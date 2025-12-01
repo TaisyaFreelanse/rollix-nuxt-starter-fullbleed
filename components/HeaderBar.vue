@@ -9,7 +9,7 @@ const mobileOpen = useState('mobileOpen', () => false)
       <div class="flex items-center gap-3">
         <button class="md:hidden p-2 rounded-lg bg-white/5 hover:bg-white/10" @click="mobileOpen=true">☰</button>
         <NuxtLink to="/" class="flex items-center gap-3">
-          <img src="/logo.svg" class="h-7" alt="logo" />
+          <img src="/logo.svg" class="h-10 w-auto" alt="Уасаби" />
         </NuxtLink>
       </div>
       <nav class="hidden md:flex items-center gap-2">

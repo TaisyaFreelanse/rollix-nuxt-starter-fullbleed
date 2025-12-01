@@ -4,29 +4,29 @@
 
 ### 1.1 Обновление зависимостей и структуры
 
-- Установка дополнительных пакетов: Pinia (state management), VueUse, Headless UI
-- Настройка TypeScript конфигурации
-- Добавление ESLint/Prettier для code quality
-- Настройка environment переменных
+- [x] Установка дополнительных пакетов: Pinia (state management), VueUse, Headless UI
+- [x] Настройка TypeScript конфигурации
+- [x] Добавление ESLint/Prettier для code quality
+- [x] Настройка environment переменных
 
 ### 1.2 Структура базы данных
 
-- Создание схемы БД: пользователи, товары, категории, заказы, промокоды, зоны доставки
-- Настройка ORM (Prisma/Drizzle) для работы с БД
-- Создание миграций и seed данных
+- [x] Создание схемы БД: пользователи, товары, категории, заказы, промокоды, зоны доставки
+- [x] Настройка ORM (Prisma/Drizzle) для работы с БД
+- [x] Создание миграций и seed данных
 
 ## 2. Frontend - Основной функционал
 
 ### 2.1 Каталог товаров (по образцу Yakitoriya)
 
-**Файлы:** [`pages/catalog.vue`](pages/catalog.vue), [`components/ProductCard.vue`](components/ProductCard.vue)
+**Файлы:** [`pages/catalog.vue`](pages/catalog.vue), [`components/ProductCard.vue`](components/ProductCard.vue), [`components/ProductModal.vue`](components/ProductModal.vue), [`components/SidebarMenu.vue`](components/SidebarMenu.vue)
 
-- Боковое меню категорий с иконками (как на Yakitoriya)
-- Система фильтров и сортировки
-- Карточки товаров с hover-эффектами и анимациями
-- Модальные окна товаров с модификаторами (соусы, палочки, васаби)
-- Lazy loading изображений и виртуализация списков
-- Адаптивный дизайн для мобильных устройств
+- [x] Боковое меню категорий с иконками (как на Yakitoriya)
+- [x] Система фильтров и сортировки
+- [x] Карточки товаров с hover-эффектами и анимациями
+- [x] Модальные окна товаров с модификаторами (соусы, палочки, васаби)
+- [x] Lazy loading изображений и виртуализация списков
+- [x] Адаптивный дизайн для мобильных устройств
 
 ### 2.2 Корзина и оформление заказа
 

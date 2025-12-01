@@ -3,40 +3,41 @@ import { Server } from 'node:http';
 import { resolve, dirname, join } from 'node:path';
 import nodeCrypto from 'node:crypto';
 import { parentPort, threadId } from 'node:worker_threads';
-import { defineEventHandler, handleCacheHeaders, splitCookiesString, createEvent, fetchWithEvent, isEvent, eventHandler, setHeaders, sendRedirect, proxyRequest, getRequestHeader, setResponseHeaders, setResponseStatus, send, getRequestHeaders, setResponseHeader, appendResponseHeader, getRequestURL, getResponseHeader, removeResponseHeader, createError, getQuery as getQuery$1, readBody, createApp, createRouter as createRouter$1, toNodeListener, lazyEventHandler, getResponseStatus, getRouterParam, getResponseStatusText } from 'file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/node_modules/h3/dist/index.mjs';
-import { escapeHtml } from 'file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/node_modules/@vue/shared/dist/shared.cjs.js';
-import { createRenderer, getRequestDependencies, getPreloadLinks, getPrefetchLinks } from 'file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/node_modules/vue-bundle-renderer/dist/runtime.mjs';
-import { parseURL, withoutBase, joinURL, getQuery, withQuery, withTrailingSlash, decodePath, withLeadingSlash, withoutTrailingSlash, joinRelativeURL } from 'file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/node_modules/ufo/dist/index.mjs';
-import { renderToString } from 'file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/node_modules/vue/server-renderer/index.mjs';
-import { klona } from 'file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/node_modules/klona/dist/index.mjs';
-import defu, { defuFn } from 'file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/node_modules/defu/dist/defu.mjs';
-import destr, { destr as destr$1 } from 'file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/node_modules/destr/dist/index.mjs';
-import { snakeCase } from 'file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/node_modules/scule/dist/index.mjs';
-import { createHead as createHead$1, propsToString, renderSSRHead } from 'file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/node_modules/unhead/dist/server.mjs';
-import { stringify, uneval } from 'file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/node_modules/devalue/index.js';
-import { isVNode, toValue, isRef } from 'file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/node_modules/vue/index.mjs';
-import { DeprecationsPlugin, PromisesPlugin, TemplateParamsPlugin, AliasSortingPlugin } from 'file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/node_modules/unhead/dist/plugins.mjs';
-import { createHooks } from 'file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/node_modules/hookable/dist/index.mjs';
-import { createFetch, Headers as Headers$1 } from 'file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/node_modules/ofetch/dist/node.mjs';
-import { fetchNodeRequestHandler, callNodeRequestHandler } from 'file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/node_modules/node-mock-http/dist/index.mjs';
-import { createStorage, prefixStorage } from 'file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/node_modules/unstorage/dist/index.mjs';
-import unstorage_47drivers_47fs from 'file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/node_modules/unstorage/drivers/fs.mjs';
-import { digest } from 'file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/node_modules/ohash/dist/index.mjs';
-import { toRouteMatcher, createRouter } from 'file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/node_modules/radix3/dist/index.mjs';
+import { defineEventHandler, handleCacheHeaders, splitCookiesString, createEvent, fetchWithEvent, isEvent, eventHandler, setHeaders, sendRedirect, proxyRequest, getRequestHeader, setResponseHeaders, setResponseStatus, send, getRequestHeaders, setResponseHeader, appendResponseHeader, getRequestURL, getResponseHeader, removeResponseHeader, createError, getQuery as getQuery$1, readBody, createApp, createRouter as createRouter$1, toNodeListener, lazyEventHandler, getResponseStatus, getRouterParam, getResponseStatusText } from 'file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/h3/dist/index.mjs';
+import { escapeHtml } from 'file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/@vue/shared/dist/shared.cjs.js';
+import { PrismaClient } from 'file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/@prisma/client/default.js';
+import { createRenderer, getRequestDependencies, getPreloadLinks, getPrefetchLinks } from 'file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/vue-bundle-renderer/dist/runtime.mjs';
+import { parseURL, withoutBase, joinURL, getQuery, withQuery, withTrailingSlash, decodePath, withLeadingSlash, withoutTrailingSlash, joinRelativeURL } from 'file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/ufo/dist/index.mjs';
+import { renderToString } from 'file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/vue/server-renderer/index.mjs';
+import { klona } from 'file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/klona/dist/index.mjs';
+import defu, { defuFn } from 'file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/defu/dist/defu.mjs';
+import destr, { destr as destr$1 } from 'file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/destr/dist/index.mjs';
+import { snakeCase } from 'file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/scule/dist/index.mjs';
+import { createHead as createHead$1, propsToString, renderSSRHead } from 'file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/unhead/dist/server.mjs';
+import { stringify, uneval } from 'file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/devalue/index.js';
+import { isVNode, toValue, isRef } from 'file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/vue/index.mjs';
+import { DeprecationsPlugin, PromisesPlugin, TemplateParamsPlugin, AliasSortingPlugin } from 'file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/unhead/dist/plugins.mjs';
+import { createHooks } from 'file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/hookable/dist/index.mjs';
+import { createFetch, Headers as Headers$1 } from 'file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/ofetch/dist/node.mjs';
+import { fetchNodeRequestHandler, callNodeRequestHandler } from 'file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/node-mock-http/dist/index.mjs';
+import { createStorage, prefixStorage } from 'file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/unstorage/dist/index.mjs';
+import unstorage_47drivers_47fs from 'file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/unstorage/drivers/fs.mjs';
+import { digest } from 'file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/ohash/dist/index.mjs';
+import { toRouteMatcher, createRouter } from 'file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/radix3/dist/index.mjs';
 import { readFile } from 'node:fs/promises';
-import consola, { consola as consola$1 } from 'file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/node_modules/consola/dist/index.mjs';
-import { ErrorParser } from 'file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/node_modules/youch-core/build/index.js';
-import { Youch } from 'file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/node_modules/youch/build/index.js';
-import { SourceMapConsumer } from 'file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/node_modules/source-map/source-map.js';
+import consola, { consola as consola$1 } from 'file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/consola/dist/index.mjs';
+import { ErrorParser } from 'file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/youch-core/build/index.js';
+import { Youch } from 'file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/youch/build/index.js';
+import { SourceMapConsumer } from 'file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/source-map/source-map.js';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { getContext } from 'file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/node_modules/unctx/dist/index.mjs';
-import { captureRawStackTrace, parseRawStackTrace } from 'file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/node_modules/errx/dist/index.js';
+import { getContext } from 'file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/unctx/dist/index.mjs';
+import { captureRawStackTrace, parseRawStackTrace } from 'file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/errx/dist/index.js';
 import { promises } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname as dirname$1, resolve as resolve$1 } from 'file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/node_modules/pathe/dist/index.mjs';
-import { walkResolver } from 'file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/node_modules/unhead/dist/utils.mjs';
+import { dirname as dirname$1, resolve as resolve$1 } from 'file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/pathe/dist/index.mjs';
+import { walkResolver } from 'file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/unhead/dist/utils.mjs';
 
-const serverAssets = [{"baseName":"server","dir":"C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/server/assets"}];
+const serverAssets = [{"baseName":"server","dir":"C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/server/assets"}];
 
 const assets$1 = createStorage();
 
@@ -48,11 +49,11 @@ const storage = createStorage({});
 
 storage.mount('/assets', assets$1);
 
-storage.mount('root', unstorage_47drivers_47fs({"driver":"fs","readOnly":true,"base":"C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed","watchOptions":{"ignored":[null]}}));
-storage.mount('src', unstorage_47drivers_47fs({"driver":"fs","readOnly":true,"base":"C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/server","watchOptions":{"ignored":[null]}}));
-storage.mount('build', unstorage_47drivers_47fs({"driver":"fs","readOnly":false,"base":"C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/.nuxt"}));
-storage.mount('cache', unstorage_47drivers_47fs({"driver":"fs","readOnly":false,"base":"C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/.nuxt/cache"}));
-storage.mount('data', unstorage_47drivers_47fs({"driver":"fs","base":"C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/.data/kv"}));
+storage.mount('root', unstorage_47drivers_47fs({"driver":"fs","readOnly":true,"base":"C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed","watchOptions":{"ignored":[null]}}));
+storage.mount('src', unstorage_47drivers_47fs({"driver":"fs","readOnly":true,"base":"C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/server","watchOptions":{"ignored":[null]}}));
+storage.mount('build', unstorage_47drivers_47fs({"driver":"fs","readOnly":false,"base":"C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/.nuxt"}));
+storage.mount('cache', unstorage_47drivers_47fs({"driver":"fs","readOnly":false,"base":"C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/.nuxt/cache"}));
+storage.mount('data', unstorage_47drivers_47fs({"driver":"fs","base":"C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/.data/kv"}));
 
 function useStorage(base = "") {
   return base ? prefixStorage(storage, base) : storage;
@@ -1012,13 +1013,13 @@ if (!window.__NUXT_DEVTOOLS_TIME_METRIC__) {
 window.__NUXT_DEVTOOLS_TIME_METRIC__.appInit = Date.now()
 `;
 
-const _vIUvoihAH_yllra4pLHEdBE4vYTgz41vW1_B_x3BI = (function(nitro) {
+const _jKkDnZhH033R2Tcsel_drkLQhNX9IDv8WFQ0BBoM = (function(nitro) {
   nitro.hooks.hook("render:html", (htmlContext) => {
     htmlContext.head.push(`<script>${script}<\/script>`);
   });
 });
 
-const rootDir = "C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed";
+const rootDir = "C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed";
 
 const appHead = {"meta":[{"name":"viewport","content":"width=device-width, initial-scale=1"},{"charset":"utf-8"}],"link":[{"rel":"preconnect","href":"https://fonts.googleapis.com"},{"rel":"stylesheet","href":"https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"}],"style":[],"script":[],"noscript":[],"title":"Rollix — доставка роллов","htmlAttrs":{"lang":"ru"}};
 
@@ -1037,7 +1038,7 @@ const devReducers = {
   URL: (data) => data instanceof URL ? data.toString() : void 0
 };
 const asyncContext = getContext("nuxt-dev", { asyncContext: true, AsyncLocalStorage });
-const _tFJaJu3Tp5esp203iPCLnLV61Aq9JgGqEFNfbqzh5Q = (nitroApp) => {
+const _yHv2NP3P4oH8J4RXYFSzh10JCB1Y2X5BlWj29xJwc4 = (nitroApp) => {
   const handler = nitroApp.h3App.handler;
   nitroApp.h3App.handler = (event) => {
     return asyncContext.callAsync({ logs: [], event }, () => handler(event));
@@ -1107,8 +1108,8 @@ function onConsoleLog(callback) {
 }
 
 const plugins = [
-  _vIUvoihAH_yllra4pLHEdBE4vYTgz41vW1_B_x3BI,
-_tFJaJu3Tp5esp203iPCLnLV61Aq9JgGqEFNfbqzh5Q
+  _jKkDnZhH033R2Tcsel_drkLQhNX9IDv8WFQ0BBoM,
+_yHv2NP3P4oH8J4RXYFSzh10JCB1Y2X5BlWj29xJwc4
 ];
 
 const assets = {};
@@ -1136,7 +1137,7 @@ function getAsset (id) {
 
 const METHODS = /* @__PURE__ */ new Set(["HEAD", "GET"]);
 const EncodingMap = { gzip: ".gz", br: ".br" };
-const _CBVCiM = eventHandler((event) => {
+const _anTxch = eventHandler((event) => {
   if (event.method && !METHODS.has(event.method)) {
     return;
   }
@@ -1274,8 +1275,8 @@ function publicAssetsURL(...path) {
 
 const APP_ROOT_OPEN_TAG = `<${appRootTag}${propsToString(appRootAttrs)}>`;
 const APP_ROOT_CLOSE_TAG = `</${appRootTag}>`;
-const getServerEntry = () => import('file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/.nuxt//dist/server/server.mjs').then((r) => r.default || r);
-const getClientManifest = () => import('file://C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/.nuxt//dist/server/client.manifest.mjs').then((r) => r.default || r).then((r) => typeof r === "function" ? r() : r);
+const getServerEntry = () => import('file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/.nuxt//dist/server/server.mjs').then((r) => r.default || r);
+const getClientManifest = () => import('file://C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/.nuxt//dist/server/client.manifest.mjs').then((r) => r.default || r).then((r) => typeof r === "function" ? r() : r);
 const getSSRRenderer = lazyCachedFunction(async () => {
   const manifest = await getClientManifest();
   if (!manifest) {
@@ -1524,13 +1525,19 @@ async function getIslandContext(event) {
   return ctx;
 }
 
-const _lazy_NkTiAW = () => Promise.resolve().then(function () { return renderer$1; });
+const _lazy_olI9dM = () => Promise.resolve().then(function () { return index_get$3; });
+const _lazy_Cl7tSA = () => Promise.resolve().then(function () { return _id__get$1; });
+const _lazy_gg7SMc = () => Promise.resolve().then(function () { return index_get$1; });
+const _lazy_SFXOTV = () => Promise.resolve().then(function () { return renderer$1; });
 
 const handlers = [
-  { route: '', handler: _CBVCiM, lazy: false, middleware: true, method: undefined },
-  { route: '/__nuxt_error', handler: _lazy_NkTiAW, lazy: true, middleware: false, method: undefined },
+  { route: '', handler: _anTxch, lazy: false, middleware: true, method: undefined },
+  { route: '/api/categories', handler: _lazy_olI9dM, lazy: true, middleware: false, method: "get" },
+  { route: '/api/products/:id', handler: _lazy_Cl7tSA, lazy: true, middleware: false, method: "get" },
+  { route: '/api/products', handler: _lazy_gg7SMc, lazy: true, middleware: false, method: "get" },
+  { route: '/__nuxt_error', handler: _lazy_SFXOTV, lazy: true, middleware: false, method: undefined },
   { route: '/__nuxt_island/**', handler: _SxA8c9, lazy: false, middleware: false, method: undefined },
-  { route: '/**', handler: _lazy_NkTiAW, lazy: true, middleware: false, method: undefined }
+  { route: '/**', handler: _lazy_SFXOTV, lazy: true, middleware: false, method: undefined }
 ];
 
 function createNitroApp() {
@@ -1859,6 +1866,213 @@ const styles = {};
 const styles$1 = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
   __proto__: null,
   default: styles
+}, Symbol.toStringTag, { value: 'Module' }));
+
+var _a;
+const prismaClientSingleton = () => {
+  return new PrismaClient();
+};
+const prisma = (_a = globalThis.prismaGlobal) != null ? _a : prismaClientSingleton();
+globalThis.prismaGlobal = prisma;
+
+const index_get$2 = defineEventHandler(async (event) => {
+  try {
+    const categories = await prisma.category.findMany({
+      where: {
+        isActive: true
+      },
+      include: {
+        _count: {
+          select: {
+            products: {
+              where: {
+                isActive: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: {
+        sortOrder: "asc"
+      }
+    });
+    return categories;
+  } catch (error) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: "\u041E\u0448\u0438\u0431\u043A\u0430 \u043F\u0440\u0438 \u043F\u043E\u043B\u0443\u0447\u0435\u043D\u0438\u0438 \u043A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u0439"
+    });
+  }
+});
+
+const index_get$3 = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
+  __proto__: null,
+  default: index_get$2
+}, Symbol.toStringTag, { value: 'Module' }));
+
+const _id__get = defineEventHandler(async (event) => {
+  try {
+    const id = getRouterParam(event, "id");
+    if (!id) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: "ID \u0442\u043E\u0432\u0430\u0440\u0430 \u043D\u0435 \u0443\u043A\u0430\u0437\u0430\u043D"
+      });
+    }
+    const product = await prisma.product.findUnique({
+      where: {
+        id
+      },
+      include: {
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            icon: true
+          }
+        },
+        modifiers: {
+          include: {
+            options: {
+              orderBy: {
+                sortOrder: "asc"
+              }
+            }
+          },
+          orderBy: {
+            sortOrder: "asc"
+          }
+        }
+      }
+    });
+    if (!product) {
+      throw createError({
+        statusCode: 404,
+        statusMessage: "\u0422\u043E\u0432\u0430\u0440 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D"
+      });
+    }
+    return {
+      ...product,
+      price: Number(product.price),
+      oldPrice: product.oldPrice ? Number(product.oldPrice) : null,
+      modifiers: product.modifiers.map((modifier) => ({
+        ...modifier,
+        price: Number(modifier.price),
+        options: modifier.options.map((option) => ({
+          ...option,
+          price: Number(option.price)
+        }))
+      }))
+    };
+  } catch (error) {
+    if (error.statusCode) {
+      throw error;
+    }
+    throw createError({
+      statusCode: 500,
+      statusMessage: "\u041E\u0448\u0438\u0431\u043A\u0430 \u043F\u0440\u0438 \u043F\u043E\u043B\u0443\u0447\u0435\u043D\u0438\u0438 \u0442\u043E\u0432\u0430\u0440\u0430"
+    });
+  }
+});
+
+const _id__get$1 = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
+  __proto__: null,
+  default: _id__get
+}, Symbol.toStringTag, { value: 'Module' }));
+
+const index_get = defineEventHandler(async (event) => {
+  try {
+    const query = getQuery$1(event);
+    const categoryId = query.categoryId;
+    const search = query.search;
+    const sortBy = query.sortBy || "sortOrder";
+    const sortOrder = query.sortOrder || "asc";
+    const isPopular = query.isPopular === "true";
+    const limit = query.limit ? parseInt(query.limit) : void 0;
+    const offset = query.offset ? parseInt(query.offset) : void 0;
+    const where = {
+      isActive: true
+    };
+    if (categoryId) {
+      where.categoryId = categoryId;
+    }
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } }
+      ];
+    }
+    if (isPopular) {
+      where.isPopular = true;
+    }
+    const orderBy = {};
+    if (sortBy === "price") {
+      orderBy.price = sortOrder;
+    } else if (sortBy === "name") {
+      orderBy.name = sortOrder;
+    } else {
+      orderBy.sortOrder = sortOrder;
+    }
+    const products = await prisma.product.findMany({
+      where,
+      include: {
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            icon: true
+          }
+        },
+        modifiers: {
+          include: {
+            options: {
+              orderBy: {
+                sortOrder: "asc"
+              }
+            }
+          },
+          orderBy: {
+            sortOrder: "asc"
+          }
+        }
+      },
+      orderBy,
+      take: limit,
+      skip: offset
+    });
+    const total = await prisma.product.count({ where });
+    const formattedProducts = products.map((product) => ({
+      ...product,
+      price: Number(product.price),
+      oldPrice: product.oldPrice ? Number(product.oldPrice) : null,
+      modifiers: product.modifiers.map((modifier) => ({
+        ...modifier,
+        price: Number(modifier.price),
+        options: modifier.options.map((option) => ({
+          ...option,
+          price: Number(option.price)
+        }))
+      }))
+    }));
+    return {
+      products: formattedProducts,
+      total,
+      limit,
+      offset
+    };
+  } catch (error) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: "\u041E\u0448\u0438\u0431\u043A\u0430 \u043F\u0440\u0438 \u043F\u043E\u043B\u0443\u0447\u0435\u043D\u0438\u0438 \u0442\u043E\u0432\u0430\u0440\u043E\u0432"
+    });
+  }
+});
+
+const index_get$1 = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
+  __proto__: null,
+  default: index_get
 }, Symbol.toStringTag, { value: 'Module' }));
 
 function renderPayloadResponse(ssrContext) {

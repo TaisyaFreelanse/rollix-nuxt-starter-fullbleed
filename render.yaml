@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: rollix-delivery
+    env: node
+    plan: starter
+    region: oregon
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NUXT_PUBLIC_API_BASE_URL
+        value: https://rollix-delivery.onrender.com
+      - key: NUXT_PUBLIC_APP_NAME
+        value: Rollix
+      - key: NUXT_PUBLIC_APP_URL
+        value: https://rollix-delivery.onrender.com
+    # DATABASE_URL будет автоматически добавлен Render при связывании с базой данных
+
+databases:
+  - name: rollix-db
+    databaseName: rollix_db
+    user: rollix_db_user
+    plan: free
+    region: oregon
+

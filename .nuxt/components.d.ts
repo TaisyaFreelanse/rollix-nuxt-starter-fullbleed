@@ -20,6 +20,7 @@ export const FooterBar: typeof import("../components/FooterBar.vue")['default']
 export const HeaderBar: typeof import("../components/HeaderBar.vue")['default']
 export const MobileSidebar: typeof import("../components/MobileSidebar.vue")['default']
 export const ProductCard: typeof import("../components/ProductCard.vue")['default']
+export const ProductModal: typeof import("../components/ProductModal.vue")['default']
 export const SidebarMenu: typeof import("../components/SidebarMenu.vue")['default']
 export const NuxtWelcome: typeof import("../node_modules/nuxt/dist/app/components/welcome.vue")['default']
 export const NuxtLayout: typeof import("../node_modules/nuxt/dist/app/components/nuxt-layout")['default']
@@ -50,6 +51,7 @@ export const LazyFooterBar: LazyComponent<typeof import("../components/FooterBar
 export const LazyHeaderBar: LazyComponent<typeof import("../components/HeaderBar.vue")['default']>
 export const LazyMobileSidebar: LazyComponent<typeof import("../components/MobileSidebar.vue")['default']>
 export const LazyProductCard: LazyComponent<typeof import("../components/ProductCard.vue")['default']>
+export const LazyProductModal: LazyComponent<typeof import("../components/ProductModal.vue")['default']>
 export const LazySidebarMenu: LazyComponent<typeof import("../components/SidebarMenu.vue")['default']>
 export const LazyNuxtWelcome: LazyComponent<typeof import("../node_modules/nuxt/dist/app/components/welcome.vue")['default']>
 export const LazyNuxtLayout: LazyComponent<typeof import("../node_modules/nuxt/dist/app/components/nuxt-layout")['default']>

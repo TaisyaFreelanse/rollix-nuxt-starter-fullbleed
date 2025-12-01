@@ -20,6 +20,7 @@ interface _GlobalComponents {
   'HeaderBar': typeof import("../../components/HeaderBar.vue")['default']
   'MobileSidebar': typeof import("../../components/MobileSidebar.vue")['default']
   'ProductCard': typeof import("../../components/ProductCard.vue")['default']
+  'ProductModal': typeof import("../../components/ProductModal.vue")['default']
   'SidebarMenu': typeof import("../../components/SidebarMenu.vue")['default']
   'NuxtWelcome': typeof import("../../node_modules/nuxt/dist/app/components/welcome.vue")['default']
   'NuxtLayout': typeof import("../../node_modules/nuxt/dist/app/components/nuxt-layout")['default']
@@ -50,6 +51,7 @@ interface _GlobalComponents {
   'LazyHeaderBar': LazyComponent<typeof import("../../components/HeaderBar.vue")['default']>
   'LazyMobileSidebar': LazyComponent<typeof import("../../components/MobileSidebar.vue")['default']>
   'LazyProductCard': LazyComponent<typeof import("../../components/ProductCard.vue")['default']>
+  'LazyProductModal': LazyComponent<typeof import("../../components/ProductModal.vue")['default']>
   'LazySidebarMenu': LazyComponent<typeof import("../../components/SidebarMenu.vue")['default']>
   'LazyNuxtWelcome': LazyComponent<typeof import("../../node_modules/nuxt/dist/app/components/welcome.vue")['default']>
   'LazyNuxtLayout': LazyComponent<typeof import("../../node_modules/nuxt/dist/app/components/nuxt-layout")['default']>
