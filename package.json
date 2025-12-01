@@ -4,8 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "nuxt dev",
-    "build": "npx nuxt build",
-    "start": "nuxt start",
+    "build": "node node_modules/.bin/nuxt build",
+    "start": "node node_modules/.bin/nuxt start",
     "generate": "nuxt generate",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -17,7 +17,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "db:dev": "prisma dev",
-    "render:build": "npm install --production=false && npx prisma generate --schema=prisma/schema.prisma && npx nuxt build",
+    "render:build": "npm install --production=false && npx prisma generate --schema=prisma/schema.prisma && node node_modules/.bin/nuxt build",
     "render:setup": "npx tsx scripts/setup-db.ts"
   },
   "dependencies": {
