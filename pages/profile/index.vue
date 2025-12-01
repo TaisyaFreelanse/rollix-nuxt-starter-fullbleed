@@ -1,9 +1,18 @@
 <script setup lang="ts">
 definePageMeta({
-  middleware: 'auth' // TODO: Добавить middleware для проверки авторизации
+  middleware: 'auth'
 })
 
+const auth = useAuth()
+const router = useRouter()
 const activeTab = ref<'orders' | 'addresses' | 'favorites' | 'bonuses'>('orders')
+
+// Дополнительная проверка на клиенте
+onMounted(() => {
+  if (!auth.isAuthenticated.value) {
+    router.push('/')
+  }
+})
 </script>
 
 <template>

@@ -56,9 +56,9 @@ export const useAuth = () => {
     token: readonly(token),
     user: readonly(user),
     isAuthenticated,
+    isInitialized: readonly(isInitialized),
     setAuth,
     clearAuth,
     $fetchWithAuth
   }
 }
-
