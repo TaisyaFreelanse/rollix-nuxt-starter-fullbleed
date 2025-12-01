@@ -1,16 +1,27 @@
 export default defineNuxtPlugin(() => {
-  // Перехватываем все $fetch запросы для добавления токена
-  const originalFetch = $fetch
-  
-  // Создаем обертку с перехватчиком
+  // Создаем перехватчик для всех $fetch запросов
   const authFetch = $fetch.create({
     onRequest({ options }) {
       const auth = useAuth()
       if (auth.token.value) {
-        const headers = options.headers || {}
-        if (typeof headers === 'object' && !Array.isArray(headers)) {
+        // Убеждаемся, что headers - это объект
+        if (!options.headers) {
+          options.headers = {}
+        }
+        
+        // Если headers - массив, преобразуем в объект
+        if (Array.isArray(options.headers)) {
+          const headersObj: Record<string, string> = {}
+          options.headers.forEach(([key, value]: [string, string]) => {
+            headersObj[key] = value
+          })
+          options.headers = headersObj
+        }
+        
+        // Добавляем токен авторизации
+        if (typeof options.headers === 'object' && !Array.isArray(options.headers)) {
           options.headers = {
-            ...headers,
+            ...options.headers,
             Authorization: `Bearer ${auth.token.value}`
           }
         }
@@ -18,16 +29,10 @@ export default defineNuxtPlugin(() => {
     }
   })
 
-  // Заменяем глобальный $fetch на клиенте
+  // Заменяем глобальный $fetch только на клиенте
   if (process.client) {
-    // @ts-ignore
+    // @ts-ignore - заменяем глобальный $fetch
     globalThis.$fetch = authFetch
-    // Также заменяем в window для совместимости
-    // @ts-ignore
-    if (typeof window !== 'undefined') {
-      // @ts-ignore
-      window.$fetch = authFetch
-    }
   }
 })
 

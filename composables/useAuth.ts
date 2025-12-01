@@ -1,18 +1,24 @@
 export const useAuth = () => {
-  const token = useState<string | null>('auth:token', () => {
-    if (process.client) {
-      return localStorage.getItem('auth_token')
-    }
-    return null
-  })
+  const token = useState<string | null>('auth:token', () => null)
+  const user = useState<any | null>('auth:user', () => null)
+  const isInitialized = useState<boolean>('auth:initialized', () => false)
 
-  const user = useState<any | null>('auth:user', () => {
-    if (process.client) {
-      const userStr = localStorage.getItem('auth_user')
-      return userStr ? JSON.parse(userStr) : null
+  // Инициализация из localStorage только на клиенте
+  if (process.client && !isInitialized.value) {
+    const savedToken = localStorage.getItem('auth_token')
+    const savedUser = localStorage.getItem('auth_user')
+    if (savedToken) {
+      token.value = savedToken
     }
-    return null
-  })
+    if (savedUser) {
+      try {
+        user.value = JSON.parse(savedUser)
+      } catch (e) {
+        console.error('Ошибка парсинга пользователя из localStorage', e)
+      }
+    }
+    isInitialized.value = true
+  }
 
   const isAuthenticated = computed(() => !!token.value)
 

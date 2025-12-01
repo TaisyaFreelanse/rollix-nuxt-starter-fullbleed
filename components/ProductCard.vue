@@ -33,19 +33,27 @@ const checkFavorite = async () => {
   }
 }
 
+const auth = useAuth()
+
 const toggleFavorite = async (e: Event) => {
   e.stopPropagation()
   if (!props.product?.id || isLoadingFavorite.value) return
 
+  // Проверяем авторизацию
+  if (!auth.isAuthenticated.value) {
+    // TODO: Показать модальное окно авторизации
+    return
+  }
+
   isLoadingFavorite.value = true
   try {
     if (isFavorite.value) {
-      await $fetch(`/api/profile/favorites/${props.product.id}`, {
+      await auth.$fetchWithAuth(`/api/profile/favorites/${props.product.id}`, {
         method: 'DELETE'
       })
       isFavorite.value = false
     } else {
-      await $fetch(`/api/profile/favorites/${props.product.id}`, {
+      await auth.$fetchWithAuth(`/api/profile/favorites/${props.product.id}`, {
         method: 'POST'
       })
       isFavorite.value = true

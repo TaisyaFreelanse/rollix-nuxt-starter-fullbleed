@@ -1,11 +1,12 @@
 <script setup lang="ts">
+const auth = useAuth()
 const favorites = ref<any[]>([])
 const loading = ref(false)
 
 const fetchFavorites = async () => {
   loading.value = true
   try {
-    favorites.value = await $fetch('/api/profile/favorites')
+    favorites.value = await auth.$fetchWithAuth('/api/profile/favorites')
   } catch (error) {
     console.error('Ошибка загрузки избранного', error)
   } finally {
@@ -15,7 +16,7 @@ const fetchFavorites = async () => {
 
 const removeFavorite = async (productId: string) => {
   try {
-    await $fetch(`/api/profile/favorites/${productId}`, {
+    await auth.$fetchWithAuth(`/api/profile/favorites/${productId}`, {
       method: 'DELETE'
     })
     await fetchFavorites()

@@ -155,7 +155,8 @@ const submitOrder = async () => {
       paymentMethod: 'CASH' // По умолчанию наличные, изменится при выборе онлайн оплаты
     }
 
-    const order = await $fetch('/api/orders', {
+    const auth = useAuth()
+    const order = await auth.$fetchWithAuth('/api/orders', {
       method: 'POST',
       body: orderData
     })
@@ -181,7 +182,8 @@ const processPayment = async (paymentMethod: 'card' | 'cash') => {
   try {
     if (paymentMethod === 'cash') {
       // Наличные - заказ уже создан, просто обновляем метод оплаты
-      await $fetch(`/api/orders/${createdOrderId.value}`, {
+      const auth = useAuth()
+      await auth.$fetchWithAuth(`/api/orders/${createdOrderId.value}`, {
         method: 'PUT',
         body: { paymentMethod: 'CASH' }
       })
