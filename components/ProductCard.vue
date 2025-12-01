@@ -2,10 +2,12 @@
 import type { Product } from '~/composables/useCatalog'
 
 interface Props {
-  product: Product
+  product?: Product | null
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  product: null
+})
 
 const emit = defineEmits<{
   click: [product: Product]
@@ -24,7 +26,9 @@ const discountPercent = computed(() => {
 })
 
 const handleClick = () => {
-  emit('click', props.product)
+  if (props.product) {
+    emit('click', props.product)
+  }
 }
 </script>
 
