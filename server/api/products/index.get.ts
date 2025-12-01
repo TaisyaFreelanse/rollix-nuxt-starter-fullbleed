@@ -73,9 +73,10 @@ export default defineEventHandler(async (event) => {
     // Преобразуем Decimal в число для JSON
     const formattedProducts = products.map((product) => ({
       ...product,
+      image: product.image || null,
       price: Number(product.price),
       oldPrice: product.oldPrice ? Number(product.oldPrice) : null,
-      modifiers: product.modifiers.map((modifier) => ({
+      modifiers: (product.modifiers || []).map((modifier) => ({
         ...modifier,
         price: Number(modifier.price),
         options: modifier.options.map((option) => ({

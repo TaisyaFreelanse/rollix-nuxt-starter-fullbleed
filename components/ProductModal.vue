@@ -20,7 +20,7 @@ const selectedModifiers = ref<Record<string, string[]>>({})
 watch(
   () => props.product,
   () => {
-    if (props.product) {
+    if (props.product && props.product.modifiers) {
       selectedModifiers.value = {}
       props.product.modifiers.forEach((modifier) => {
         if (modifier.isRequired) {
@@ -40,11 +40,12 @@ watch(
 )
 
 const totalPrice = computed(() => {
+  if (!props.product) return 0
   let basePrice = Number(props.product.price) * quantity.value
 
   Object.values(selectedModifiers.value).forEach((optionIds) => {
     optionIds.forEach((optionId) => {
-      props.product.modifiers.forEach((modifier) => {
+      props.product?.modifiers?.forEach((modifier) => {
         const option = modifier.options.find((opt) => opt.id === optionId)
         if (option) {
           basePrice += Number(option.price) * quantity.value
@@ -140,8 +141,8 @@ const closeModal = () => {
                 <!-- Изображение -->
                 <div class="md:w-1/2 bg-gray-900 flex items-center justify-center p-4 md:p-8">
                   <img
-                    :src="product.image || '/product.svg'"
-                    :alt="product.name"
+                    :src="product?.image || '/product.svg'"
+                    :alt="product?.name || ''"
                     class="max-w-full max-h-48 md:max-h-64 object-cover rounded-lg" />
                 </div>
 
@@ -161,7 +162,7 @@ const closeModal = () => {
                   </div>
 
                   <!-- Модификаторы -->
-                  <div v-if="product.modifiers.length > 0" class="space-y-4 mb-6">
+                  <div v-if="product?.modifiers && product.modifiers.length > 0" class="space-y-4 mb-6">
                     <div
                       v-for="modifier in product.modifiers"
                       :key="modifier.id"

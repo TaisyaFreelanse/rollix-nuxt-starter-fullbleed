@@ -11,7 +11,7 @@ const emit = defineEmits<{
   click: [product: Product]
 }>()
 
-const imageUrl = computed(() => props.product.image || '/product.svg')
+const imageUrl = computed(() => props.product?.image || '/product.svg')
 const hasDiscount = computed(() => props.product.oldPrice && props.product.oldPrice > props.product.price)
 const discountPercent = computed(() => {
   if (!hasDiscount.value || !props.product.oldPrice) return 0
