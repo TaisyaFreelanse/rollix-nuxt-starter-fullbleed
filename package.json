@@ -17,7 +17,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "db:dev": "prisma dev",
-    "render:build": "npm install && npx prisma generate && npm run build"
+    "render:build": "npm install && npx prisma generate && npm run build",
+    "render:setup": "npx tsx scripts/setup-db.ts"
   },
   "dependencies": {
     "@headlessui/vue": "^1.7.23",
