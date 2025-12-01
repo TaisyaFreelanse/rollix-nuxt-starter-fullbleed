@@ -20,6 +20,16 @@ const sortOptions = [
 const selectedProduct = ref<Product | null>(null)
 const showProductModal = ref(false)
 
+const loadProducts = async () => {
+  await fetchProducts({
+    categoryId: selectedCategoryId.value,
+    search: searchQuery.value || undefined,
+    sortBy: sortBy.value,
+    sortOrder: sortOrder.value,
+    limit: 100
+  })
+}
+
 watch(
   () => [selectedCategoryId.value, searchQuery.value, sortBy.value, sortOrder.value],
   async () => {
@@ -32,16 +42,6 @@ onMounted(async () => {
   await fetchCategories()
   await loadProducts()
 })
-
-const loadProducts = async () => {
-  await fetchProducts({
-    categoryId: selectedCategoryId.value,
-    search: searchQuery.value || undefined,
-    sortBy: sortBy.value,
-    sortOrder: sortOrder.value,
-    limit: 100
-  })
-}
 
 const handleSearch = () => {
   loadProducts()
