@@ -65,7 +65,7 @@ const handleAuthCancel = () => {
         <NuxtLink to="/delivery" class="px-4 py-2 rounded-lg hover:bg-white/5 transition" exact-active-class="text-white">О доставке</NuxtLink>
       </nav>
       <div class="flex items-center gap-3">
-        <button class="hidden md:inline px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition text-sm">Киев</button>
+        <button class="hidden md:inline px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition text-sm">Москва</button>
         <NuxtLink
           :class="[
             'relative px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-all text-sm',

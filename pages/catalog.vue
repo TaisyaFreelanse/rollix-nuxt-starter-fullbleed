@@ -92,8 +92,12 @@ const closeProductModal = () => {
         <!-- Сортировка -->
         <select
           v-model="sortBy"
-          class="px-3 py-1.5 rounded bg-white/5 hover:bg-white/10 border border-white/10 focus:border-accent focus:outline-none text-sm">
-          <option v-for="option in sortOptions" :key="option.value" :value="option.value">
+          class="px-3 py-1.5 rounded bg-[#1a1b1e] hover:bg-[#25262b] border border-white/10 focus:border-accent focus:outline-none text-sm text-white cursor-pointer">
+          <option
+            v-for="option in sortOptions"
+            :key="option.value"
+            :value="option.value"
+            class="bg-[#1a1b1e] text-white py-2">
             {{ option.label }}
           </option>
         </select>

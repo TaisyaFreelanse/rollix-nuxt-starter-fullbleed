@@ -75,12 +75,11 @@ const handleClick = () => {
 }
 </script>
 
-  <template>
-    <article
-      v-if="isValidProduct"
-      class="card card-hover group cursor-pointer touch-target"
-      @click="handleClick"
-      @touchstart.passive="handleClick">
+<template>
+  <article
+    v-if="isValidProduct"
+    class="card card-hover group cursor-pointer"
+    @click="handleClick">
     <div class="relative overflow-hidden rounded-t-lg">
       <img
         :src="imageUrl"
@@ -112,12 +111,10 @@ const handleClick = () => {
       </button>
       <!-- Overlay при hover -->
       <div
-        class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
-        <div class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-2 group-hover:translate-y-0">
-          <button class="px-4 py-2 bg-accent hover:bg-accent-700 rounded-lg text-white font-medium text-sm transition">
-            Подробнее
-          </button>
-        </div>
+        class="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300 flex items-center justify-center pointer-events-none">
+        <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 px-4 py-2 bg-accent rounded-lg text-white font-medium text-sm">
+          Подробнее
+        </span>
       </div>
     </div>
     <div class="p-4">

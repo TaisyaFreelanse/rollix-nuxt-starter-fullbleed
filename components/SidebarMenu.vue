@@ -23,10 +23,15 @@ const isActive = (categoryId: string) => {
     <div class="p-3 pb-24">
       <div class="text-xs uppercase tracking-wider text-gray-400 mb-2">Меню доставки</div>
       <div class="flex items-center gap-2 mb-3">
-        <button class="px-3 py-1.5 rounded-lg bg-accent hover:bg-accent-700 transition text-sm text-white">
+        <NuxtLink
+          to="/catalog"
+          class="px-3 py-1.5 rounded-lg bg-accent hover:bg-accent-700 transition text-sm text-white">
           Категории
-        </button>
-        <button class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition text-sm">
+        </NuxtLink>
+        <button
+          class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition text-sm text-gray-400 cursor-not-allowed"
+          disabled
+          title="Скоро">
           Ингредиенты
         </button>
       </div>
