@@ -20,7 +20,9 @@ export default defineEventHandler(async (event) => {
     }
 
     const body = await readBody(event)
-    const userId = body.userId || null // TODO: Получить из сессии/токена
+    // Получаем userId из контекста авторизации (если пользователь авторизован)
+    const auth = event.context.auth
+    const userId = auth?.userId || body.userId || null
 
     // Генерируем номер заказа
     const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`

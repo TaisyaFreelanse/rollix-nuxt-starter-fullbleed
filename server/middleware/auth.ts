@@ -15,10 +15,23 @@ export default defineEventHandler(async (event) => {
     '/api/auth',
     '/api/delivery-zones',
     '/api/promo-codes',
-    '/api/admin/settings' // Публичный для проверки режима техработ
+    '/api/admin/settings', // Публичный для проверки режима техработ
+    '/api/orders' // Разрешаем гостевые заказы
   ]
 
   if (publicRoutes.some((route) => path.startsWith(route))) {
+    // Для маршрутов с опциональной авторизацией пытаемся извлечь токен, но не требуем его
+    const authHeader = event.node.req.headers.authorization
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7)
+      try {
+        const payload = await verifyToken(token)
+        event.context.auth = { userId: payload.userId }
+      } catch (error) {
+        // Игнорируем ошибку - пользователь просто не авторизован
+        event.context.auth = null
+      }
+    }
     return
   }
 

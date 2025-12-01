@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const cartStore = useCartStore()
 const router = useRouter()
+const auth = useAuth()
 
 if (cartStore.isEmpty) {
   router.push('/cart')
@@ -155,10 +156,10 @@ const submitOrder = async () => {
       paymentMethod: 'CASH' // По умолчанию наличные, изменится при выборе онлайн оплаты
     }
 
-    const auth = useAuth()
-    const order = await auth.$fetchWithAuth('/api/orders', {
+    const order = await $fetch('/api/orders', {
       method: 'POST',
-      body: orderData
+      body: orderData,
+      headers: auth.token.value ? { Authorization: `Bearer ${auth.token.value}` } : {}
     })
 
     createdOrderId.value = order.id
@@ -182,10 +183,10 @@ const processPayment = async (paymentMethod: 'card' | 'cash') => {
   try {
     if (paymentMethod === 'cash') {
       // Наличные - заказ уже создан, просто обновляем метод оплаты
-      const auth = useAuth()
-      await auth.$fetchWithAuth(`/api/orders/${createdOrderId.value}`, {
+      await $fetch(`/api/orders/${createdOrderId.value}`, {
         method: 'PUT',
-        body: { paymentMethod: 'CASH' }
+        body: { paymentMethod: 'CASH' },
+        headers: auth.token.value ? { Authorization: `Bearer ${auth.token.value}` } : {}
       })
       
       toast.success('Заказ успешно оформлен!')
