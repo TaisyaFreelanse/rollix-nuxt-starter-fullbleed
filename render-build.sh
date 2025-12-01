@@ -1,14 +1,7 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+# Exit on error
+set -o errexit
 
-echo "📦 Installing dependencies..."
-npm install
-
-echo "🔧 Generating Prisma Client..."
-npx prisma generate
-
-echo "🏗️ Building application..."
+npm install --production=false
+npx prisma generate --schema=prisma/schema.prisma
 npm run build
-
-echo "✅ Build completed successfully!"
-
