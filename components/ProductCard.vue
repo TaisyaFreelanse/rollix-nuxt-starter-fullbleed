@@ -147,6 +147,6 @@ const handleClick = () => {
 
 <style scoped>
 .card {
-  @apply bg-card rounded-lg overflow-hidden border border-white/5 hover:border-white/10 transition-all;
+  @apply bg-card rounded-lg overflow-hidden border border-white/5 hover:border-white/10;
 }
 </style>
