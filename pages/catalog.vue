@@ -126,7 +126,7 @@ const closeProductModal = () => {
           : 'grid-cols-1'
       ]">
       <ProductCard
-        v-for="product in products"
+        v-for="product in products.filter(p => p && p.id && p.name)"
         :key="product.id"
         :product="product"
         @click="openProductModal(product)" />

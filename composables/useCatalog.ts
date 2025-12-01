@@ -95,7 +95,8 @@ export const useCatalog = () => {
       if (params?.offset) query.offset = params.offset.toString()
 
       const data = await $fetch<ProductsResponse>('/api/products', { query })
-      products.value = data.products
+      // Фильтруем невалидные продукты
+      products.value = (data.products || []).filter(p => p && p.id && p.name)
       totalProducts.value = data.total
       return data
     } catch (error) {
