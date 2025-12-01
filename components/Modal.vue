@@ -31,8 +31,7 @@ const close = () => {
 </script>
 
 <template>
-  <Transition appear :show="open">
-    <Dialog as="div" class="relative z-50" @close="closeOnOverlay ? close : undefined">
+  <Dialog :open="open" as="div" class="relative z-50" @close="closeOnOverlay ? close : undefined">
       <TransitionChild
         enter="duration-300 ease-out"
         enter-from="opacity-0"
@@ -81,6 +80,5 @@ const close = () => {
         </div>
       </div>
     </Dialog>
-  </Transition>
 </template>
 

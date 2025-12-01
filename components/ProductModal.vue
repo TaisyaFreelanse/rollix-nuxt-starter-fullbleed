@@ -148,8 +148,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <Transition appear :show="open">
-    <Dialog as="div" class="relative z-50" @close="closeModal">
+  <Dialog :open="open" as="div" class="relative z-50" @close="closeModal">
       <TransitionChild
         enter="duration-300 ease-out"
         enter-from="opacity-0"
@@ -278,6 +277,5 @@ onMounted(() => {
         </div>
       </div>
     </Dialog>
-  </Transition>
 </template>
 
