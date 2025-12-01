@@ -18,6 +18,49 @@ const isValidProduct = computed(() => {
   return props.product && props.product.id && props.product.name
 })
 
+const isFavorite = ref(false)
+const isLoadingFavorite = ref(false)
+
+// Проверяем, в избранном ли товар
+const checkFavorite = async () => {
+  if (!props.product?.id) return
+  try {
+    // TODO: Проверить через API
+    // const favorite = await $fetch(`/api/profile/favorites/${props.product.id}`)
+    // isFavorite.value = !!favorite
+  } catch (error) {
+    // Товар не в избранном
+  }
+}
+
+const toggleFavorite = async (e: Event) => {
+  e.stopPropagation()
+  if (!props.product?.id || isLoadingFavorite.value) return
+
+  isLoadingFavorite.value = true
+  try {
+    if (isFavorite.value) {
+      await $fetch(`/api/profile/favorites/${props.product.id}`, {
+        method: 'DELETE'
+      })
+      isFavorite.value = false
+    } else {
+      await $fetch(`/api/profile/favorites/${props.product.id}`, {
+        method: 'POST'
+      })
+      isFavorite.value = true
+    }
+  } catch (error) {
+    console.error('Ошибка изменения избранного', error)
+  } finally {
+    isLoadingFavorite.value = false
+  }
+}
+
+onMounted(() => {
+  checkFavorite()
+})
+
 const imageUrl = computed(() => props.product?.image || '/product.svg')
 const hasDiscount = computed(() => props.product?.oldPrice && props.product.oldPrice > props.product.price)
 const discountPercent = computed(() => {
@@ -32,11 +75,12 @@ const handleClick = () => {
 }
 </script>
 
-<template>
-  <article
-    v-if="isValidProduct"
-    class="card group cursor-pointer transform transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
-    @click="handleClick">
+  <template>
+    <article
+      v-if="isValidProduct"
+      class="card card-hover group cursor-pointer touch-target"
+      @click="handleClick"
+      @touchstart.passive="handleClick">
     <div class="relative overflow-hidden rounded-t-lg">
       <img
         :src="imageUrl"
@@ -55,6 +99,17 @@ const handleClick = () => {
         class="absolute top-3 right-3 badge border-yellow-500 text-yellow-300 bg-yellow-500/20 backdrop-blur-sm">
         ⭐ Популярное
       </div>
+      <!-- Кнопка избранного -->
+      <button
+        :class="[
+          'absolute bottom-3 right-3 p-2 rounded-full backdrop-blur-sm transition',
+          isFavorite
+            ? 'bg-red-500/20 border-red-500/50 text-red-300'
+            : 'bg-white/10 border-white/20 text-gray-400 hover:text-white'
+        ]"
+        @click="toggleFavorite">
+        {{ isFavorite ? '❤️' : '🤍' }}
+      </button>
       <!-- Overlay при hover -->
       <div
         class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">

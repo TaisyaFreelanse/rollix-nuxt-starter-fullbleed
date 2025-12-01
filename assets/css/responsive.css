@@ -1,0 +1,301 @@
+/* ============================================
+   Адаптивные стили для различных разрешений
+   ============================================ */
+
+/* Touch-friendly элементы для мобильных устройств */
+@media (max-width: 768px) {
+  /* Увеличиваем размеры кликабельных элементов */
+  button,
+  a,
+  [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Улучшаем отступы для touch-интерфейса */
+  .touch-target {
+    padding: 12px 16px;
+    margin: 8px 0;
+  }
+
+  /* Оптимизация для карточек товаров на мобильных */
+  .card {
+    margin-bottom: 1rem;
+  }
+
+  /* Улучшаем читаемость текста */
+  body {
+    font-size: 16px; /* Предотвращает автоматическое масштабирование на iOS */
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Оптимизация модальных окон */
+  .modal-content {
+    max-height: 90vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Улучшаем навигацию */
+  nav a {
+    padding: 12px 16px;
+    display: block;
+  }
+}
+
+/* Планшеты (768px - 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+  /* Оптимизация сетки для планшетов */
+  .grid-tablet-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .grid-tablet-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* Улучшаем размеры шрифтов */
+  h1 {
+    font-size: 2rem;
+  }
+
+  h2 {
+    font-size: 1.75rem;
+  }
+
+  /* Оптимизация карточек */
+  .card {
+    padding: 1.25rem;
+  }
+}
+
+/* Большие экраны (1024px+) */
+@media (min-width: 1024px) {
+  /* Максимальная ширина контента */
+  .container-xl {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  /* Оптимизация для широких экранов */
+  .grid-desktop-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .grid-desktop-5 {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .grid-desktop-6 {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+/* Очень большие экраны (1440px+) */
+@media (min-width: 1440px) {
+  .container-2xl {
+    max-width: 1536px;
+    margin: 0 auto;
+  }
+}
+
+/* Портретная ориентация */
+@media (orientation: portrait) {
+  /* Оптимизация для вертикальной ориентации */
+  .portrait-optimize {
+    flex-direction: column;
+  }
+}
+
+/* Альбомная ориентация */
+@media (orientation: landscape) and (max-height: 500px) {
+  /* Оптимизация для горизонтальной ориентации на мобильных */
+  .landscape-optimize {
+    flex-direction: row;
+  }
+
+  /* Уменьшаем высоту шапки в ландшафте */
+  header {
+    height: auto;
+    min-height: 48px;
+  }
+}
+
+/* Высокая плотность пикселей (Retina) */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  /* Оптимизация изображений для Retina */
+  img {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Поддержка темной темы на уровне системы */
+@media (prefers-color-scheme: dark) {
+  /* Стили уже используют темную тему по умолчанию */
+}
+
+/* Поддержка уменьшенной анимации */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Улучшение доступности для touch-устройств */
+.touch-action-none {
+  touch-action: none;
+}
+
+.touch-action-pan-x {
+  touch-action: pan-x;
+}
+
+.touch-action-pan-y {
+  touch-action: pan-y;
+}
+
+.touch-action-pan-xy {
+  touch-action: pan-x pan-y;
+}
+
+/* Предотвращение выделения текста при двойном тапе на мобильных */
+.no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Улучшение скролла на touch-устройствах */
+.smooth-scroll {
+  -webkit-overflow-scrolling: touch;
+  overflow-scrolling: touch;
+}
+
+/* Адаптивные изображения */
+.responsive-image {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+/* Адаптивные видео */
+.responsive-video {
+  position: relative;
+  padding-bottom: 56.25%; /* 16:9 */
+  height: 0;
+  overflow: hidden;
+}
+
+.responsive-video iframe,
+.responsive-video video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Адаптивные таблицы */
+@media (max-width: 768px) {
+  .responsive-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .responsive-table table {
+    min-width: 600px;
+  }
+}
+
+/* Адаптивные формы */
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="number"],
+  textarea,
+  select {
+    font-size: 16px; /* Предотвращает зум на iOS */
+  }
+}
+
+/* Адаптивные кнопки */
+@media (max-width: 768px) {
+  .btn-mobile {
+    width: 100%;
+    padding: 14px 20px;
+    font-size: 16px;
+  }
+}
+
+/* Адаптивные отступы */
+@media (max-width: 640px) {
+  .mobile-p-2 {
+    padding: 0.5rem;
+  }
+
+  .mobile-p-4 {
+    padding: 1rem;
+  }
+
+  .mobile-m-2 {
+    margin: 0.5rem;
+  }
+
+  .mobile-m-4 {
+    margin: 1rem;
+  }
+}
+
+/* Адаптивная типографика */
+@media (max-width: 768px) {
+  .text-mobile-sm {
+    font-size: 0.875rem;
+  }
+
+  .text-mobile-base {
+    font-size: 1rem;
+  }
+
+  .text-mobile-lg {
+    font-size: 1.125rem;
+  }
+
+  .text-mobile-xl {
+    font-size: 1.25rem;
+  }
+}
+
+/* Скрытие элементов на определенных разрешениях */
+@media (max-width: 768px) {
+  .hide-mobile {
+    display: none !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .show-mobile {
+    display: none !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  .hide-tablet {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  .hide-desktop {
+    display: none !important;
+  }
+}
+

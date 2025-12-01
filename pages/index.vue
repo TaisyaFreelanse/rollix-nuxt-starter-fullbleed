@@ -7,7 +7,7 @@
         <div class="h-[50vh] min-h-[380px] bg-[url('/product.svg')] bg-cover bg-center opacity-80"></div>
         <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent"></div>
         <div class="absolute inset-0 flex items-center">
-          <div class="w-full px-4 lg:px-8">
+          <div class="w-full px-4 sm:px-6 lg:px-8">
             <div class="ml-0 lg:ml-64">
               <div class="text-center lg:text-left max-w-3xl">
                 <h1 class="text-3xl md:text-5xl font-semibold mb-3">Согреваемся в Rollix!</h1>
@@ -23,7 +23,7 @@
     </section>
 
     <!-- Content full width -->
-    <section class="px-4 lg:px-8 mt-10">
+    <section class="px-4 sm:px-6 lg:px-8 mt-10">
       <h2 class="text-xl md:text-2xl font-semibold mb-4">Популярное</h2>
       <div class="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
         <ProductCard v-for="i in 12" :key="i"

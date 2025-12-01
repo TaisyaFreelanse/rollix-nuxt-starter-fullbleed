@@ -2,12 +2,25 @@
 const model = defineModel<boolean>({ required: true })
 const route = useRoute()
 const { categories, fetchCategories } = useCatalog()
+const touchGestures = useTouchGestures()
 
 const selectedCategoryId = computed(() => route.query.categoryId as string | undefined)
 
 onMounted(async () => {
   if (categories.value.length === 0) {
     await fetchCategories()
+  }
+
+  // Закрытие по свайпу влево
+  const sidebar = document.querySelector('[data-mobile-sidebar]') as HTMLElement
+  if (sidebar) {
+    touchGestures.bindTouchHandlers(sidebar, {
+      onSwipeLeft: () => {
+        if (model.value) {
+          model.value = false
+        }
+      }
+    })
   }
 })
 
@@ -27,7 +40,8 @@ const isActive = (categoryId: string) => {
     <transition name="slide">
       <aside
         v-if="model"
-        class="fixed z-[70] inset-y-0 left-0 w-80 bg-card border-r border-white/10 p-4 overflow-y-auto">
+        data-mobile-sidebar
+        class="fixed z-[70] inset-y-0 left-0 w-80 bg-card border-r border-white/10 p-4 overflow-y-auto touch-pan-y smooth-scroll">
         <div class="flex items-center justify-between mb-3">
           <div class="text-sm text-gray-400 uppercase">Меню доставки</div>
           <button

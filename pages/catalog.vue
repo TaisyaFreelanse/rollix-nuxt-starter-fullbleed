@@ -63,7 +63,7 @@ const closeProductModal = () => {
 </script>
 
 <template>
-  <main class="w-[100vw] px-4 lg:px-8">
+  <main class="w-[100vw] px-4 sm:px-6 lg:px-8">
     <!-- Заголовок и фильтры -->
     <div class="flex flex-col gap-3 mt-4 sm:mt-6 mb-4">
       <div class="flex items-center justify-between">
@@ -112,8 +112,8 @@ const closeProductModal = () => {
     </div>
 
     <!-- Загрузка -->
-    <div v-if="loading" class="flex items-center justify-center py-12">
-      <div class="text-gray-400">Загрузка...</div>
+    <div v-if="loading" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+      <ProductCardSkeleton v-for="i in 12" :key="i" />
     </div>
 
     <!-- Список товаров -->
@@ -126,9 +126,11 @@ const closeProductModal = () => {
           : 'grid-cols-1'
       ]">
       <ProductCard
-        v-for="product in products.filter(p => p && p.id && p.name)"
+        v-for="(product, index) in products.filter(p => p && p.id && p.name)"
         :key="product.id"
         :product="product"
+        :class="`stagger-item`"
+        :style="{ animationDelay: `${Math.min(index * 50, 500)}ms` }"
         @click="openProductModal(product)" />
     </div>
 

@@ -21,5 +21,6 @@ const mobileOpen = useState('mobileOpen', () => false)
     <FooterBar />
     <CookieBar />
     <ChatButton />
+    <ToastContainer />
   </div>
 </template>

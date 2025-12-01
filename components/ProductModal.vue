@@ -91,19 +91,60 @@ const decrementQuantity = () => {
   }
 }
 
+const cartStore = useCartStore()
+const toast = useToast()
+const animations = useAnimations()
+
 const addToCart = () => {
-  // TODO: Добавить в корзину через store
-  console.log('Добавить в корзину:', {
-    product: props.product,
-    quantity: quantity.value,
-    modifiers: selectedModifiers.value
+  if (!props.product) return
+
+  // Преобразуем selectedModifiers в формат для корзины
+  const cartModifiers: Array<{ modifierId: string; optionIds: string[] }> = []
+  Object.entries(selectedModifiers.value).forEach(([modifierId, optionIds]) => {
+    if (optionIds.length > 0) {
+      cartModifiers.push({ modifierId, optionIds })
+    }
   })
+
+  cartStore.addItem(props.product, quantity.value, cartModifiers)
+  
+  // Анимация добавления в корзину
+  nextTick(() => {
+    const button = document.querySelector('[data-add-to-cart]') as HTMLElement
+    if (button) {
+      animations.animateAddToCart(button)
+    }
+    
+    // Анимация счетчика корзины
+    const cartCount = document.querySelector('[data-cart-count]') as HTMLElement
+    if (cartCount) {
+      animations.animateCartCount(cartCount)
+    }
+  })
+  
+  toast.success(`${props.product.name} добавлен в корзину`)
   emit('close')
 }
 
 const closeModal = () => {
   emit('close')
 }
+
+// Закрытие модального окна по свайпу вниз на мобильных устройствах
+const touchGestures = useTouchGestures()
+const modalRef = ref<HTMLElement | null>(null)
+
+onMounted(() => {
+  if (modalRef.value) {
+    touchGestures.bindTouchHandlers(modalRef.value, {
+      onSwipeDown: () => {
+        if (props.open) {
+          closeModal()
+        }
+      }
+    })
+  }
+})
 </script>
 
 <template>
@@ -129,7 +170,8 @@ const closeModal = () => {
             leave-from="opacity-100 scale-100"
             leave-to="opacity-0 scale-95">
             <DialogPanel
-              class="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-card border border-white/10 shadow-xl transition-all">
+              ref="modalRef"
+              class="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-card border border-white/10 shadow-xl transition-all touch-pan-y">
               <!-- Закрыть -->
               <button
                 class="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/5 hover:bg-white/10 transition text-gray-400 hover:text-white"
@@ -223,7 +265,8 @@ const closeModal = () => {
                     </div>
 
                     <button
-                      class="w-full py-3 bg-accent hover:bg-accent-700 rounded-lg text-white font-medium transition"
+                      data-add-to-cart
+                      class="w-full py-3 bg-accent hover:bg-accent-700 rounded-lg text-white font-medium transition button-press"
                       @click="addToCart">
                       Добавить в корзину
                     </button>
