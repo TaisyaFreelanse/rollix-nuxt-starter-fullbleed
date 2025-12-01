@@ -1,0 +1,1 @@
+export { default } from "file:///C:/Users/Admin/Downloads/rollix-nuxt-starter-fullbleed/node_modules/@nuxt/vite-builder/dist/runtime/vite-node.mjs"
