@@ -11,9 +11,10 @@ const emit = defineEmits<{
   click: [product: Product]
 }>()
 
-if (!props.product) {
-  throw new Error('ProductCard: product prop is required')
-}
+// Проверка валидности продукта - если продукт невалиден, не рендерим компонент
+const isValidProduct = computed(() => {
+  return props.product && props.product.id && props.product.name
+})
 
 const imageUrl = computed(() => props.product?.image || '/product.svg')
 const hasDiscount = computed(() => props.product?.oldPrice && props.product.oldPrice > props.product.price)
@@ -29,6 +30,7 @@ const handleClick = () => {
 
 <template>
   <article
+    v-if="isValidProduct"
     class="card group cursor-pointer transform transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
     @click="handleClick">
     <div class="relative overflow-hidden rounded-t-lg">

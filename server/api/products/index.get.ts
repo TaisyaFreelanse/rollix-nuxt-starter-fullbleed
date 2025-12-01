@@ -70,13 +70,16 @@ export default defineEventHandler(async (event) => {
 
     const total = await prisma.product.count({ where })
 
-    // Преобразуем Decimal в число для JSON
-    const formattedProducts = products.map((product) => ({
-      ...product,
-      image: product.image || null,
-      price: Number(product.price),
-      oldPrice: product.oldPrice ? Number(product.oldPrice) : null,
-      modifiers: (product.modifiers || []).map((modifier) => ({
+    // Преобразуем Decimal в число для JSON и фильтруем невалидные продукты
+    const formattedProducts = products
+      .filter((product) => product && product.id && product.name)
+      .map((product) => ({
+        ...product,
+        name: product.name || '',
+        image: product.image || null,
+        price: Number(product.price) || 0,
+        oldPrice: product.oldPrice ? Number(product.oldPrice) : null,
+        modifiers: (product.modifiers || []).map((modifier) => ({
         ...modifier,
         price: Number(modifier.price),
         options: modifier.options.map((option) => ({
