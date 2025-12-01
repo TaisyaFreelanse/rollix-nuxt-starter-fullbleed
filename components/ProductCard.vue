@@ -98,17 +98,6 @@ const handleClick = () => {
         class="absolute top-3 right-3 badge border-yellow-500 text-yellow-300 bg-yellow-500/20 backdrop-blur-sm">
         ⭐ Популярное
       </div>
-      <!-- Кнопка избранного -->
-      <button
-        :class="[
-          'absolute bottom-3 right-3 p-2 rounded-full backdrop-blur-sm transition',
-          isFavorite
-            ? 'bg-red-500/20 border-red-500/50 text-red-300'
-            : 'bg-white/10 border-white/20 text-gray-400 hover:text-white'
-        ]"
-        @click="toggleFavorite">
-        {{ isFavorite ? '❤️' : '🤍' }}
-      </button>
       <!-- Overlay при hover -->
       <div
         class="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300 flex items-center justify-center pointer-events-none">
@@ -116,6 +105,18 @@ const handleClick = () => {
           Подробнее
         </span>
       </div>
+      <!-- Кнопка избранного (поверх overlay) -->
+      <button
+        type="button"
+        :class="[
+          'absolute bottom-3 right-3 z-10 p-2 rounded-full backdrop-blur-sm transition',
+          isFavorite
+            ? 'bg-red-500/20 border border-red-500/50 text-red-300'
+            : 'bg-white/10 border border-white/20 text-gray-400 hover:text-white hover:bg-white/20'
+        ]"
+        @click.stop="toggleFavorite">
+        {{ isFavorite ? '❤️' : '🤍' }}
+      </button>
     </div>
     <div class="p-4">
       <h3 class="text-white font-medium group-hover:text-accent transition-colors">

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/vue'
-import type { Product, ProductModifier, ProductModifierOption } from '~/composables/useCatalog'
+import { Dialog, DialogPanel, DialogTitle, TransitionRoot, TransitionChild } from '@headlessui/vue'
+import type { Product } from '~/composables/useCatalog'
 
 interface Props {
   product: Product
@@ -16,28 +16,35 @@ const emit = defineEmits<{
 const quantity = ref(1)
 const selectedModifiers = ref<Record<string, string[]>>({})
 
-// Инициализация модификаторов
+// Сброс состояния при открытии модального окна
 watch(
-  () => props.product,
-  () => {
-    if (props.product && props.product.modifiers) {
-      selectedModifiers.value = {}
-      props.product.modifiers.forEach((modifier) => {
-        if (modifier.isRequired) {
-          const defaultOption = modifier.options.find((opt) => opt.isDefault) || modifier.options[0]
-          if (defaultOption) {
-            selectedModifiers.value[modifier.id] = modifier.isMultiple
-              ? [defaultOption.id]
-              : [defaultOption.id]
-          }
-        } else {
-          selectedModifiers.value[modifier.id] = []
-        }
-      })
+  () => props.open,
+  (isOpen) => {
+    if (isOpen) {
+      quantity.value = 1
+      initModifiers()
     }
-  },
-  { immediate: true }
+  }
 )
+
+// Инициализация модификаторов
+const initModifiers = () => {
+  if (props.product && props.product.modifiers) {
+    selectedModifiers.value = {}
+    props.product.modifiers.forEach((modifier) => {
+      if (modifier.isRequired) {
+        const defaultOption = modifier.options.find((opt) => opt.isDefault) || modifier.options[0]
+        if (defaultOption) {
+          selectedModifiers.value[modifier.id] = [defaultOption.id]
+        }
+      } else {
+        selectedModifiers.value[modifier.id] = []
+      }
+    })
+  }
+}
+
+watch(() => props.product, initModifiers, { immediate: true })
 
 const totalPrice = computed(() => {
   if (!props.product) return 0
@@ -93,7 +100,6 @@ const decrementQuantity = () => {
 
 const cartStore = useCartStore()
 const toast = useToast()
-const animations = useAnimations()
 
 const addToCart = () => {
   if (!props.product) return
@@ -107,49 +113,22 @@ const addToCart = () => {
   })
 
   cartStore.addItem(props.product, quantity.value, cartModifiers)
-  
-  // Анимация добавления в корзину
-  nextTick(() => {
-    const button = document.querySelector('[data-add-to-cart]') as HTMLElement
-    if (button) {
-      animations.animateAddToCart(button)
-    }
-    
-    // Анимация счетчика корзины
-    const cartCount = document.querySelector('[data-cart-count]') as HTMLElement
-    if (cartCount) {
-      animations.animateCartCount(cartCount)
-    }
-  })
-  
   toast.success(`${props.product.name} добавлен в корзину`)
   emit('close')
 }
 
+const closeButtonRef = ref<HTMLButtonElement | null>(null)
+
 const closeModal = () => {
   emit('close')
 }
-
-// Закрытие модального окна по свайпу вниз на мобильных устройствах
-const touchGestures = useTouchGestures()
-const modalRef = ref<HTMLElement | null>(null)
-
-onMounted(() => {
-  if (modalRef.value) {
-    touchGestures.bindTouchHandlers(modalRef.value, {
-      onSwipeDown: () => {
-        if (props.open) {
-          closeModal()
-        }
-      }
-    })
-  }
-})
 </script>
 
 <template>
-  <Dialog :open="open" as="div" class="relative z-50" @close="closeModal">
+  <TransitionRoot appear :show="open" as="template">
+    <Dialog as="div" class="relative z-[100]" :initial-focus="closeButtonRef" @close="closeModal">
       <TransitionChild
+        as="template"
         enter="duration-300 ease-out"
         enter-from="opacity-0"
         enter-to="opacity-100"
@@ -162,6 +141,7 @@ onMounted(() => {
       <div class="fixed inset-0 overflow-y-auto">
         <div class="flex min-h-full items-center justify-center p-4">
           <TransitionChild
+            as="template"
             enter="duration-300 ease-out"
             enter-from="opacity-0 scale-95"
             enter-to="opacity-100 scale-100"
@@ -169,10 +149,11 @@ onMounted(() => {
             leave-from="opacity-100 scale-100"
             leave-to="opacity-0 scale-95">
             <DialogPanel
-              ref="modalRef"
-              class="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-card border border-white/10 shadow-xl transition-all touch-pan-y">
+              class="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-card border border-white/10 shadow-xl">
               <!-- Закрыть -->
               <button
+                ref="closeButtonRef"
+                type="button"
                 class="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/5 hover:bg-white/10 transition text-gray-400 hover:text-white"
                 @click="closeModal">
                 ✕
@@ -190,16 +171,16 @@ onMounted(() => {
                 <!-- Контент -->
                 <div class="md:w-1/2 flex flex-col overflow-y-auto p-4 md:p-6">
                   <DialogTitle class="text-2xl font-semibold text-white mb-2">
-                    {{ product.name }}
+                    {{ product?.name }}
                   </DialogTitle>
 
-                  <p v-if="product.description" class="text-gray-400 mb-4">
+                  <p v-if="product?.description" class="text-gray-400 mb-4">
                     {{ product.description }}
                   </p>
 
                   <div class="flex items-center gap-4 mb-6 text-sm text-gray-400">
-                    <span v-if="product.weight">{{ product.weight }}г</span>
-                    <span v-if="product.calories">{{ product.calories }} ккал</span>
+                    <span v-if="product?.weight">{{ product.weight }}г</span>
+                    <span v-if="product?.calories">{{ product.calories }} ккал</span>
                   </div>
 
                   <!-- Модификаторы -->
@@ -221,6 +202,7 @@ onMounted(() => {
                         <button
                           v-for="option in modifier.options"
                           :key="option.id"
+                          type="button"
                           :class="[
                             'w-full text-left px-4 py-2 rounded-lg border transition',
                             isOptionSelected(modifier.id, option.id)
@@ -246,12 +228,14 @@ onMounted(() => {
                         <span class="text-gray-400">Количество:</span>
                         <div class="flex items-center gap-2 border border-white/10 rounded-lg">
                           <button
+                            type="button"
                             class="px-3 py-1 hover:bg-white/10 transition"
                             @click="decrementQuantity">
                             −
                           </button>
                           <span class="px-4 py-1 text-white font-medium">{{ quantity }}</span>
                           <button
+                            type="button"
                             class="px-3 py-1 hover:bg-white/10 transition"
                             @click="incrementQuantity">
                             +
@@ -264,8 +248,8 @@ onMounted(() => {
                     </div>
 
                     <button
-                      data-add-to-cart
-                      class="w-full py-3 bg-accent hover:bg-accent-700 rounded-lg text-white font-medium transition button-press"
+                      type="button"
+                      class="w-full py-3 bg-accent hover:bg-accent-700 rounded-lg text-white font-medium transition"
                       @click="addToCart">
                       Добавить в корзину
                     </button>
@@ -277,5 +261,5 @@ onMounted(() => {
         </div>
       </div>
     </Dialog>
+  </TransitionRoot>
 </template>
-

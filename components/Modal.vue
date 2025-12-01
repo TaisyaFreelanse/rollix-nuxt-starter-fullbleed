@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Dialog, DialogPanel, DialogTitle, TransitionChild } from '@headlessui/vue'
+import { Dialog, DialogPanel, DialogTitle, TransitionRoot, TransitionChild } from '@headlessui/vue'
 
 interface Props {
   open: boolean
@@ -25,15 +25,18 @@ const sizeClasses = {
   full: 'max-w-full mx-4'
 }
 
+const closeButtonRef = ref<HTMLButtonElement | null>(null)
+
 const close = () => {
   emit('close')
 }
 </script>
 
 <template>
-  <Teleport to="body">
-    <Dialog :open="open" as="div" class="relative z-[100]" @close="closeOnOverlay ? close() : undefined">
+  <TransitionRoot appear :show="open" as="template">
+    <Dialog as="div" class="relative z-[100]" :initial-focus="closeButtonRef" @close="closeOnOverlay ? close() : undefined">
       <TransitionChild
+        as="template"
         enter="duration-300 ease-out"
         enter-from="opacity-0"
         enter-to="opacity-100"
@@ -46,6 +49,7 @@ const close = () => {
       <div class="fixed inset-0 overflow-y-auto">
         <div class="flex min-h-full items-center justify-center p-4">
           <TransitionChild
+            as="template"
             enter="duration-300 ease-out"
             enter-from="opacity-0 scale-95"
             enter-to="opacity-100 scale-100"
@@ -54,19 +58,23 @@ const close = () => {
             leave-to="opacity-0 scale-95">
             <DialogPanel
               :class="[
-                'w-full transform overflow-hidden rounded-2xl bg-card border border-white/10 shadow-xl transition-all',
+                'w-full transform overflow-hidden rounded-2xl bg-card border border-white/10 shadow-xl transition-all relative',
                 sizeClasses[size]
               ]">
-              <div v-if="title || $slots.header" class="flex items-center justify-between p-6 border-b border-white/10">
-                <DialogTitle v-if="title" class="text-xl font-semibold">
+              <!-- Кнопка закрытия всегда видна -->
+              <button
+                ref="closeButtonRef"
+                type="button"
+                class="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/5 hover:bg-white/10 transition text-gray-400 hover:text-white"
+                @click="close">
+                ✕
+              </button>
+              
+              <div v-if="title || $slots.header" class="flex items-center justify-between p-6 border-b border-white/10 pr-14">
+                <DialogTitle v-if="title" class="text-xl font-semibold text-white">
                   {{ title }}
                 </DialogTitle>
                 <slot name="header" />
-                <button
-                  class="p-2 rounded-full bg-white/5 hover:bg-white/10 transition text-gray-400 hover:text-white"
-                  @click="close">
-                  ✕
-                </button>
               </div>
 
               <div class="p-6">
@@ -81,6 +89,5 @@ const close = () => {
         </div>
       </div>
     </Dialog>
-  </Teleport>
+  </TransitionRoot>
 </template>
-
