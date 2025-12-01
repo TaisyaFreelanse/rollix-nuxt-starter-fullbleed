@@ -17,7 +17,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "db:dev": "prisma dev",
-    "render:build": "rm -rf node_modules package-lock.json && npm install && npx prisma generate --schema=prisma/schema.prisma && npm run build",
+    "render:build": "npm install --production=false && npx prisma generate --schema=prisma/schema.prisma && npm run build",
     "render:setup": "npx tsx scripts/setup-db.ts"
   },
   "dependencies": {
