@@ -30,12 +30,12 @@ export default defineEventHandler(async (event) => {
     if (error.code === 'P2002') {
       throw createError({
         statusCode: 409,
-        statusMessage: 'Промокод с таким кодом уже существует'
+        message: 'Промокод с таким кодом уже существует'
       })
     }
     throw createError({
       statusCode: 500,
-      statusMessage: 'Ошибка при создании промокода'
+      message: 'Ошибка при создании промокода'
     })
   }
 })

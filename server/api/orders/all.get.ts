@@ -60,7 +60,7 @@ export default defineEventHandler(async (event) => {
   } catch (error: any) {
     throw createError({
       statusCode: 500,
-      statusMessage: 'Ошибка при получении заказов'
+      message: 'Ошибка при получении заказов'
     })
   }
 })

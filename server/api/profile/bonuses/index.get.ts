@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
   } catch (error) {
     throw createError({
       statusCode: 500,
-      statusMessage: 'Ошибка при получении бонусов'
+      message: 'Ошибка при получении бонусов'
     })
   }
 })

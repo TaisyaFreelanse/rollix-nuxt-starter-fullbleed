@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
   } catch (error) {
     throw createError({
       statusCode: 500,
-      statusMessage: 'Ошибка при получении адресов'
+      message: 'Ошибка при получении адресов'
     })
   }
 })

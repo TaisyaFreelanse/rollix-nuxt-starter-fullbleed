@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
     if (!phone || phone.length < 10) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'Неверный номер телефона'
+        message: 'Неверный номер телефона'
       })
     }
 
@@ -32,7 +32,7 @@ export default defineEventHandler(async (event) => {
     }
     throw createError({
       statusCode: 500,
-      statusMessage: 'Ошибка отправки SMS'
+      message: 'Ошибка отправки SMS'
     })
   }
 })

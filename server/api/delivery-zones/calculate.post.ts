@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
     if (!lat || !lng) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'Координаты не указаны'
+        message: 'Координаты не указаны'
       })
     }
 
@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
     if (!matchedZone) {
       throw createError({
         statusCode: 404,
-        statusMessage: 'Адрес не входит в зону доставки'
+        message: 'Адрес не входит в зону доставки'
       })
     }
 
@@ -65,7 +65,7 @@ export default defineEventHandler(async (event) => {
     }
     throw createError({
       statusCode: 500,
-      statusMessage: 'Ошибка при расчете доставки'
+      message: 'Ошибка при расчете доставки'
     })
   }
 })

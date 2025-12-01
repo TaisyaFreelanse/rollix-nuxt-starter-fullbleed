@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
       if (settings?.isMaintenanceMode) {
         throw createError({
           statusCode: 503,
-          statusMessage: settings.maintenanceMessage || 'Сайт временно недоступен. Ведутся технические работы.'
+          message: settings.maintenanceMessage || 'Сайт временно недоступен. Ведутся технические работы.'
         })
       }
     } catch (error: any) {
@@ -151,7 +151,7 @@ export default defineEventHandler(async (event) => {
     console.error('Ошибка создания заказа:', error)
     throw createError({
       statusCode: 500,
-      statusMessage: 'Ошибка при создании заказа'
+      message: 'Ошибка при создании заказа'
     })
   }
 })

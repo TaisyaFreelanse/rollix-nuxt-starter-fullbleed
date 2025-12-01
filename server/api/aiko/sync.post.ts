@@ -64,7 +64,7 @@ export default defineEventHandler(async (event) => {
     
     throw createError({
       statusCode: 500,
-      statusMessage: 'Ошибка при синхронизации с АЙКО',
+      message: 'Ошибка при синхронизации с АЙКО',
       data: {
         error: error.message,
         note: 'Проверьте настройки AIKO_API_URL и AIKO_API_KEY'

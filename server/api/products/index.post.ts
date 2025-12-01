@@ -42,12 +42,12 @@ export default defineEventHandler(async (event) => {
     if (error.code === 'P2002') {
       throw createError({
         statusCode: 409,
-        statusMessage: 'Товар с таким slug уже существует'
+        message: 'Товар с таким slug уже существует'
       })
     }
     throw createError({
       statusCode: 500,
-      statusMessage: 'Ошибка при создании товара'
+      message: 'Ошибка при создании товара'
     })
   }
 })

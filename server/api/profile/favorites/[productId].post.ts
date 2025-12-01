@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
   } catch (error) {
     throw createError({
       statusCode: 500,
-      statusMessage: 'Ошибка при добавлении в избранное'
+      message: 'Ошибка при добавлении в избранное'
     })
   }
 })

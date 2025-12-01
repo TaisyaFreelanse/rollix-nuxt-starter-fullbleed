@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
   } catch (error: any) {
     throw createError({
       statusCode: 500,
-      statusMessage: 'Ошибка при сохранении настроек'
+      message: 'Ошибка при сохранении настроек'
     })
   }
 })

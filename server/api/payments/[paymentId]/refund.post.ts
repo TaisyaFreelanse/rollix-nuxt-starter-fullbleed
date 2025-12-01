@@ -11,14 +11,14 @@ export default defineEventHandler(async (event) => {
     if (!paymentId) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'ID платежа не указан'
+        message: 'ID платежа не указан'
       })
     }
 
     if (!amount || amount <= 0) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'Сумма возврата не указана или неверна'
+        message: 'Сумма возврата не указана или неверна'
       })
     }
 
@@ -30,14 +30,14 @@ export default defineEventHandler(async (event) => {
     if (!order) {
       throw createError({
         statusCode: 404,
-        statusMessage: 'Заказ не найден'
+        message: 'Заказ не найден'
       })
     }
 
     if (order.paymentStatus !== 'PAID') {
       throw createError({
         statusCode: 400,
-        statusMessage: 'Заказ не оплачен, возврат невозможен'
+        message: 'Заказ не оплачен, возврат невозможен'
       })
     }
 
@@ -70,7 +70,7 @@ export default defineEventHandler(async (event) => {
     
     throw createError({
       statusCode: 500,
-      statusMessage: 'Ошибка при возврате платежа',
+      message: 'Ошибка при возврате платежа',
       data: {
         error: error.message
       }

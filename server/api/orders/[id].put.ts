@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
     if (!id) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'ID заказа не указан'
+        message: 'ID заказа не указан'
       })
     }
 
@@ -66,12 +66,12 @@ export default defineEventHandler(async (event) => {
     if (error.code === 'P2025') {
       throw createError({
         statusCode: 404,
-        statusMessage: 'Заказ не найден'
+        message: 'Заказ не найден'
       })
     }
     throw createError({
       statusCode: 500,
-      statusMessage: 'Ошибка при обновлении заказа'
+      message: 'Ошибка при обновлении заказа'
     })
   }
 })

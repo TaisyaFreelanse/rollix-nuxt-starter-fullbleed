@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
       // В реальной реализации здесь должна быть проверка подписи
       // throw createError({
       //   statusCode: 401,
-      //   statusMessage: 'Неверная подпись webhook'
+      //   message: 'Неверная подпись webhook'
       // })
     }
 

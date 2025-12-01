@@ -32,12 +32,12 @@ export default defineEventHandler(async (event) => {
     if (error.code === 'P2025') {
       throw createError({
         statusCode: 404,
-        statusMessage: 'Промокод не найден'
+        message: 'Промокод не найден'
       })
     }
     throw createError({
       statusCode: 500,
-      statusMessage: 'Ошибка при обновлении промокода'
+      message: 'Ошибка при обновлении промокода'
     })
   }
 })

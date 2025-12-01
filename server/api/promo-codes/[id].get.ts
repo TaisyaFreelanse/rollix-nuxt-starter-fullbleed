@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
     if (!promoCode) {
       throw createError({
         statusCode: 404,
-        statusMessage: 'Промокод не найден'
+        message: 'Промокод не найден'
       })
     }
 
@@ -27,7 +27,7 @@ export default defineEventHandler(async (event) => {
     }
     throw createError({
       statusCode: 500,
-      statusMessage: 'Ошибка при получении промокода'
+      message: 'Ошибка при получении промокода'
     })
   }
 })

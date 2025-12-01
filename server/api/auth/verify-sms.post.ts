@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
     if (!phone || !code) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'Не указан телефон или код'
+        message: 'Не указан телефон или код'
       })
     }
 
@@ -20,14 +20,14 @@ export default defineEventHandler(async (event) => {
     // if (!sessionCode || sessionPhone !== phone || Date.now() > sessionExpires) {
     //   throw createError({
     //     statusCode: 400,
-    //     statusMessage: 'Код неверен или истек'
+    //     message: 'Код неверен или истек'
     //   })
     // }
 
     // if (sessionCode !== code) {
     //   throw createError({
     //     statusCode: 400,
-    //     statusMessage: 'Неверный код'
+    //     message: 'Неверный код'
     //   })
     // }
 
@@ -67,7 +67,7 @@ export default defineEventHandler(async (event) => {
     }
     throw createError({
       statusCode: 500,
-      statusMessage: 'Ошибка проверки кода'
+      message: 'Ошибка проверки кода'
     })
   }
 })

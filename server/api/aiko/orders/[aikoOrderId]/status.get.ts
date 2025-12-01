@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
     if (!aikoOrderId) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'ID заказа АЙКО не указан'
+        message: 'ID заказа АЙКО не указан'
       })
     }
 
@@ -72,7 +72,7 @@ export default defineEventHandler(async (event) => {
     
     throw createError({
       statusCode: 500,
-      statusMessage: 'Ошибка при получении статуса заказа из АЙКО',
+      message: 'Ошибка при получении статуса заказа из АЙКО',
       data: {
         error: error.message,
         note: 'Проверьте настройки AIKO_API_URL и AIKO_API_KEY'

@@ -14,12 +14,12 @@ export default defineEventHandler(async (event) => {
     if (error.code === 'P2025') {
       throw createError({
         statusCode: 404,
-        statusMessage: 'Промокод не найден'
+        message: 'Промокод не найден'
       })
     }
     throw createError({
       statusCode: 500,
-      statusMessage: 'Ошибка при удалении промокода'
+      message: 'Ошибка при удалении промокода'
     })
   }
 })

@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
     if (!orderId) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'ID заказа не указан'
+        message: 'ID заказа не указан'
       })
     }
 
@@ -21,14 +21,14 @@ export default defineEventHandler(async (event) => {
     if (!order) {
       throw createError({
         statusCode: 404,
-        statusMessage: 'Заказ не найден'
+        message: 'Заказ не найден'
       })
     }
 
     if (order.paymentStatus === 'PAID') {
       throw createError({
         statusCode: 400,
-        statusMessage: 'Заказ уже оплачен'
+        message: 'Заказ уже оплачен'
       })
     }
 
@@ -72,7 +72,7 @@ export default defineEventHandler(async (event) => {
     
     throw createError({
       statusCode: 500,
-      statusMessage: 'Ошибка при создании платежа',
+      message: 'Ошибка при создании платежа',
       data: {
         error: error.message,
         note: 'Проверьте настройки YUKASSA_SHOP_ID и YUKASSA_SECRET_KEY'

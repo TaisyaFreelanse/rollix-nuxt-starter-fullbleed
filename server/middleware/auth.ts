@@ -25,10 +25,10 @@ export default defineEventHandler(async (event) => {
   // Проверяем токен для защищенных маршрутов
   const authHeader = event.node.req.headers.authorization
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'Требуется авторизация'
-    })
+        throw createError({
+          statusCode: 401,
+          message: 'Требуется авторизация'
+        })
   }
 
   const token = authHeader.substring(7)
@@ -36,10 +36,10 @@ export default defineEventHandler(async (event) => {
     const payload = await verifyToken(token)
     event.context.auth = { userId: payload.userId }
   } catch (error) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'Недействительный токен'
-    })
+          throw createError({
+            statusCode: 401,
+            message: 'Недействительный токен'
+          })
   }
 })
 

@@ -34,6 +34,8 @@ const sendCode = async () => {
   }
 }
 
+const auth = useAuth()
+
 const verifyCode = async () => {
   if (!code.value.trim() || code.value.length !== 4) {
     error.value = 'Введите 4-значный код'
@@ -44,13 +46,15 @@ const verifyCode = async () => {
   error.value = null
 
   try {
-    // TODO: Реализовать проверку кода через API
-    await $fetch('/api/auth/verify-sms', {
+    const response = await $fetch<{ success: boolean; token: string; user: any }>('/api/auth/verify-sms', {
       method: 'POST',
       body: { phone: phone.value, code: code.value }
     })
 
-    emit('success', phone.value)
+    if (response.success && response.token) {
+      auth.setAuth(response.token, response.user)
+      emit('success', phone.value)
+    }
   } catch (err: any) {
     error.value = err?.data?.message || 'Неверный код'
   } finally {

@@ -30,7 +30,7 @@ export default defineEventHandler(async (event) => {
     if (!order) {
       throw createError({
         statusCode: 404,
-        statusMessage: 'Заказ не найден'
+        message: 'Заказ не найден'
       })
     }
 
@@ -47,7 +47,7 @@ export default defineEventHandler(async (event) => {
     }
     throw createError({
       statusCode: 500,
-      statusMessage: 'Ошибка при получении заказа'
+      message: 'Ошибка при получении заказа'
     })
   }
 })

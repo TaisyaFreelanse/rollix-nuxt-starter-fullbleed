@@ -38,7 +38,7 @@ export default defineEventHandler(async (event) => {
   } catch (error) {
     throw createError({
       statusCode: 500,
-      statusMessage: 'Ошибка при обновлении адреса'
+      message: 'Ошибка при обновлении адреса'
     })
   }
 })

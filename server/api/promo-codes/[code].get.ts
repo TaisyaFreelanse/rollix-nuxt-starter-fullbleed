@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
     if (!code) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'Промокод не указан'
+        message: 'Промокод не указан'
       })
     }
 
@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
     if (!promoCode) {
       throw createError({
         statusCode: 404,
-        statusMessage: 'Промокод не найден или недействителен'
+        message: 'Промокод не найден или недействителен'
       })
     }
 
@@ -38,7 +38,7 @@ export default defineEventHandler(async (event) => {
       if (usageCount >= promoCode.maxUses) {
         throw createError({
           statusCode: 400,
-          statusMessage: 'Промокод исчерпал лимит использований'
+          message: 'Промокод исчерпал лимит использований'
         })
       }
     }
@@ -56,7 +56,7 @@ export default defineEventHandler(async (event) => {
     }
     throw createError({
       statusCode: 500,
-      statusMessage: 'Ошибка при проверке промокода'
+      message: 'Ошибка при проверке промокода'
     })
   }
 })

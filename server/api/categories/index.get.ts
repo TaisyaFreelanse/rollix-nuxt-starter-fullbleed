@@ -26,7 +26,7 @@ export default defineEventHandler(async (event) => {
   } catch (error) {
     throw createError({
       statusCode: 500,
-      statusMessage: 'Ошибка при получении категорий'
+      message: 'Ошибка при получении категорий'
     })
   }
 })

@@ -2,8 +2,8 @@
 <script setup lang="ts">
 const mobileOpen = useState('mobileOpen', () => false)
 const cartStore = useCartStore()
+const auth = useAuth()
 const showAuthModal = ref(false)
-const isAuthenticated = ref(false)
 const isScrolled = ref(false)
 const cartItemsCount = computed(() => cartStore.totalItems)
 const prevCartCount = ref(cartItemsCount.value)
@@ -34,9 +34,8 @@ watch(cartItemsCount, (newCount, oldCount) => {
 })
 
 const handleAuthSuccess = (phone: string) => {
-  isAuthenticated.value = true
   showAuthModal.value = false
-  // TODO: Сохранить токен авторизации
+  // Токен уже сохранен в useAuth через SmsAuth
 }
 
 const handleAuthCancel = () => {
@@ -86,7 +85,7 @@ const handleAuthCancel = () => {
           </Transition>
         </NuxtLink>
         <NuxtLink
-          v-if="isAuthenticated"
+          v-if="auth.isAuthenticated"
           to="/profile"
           class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition text-sm">
           Профиль

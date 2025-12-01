@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
     if (!paymentId) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'ID платежа не указан'
+        message: 'ID платежа не указан'
       })
     }
 
@@ -48,7 +48,7 @@ export default defineEventHandler(async (event) => {
     
     throw createError({
       statusCode: 500,
-      statusMessage: 'Ошибка при отмене платежа',
+      message: 'Ошибка при отмене платежа',
       data: {
         error: error.message
       }

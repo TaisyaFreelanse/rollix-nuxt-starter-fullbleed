@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
     if (!id) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'ID товара не указан'
+        message: 'ID товара не указан'
       })
     }
 
@@ -42,7 +42,7 @@ export default defineEventHandler(async (event) => {
     if (!product) {
       throw createError({
         statusCode: 404,
-        statusMessage: 'Товар не найден'
+        message: 'Товар не найден'
       })
     }
 
@@ -66,7 +66,7 @@ export default defineEventHandler(async (event) => {
     }
     throw createError({
       statusCode: 500,
-      statusMessage: 'Ошибка при получении товара'
+      message: 'Ошибка при получении товара'
     })
   }
 })

@@ -15,12 +15,12 @@ export default defineEventHandler(async (event) => {
     if (error.code === 'P2025') {
       throw createError({
         statusCode: 404,
-        statusMessage: 'Зона доставки не найдена'
+        message: 'Зона доставки не найдена'
       })
     }
     throw createError({
       statusCode: 500,
-      statusMessage: 'Ошибка при удалении зоны доставки'
+      message: 'Ошибка при удалении зоны доставки'
     })
   }
 })

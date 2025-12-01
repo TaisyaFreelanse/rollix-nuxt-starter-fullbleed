@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
     if (!id) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'ID категории не указан'
+        message: 'ID категории не указан'
       })
     }
 
@@ -32,12 +32,12 @@ export default defineEventHandler(async (event) => {
     if (error.code === 'P2025') {
       throw createError({
         statusCode: 404,
-        statusMessage: 'Категория не найдена'
+        message: 'Категория не найдена'
       })
     }
     throw createError({
       statusCode: 500,
-      statusMessage: 'Ошибка при обновлении категории'
+      message: 'Ошибка при обновлении категории'
     })
   }
 })

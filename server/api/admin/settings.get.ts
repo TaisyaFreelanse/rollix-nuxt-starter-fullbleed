@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
   } catch (error: any) {
     throw createError({
       statusCode: 500,
-      statusMessage: 'Ошибка при получении настроек'
+      message: 'Ошибка при получении настроек'
     })
   }
 })
