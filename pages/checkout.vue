@@ -172,9 +172,6 @@ const submitOrder = async () => {
   }
 }
 
-const payment = usePayment()
-const toast = useToast()
-
 const processPayment = async (paymentMethod: 'card' | 'cash') => {
   if (!createdOrderId.value) {
     toast.error('Заказ не создан')
@@ -407,9 +404,6 @@ const processPayment = async (paymentMethod: 'card' | 'cash') => {
         </button>
       </template>
     </Modal>
-        </div>
-      </div>
-    </div>
   </main>
 </template>
 
