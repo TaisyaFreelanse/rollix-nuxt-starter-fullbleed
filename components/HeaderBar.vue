@@ -113,18 +113,10 @@ const handleAuthCancel = () => {
           </Transition>
         </NuxtLink>
         <button
-          v-if="!auth.isAuthenticated"
           type="button"
           class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition text-sm cursor-pointer relative z-10"
-          @click.stop="showAuthModal = true">
-          Войти
-        </button>
-        <button
-          v-else
-          type="button"
-          class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition text-sm cursor-pointer relative z-10"
-          @click.stop="router.push('/profile')">
-          Профиль
+          @click.stop="handleProfileClick">
+          {{ auth.isAuthenticated.value ? 'Профиль' : 'Войти' }}
         </button>
       </div>
     </div>

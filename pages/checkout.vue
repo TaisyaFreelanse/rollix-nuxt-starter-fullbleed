@@ -137,7 +137,7 @@ const submitOrder = async () => {
     const orderData = {
       deliveryType: deliveryType.value,
       deliveryZoneId: selectedZone.value?.id,
-      address: deliveryAddress.value,
+      addressText: deliveryAddress.value,
       phone: phone.value,
       name: name.value,
       comment: comment.value,

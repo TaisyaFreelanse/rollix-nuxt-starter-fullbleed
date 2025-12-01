@@ -27,13 +27,16 @@ export default defineEventHandler(async (event) => {
     // Генерируем номер заказа
     const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
 
+    // Преобразуем deliveryType в enum (DELIVERY или PICKUP)
+    const deliveryTypeEnum = body.deliveryType?.toUpperCase() === 'PICKUP' ? 'PICKUP' : 'DELIVERY'
+
     // Создаем заказ
     const order = await prisma.order.create({
       data: {
         userId,
         orderNumber,
         status: 'PENDING',
-        deliveryType: body.deliveryType,
+        deliveryType: deliveryTypeEnum,
         deliveryZoneId: body.deliveryZoneId,
         addressId: body.addressId,
         addressText: body.addressText,
