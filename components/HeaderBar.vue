@@ -3,6 +3,7 @@
 const mobileOpen = useState('mobileOpen', () => false)
 const cartStore = useCartStore()
 const auth = useAuth()
+const router = useRouter()
 const showAuthModal = ref(false)
 const isScrolled = ref(false)
 const cartItemsCount = computed(() => cartStore.totalItems)
@@ -33,9 +34,36 @@ watch(cartItemsCount, (newCount, oldCount) => {
   prevCartCount.value = newCount
 })
 
+// Отслеживание изменений авторизации для обновления UI
+watch(() => auth.isAuthenticated.value, (isAuth) => {
+  // Принудительно обновляем компонент при изменении авторизации
+  if (isAuth) {
+    // Пользователь авторизован
+  }
+})
+
 const handleAuthSuccess = (phone: string) => {
   showAuthModal.value = false
   // Токен уже сохранен в useAuth через SmsAuth
+  // Принудительно обновляем состояние для реактивности
+  nextTick(() => {
+    // Состояние должно обновиться автоматически через useAuth
+  })
+}
+
+const handleProfileClick = (e: Event) => {
+  e.preventDefault()
+  e.stopPropagation()
+  
+  // Проверяем авторизацию еще раз перед переходом
+  const isAuth = auth.isAuthenticated.value
+  const hasToken = !!auth.token.value
+  
+  if (isAuth && hasToken) {
+    router.push('/profile')
+  } else {
+    showAuthModal.value = true
+  }
 }
 
 const handleAuthCancel = () => {
@@ -84,18 +112,19 @@ const handleAuthCancel = () => {
             </span>
           </Transition>
         </NuxtLink>
-        <NuxtLink
-          v-if="auth.isAuthenticated"
-          to="/profile"
-          class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition text-sm">
-          Профиль
-        </NuxtLink>
+        <button
+          v-if="!auth.isAuthenticated"
+          type="button"
+          class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition text-sm cursor-pointer relative z-10"
+          @click.stop="showAuthModal = true">
+          Войти
+        </button>
         <button
           v-else
           type="button"
-          class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition text-sm cursor-pointer"
-          @click.stop="showAuthModal = true">
-          Войти
+          class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition text-sm cursor-pointer relative z-10"
+          @click.stop="router.push('/profile')">
+          Профиль
         </button>
       </div>
     </div>

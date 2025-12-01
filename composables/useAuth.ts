@@ -1,23 +1,49 @@
 export const useAuth = () => {
-  const token = useState<string | null>('auth:token', () => null)
-  const user = useState<any | null>('auth:user', () => null)
-  const isInitialized = useState<boolean>('auth:initialized', () => false)
-
-  // Инициализация из localStorage только на клиенте
-  if (process.client && !isInitialized.value) {
-    const savedToken = localStorage.getItem('auth_token')
-    const savedUser = localStorage.getItem('auth_user')
-    if (savedToken) {
-      token.value = savedToken
+  const token = useState<string | null>('auth:token', () => {
+    // Инициализация из localStorage только на клиенте
+    if (process.client) {
+      return localStorage.getItem('auth_token')
     }
-    if (savedUser) {
-      try {
-        user.value = JSON.parse(savedUser)
-      } catch (e) {
-        console.error('Ошибка парсинга пользователя из localStorage', e)
+    return null
+  })
+  
+  const user = useState<any | null>('auth:user', () => {
+    // Инициализация из localStorage только на клиенте
+    if (process.client) {
+      const savedUser = localStorage.getItem('auth_user')
+      if (savedUser) {
+        try {
+          return JSON.parse(savedUser)
+        } catch (e) {
+          console.error('Ошибка парсинга пользователя из localStorage', e)
+          return null
+        }
       }
     }
-    isInitialized.value = true
+    return null
+  })
+  
+  const isInitialized = useState<boolean>('auth:initialized', () => false)
+
+  // Инициализация на клиенте после монтирования
+  if (process.client) {
+    onMounted(() => {
+      if (!isInitialized.value) {
+        const savedToken = localStorage.getItem('auth_token')
+        const savedUser = localStorage.getItem('auth_user')
+        if (savedToken && !token.value) {
+          token.value = savedToken
+        }
+        if (savedUser && !user.value) {
+          try {
+            user.value = JSON.parse(savedUser)
+          } catch (e) {
+            console.error('Ошибка парсинга пользователя из localStorage', e)
+          }
+        }
+        isInitialized.value = true
+      }
+    })
   }
 
   const isAuthenticated = computed(() => !!token.value)

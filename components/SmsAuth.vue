@@ -53,6 +53,8 @@ const verifyCode = async () => {
 
     if (response.success && response.token) {
       auth.setAuth(response.token, response.user)
+      // Убеждаемся, что состояние обновилось
+      await nextTick()
       emit('success', phone.value)
     }
   } catch (err: any) {
