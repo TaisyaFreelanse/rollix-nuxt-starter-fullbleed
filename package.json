@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "nuxt dev",
-    "build": "NODE_ENV=production nuxt build",
+    "build": "npm exec -- nuxt build",
     "start": "nuxt start",
     "generate": "nuxt generate",
     "lint": "eslint .",
