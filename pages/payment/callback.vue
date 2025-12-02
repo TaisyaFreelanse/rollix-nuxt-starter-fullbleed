@@ -36,7 +36,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <main class="w-[100vw] px-4 sm:px-6 lg:px-8 py-6">
+  <main class="w-full px-4 sm:px-6 lg:px-8 py-6">
     <div class="max-w-md mx-auto text-center">
       <div v-if="status === 'succeeded'" class="mb-4">
         <div class="text-6xl mb-4">✅</div>

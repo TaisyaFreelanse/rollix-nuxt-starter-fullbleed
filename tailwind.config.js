@@ -13,9 +13,9 @@ export default {
         bg: '#0f0f10',
         card: '#111213',
         accent: {
-          DEFAULT: '#E60012',
-          600: '#D81616',
-          700: '#C41414'
+          DEFAULT: '#22C55E',
+          600: '#16A34A',
+          700: '#15803D'
         }
       },
       borderRadius: {

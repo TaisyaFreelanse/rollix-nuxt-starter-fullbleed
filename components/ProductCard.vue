@@ -97,7 +97,7 @@ const handleClick = () => {
       <!-- Бейдж акции -->
       <div
         v-if="hasDiscount"
-        class="absolute top-3 left-3 badge border-red-500 text-red-300 bg-red-500/20 backdrop-blur-sm">
+        class="absolute top-3 left-3 badge border-accent text-accent bg-accent/20 backdrop-blur-sm">
         -{{ discountPercent }}%
       </div>
       <!-- Бейдж популярного -->
@@ -119,7 +119,7 @@ const handleClick = () => {
         :class="[
           'absolute bottom-3 right-3 z-10 p-2 rounded-full backdrop-blur-sm transition',
           isFavorite
-            ? 'bg-red-500/20 border border-red-500/50 text-red-300'
+            ? 'bg-accent/20 border border-accent/50 text-accent'
             : 'bg-white/10 border border-white/20 text-gray-400 hover:text-white hover:bg-white/20'
         ]"
         @click.stop="toggleFavorite">

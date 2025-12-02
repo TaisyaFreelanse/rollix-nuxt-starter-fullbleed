@@ -63,7 +63,7 @@ const closeProductModal = () => {
 </script>
 
 <template>
-  <main class="w-[100vw] px-4 sm:px-6 lg:px-8">
+  <main class="w-full px-4 sm:px-6 lg:px-8">
     <!-- Заголовок и фильтры -->
     <div class="flex flex-col gap-3 mt-4 sm:mt-6 mb-4">
       <div class="flex items-center justify-between">

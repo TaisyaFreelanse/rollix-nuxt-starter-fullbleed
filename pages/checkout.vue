@@ -216,7 +216,7 @@ const processPayment = async (paymentMethod: 'card' | 'cash') => {
 </script>
 
 <template>
-  <main class="w-[100vw] px-4 sm:px-6 lg:px-8 py-6">
+  <main class="w-full px-4 sm:px-6 lg:px-8 py-6">
     <h1 class="text-2xl font-semibold mb-6">Оформление заказа</h1>
 
     <div v-if="cartStore.isEmpty" class="text-center py-12">

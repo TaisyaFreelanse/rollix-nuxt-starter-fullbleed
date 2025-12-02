@@ -9,16 +9,19 @@ const mobileOpen = useState('mobileOpen', () => false)
     <MobileSidebar v-model="mobileOpen" />
 
     <!-- Full-width site grid -->
-    <div class="flex-1 w-[100vw]">
-      <div class="grid lg:grid-cols-[16rem_1fr]">
-        <SidebarMenu class="hidden lg:block" />
-        <div class="min-w-0">
-          <NuxtPage />
+    <div class="flex-1 w-full pb-20 lg:pb-0">
+      <div class="w-full max-w-[1440px] mx-auto">
+        <div class="grid lg:grid-cols-[16rem_1fr]">
+          <SidebarMenu class="hidden lg:block" />
+          <div class="min-w-0">
+            <NuxtPage />
+          </div>
         </div>
       </div>
     </div>
 
     <FooterBar />
+    <BottomNavigation />
     <CookieBar />
     <ChatButton />
     <ToastContainer />
