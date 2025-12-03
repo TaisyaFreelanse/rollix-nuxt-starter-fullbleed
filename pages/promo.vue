@@ -1,7 +1,13 @@
 
 <template>
-  <main class="w-[100vw] px-4 lg:px-8">
+  <main class="w-full px-4 lg:px-8">
     <h1 class="text-2xl font-semibold mt-6 mb-6">Новости и акции</h1>
+    
+    <!-- Промокод карточка -->
+    <div class="mb-8">
+      <PromocodeCard code="3101" description="Специальное предложение для новых клиентов" />
+    </div>
+    
     <div class="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
       <article v-for="i in 12" :key="i" class="card overflow-hidden">
         <img src="/product.svg" alt="promo" class="w-full h-48 md:h-56 object-cover" />

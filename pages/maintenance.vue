@@ -4,7 +4,7 @@ const message = computed(() => route.query.message as string || 'Сайт вре
 </script>
 
 <template>
-  <main class="min-h-screen w-[100vw] flex items-center justify-center bg-gray-900 px-4">
+  <main class="min-h-screen w-full flex items-center justify-center bg-gray-900 px-4">
     <div class="text-center max-w-md">
       <div class="text-6xl mb-6">🔧</div>
       <h1 class="text-3xl font-bold text-white mb-4">Технические работы</h1>

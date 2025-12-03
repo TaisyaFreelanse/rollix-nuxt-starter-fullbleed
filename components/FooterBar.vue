@@ -1,7 +1,7 @@
 
 <template>
   <footer class="hidden lg:block border-t border-white/5 mt-16">
-    <div class="w-[100vw] px-4 lg:px-8 py-12 grid md:grid-cols-4 gap-8 text-sm">
+    <div class="w-full px-4 lg:px-8 py-12 grid md:grid-cols-4 gap-8 text-sm">
       <div>
         <img src="/logo.svg" class="h-10 mb-3" alt="logo"/>
         <p class="text-gray-400 mb-4">Сервис заказа роллов и других блюд. Приём заказов: 10:00–23:30.</p>

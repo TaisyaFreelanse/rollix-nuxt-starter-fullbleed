@@ -97,7 +97,7 @@ const handleMouseLeave = () => {
 <template>
   <section
     ref="carouselRef"
-    class="relative w-[100vw] h-[30vh] md:h-[40vh] min-h-[200px] md:min-h-[300px] max-h-[400px] md:max-h-[500px] overflow-hidden"
+    class="relative w-full h-[30vh] md:h-[40vh] min-h-[200px] md:min-h-[300px] max-h-[400px] md:max-h-[500px] overflow-hidden"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
     @touchstart="handleTouchStart"
@@ -136,15 +136,15 @@ const handleMouseLeave = () => {
     </button>
 
     <!-- Индикаторы (точки) -->
-    <div class="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2">
+    <div class="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5">
       <button
         v-for="(banner, index) in banners"
         :key="`indicator-${index}`"
         @click="goToSlide(index)"
         :class="[
-          'w-2 h-2 rounded-full transition-all',
+          'w-1.5 h-1.5 rounded-full transition-all',
           index === currentIndex
-            ? 'bg-accent w-8'
+            ? 'bg-accent w-5'
             : 'bg-white/50 hover:bg-white/75'
         ]"
         :aria-label="`Перейти к баннеру ${index + 1}`" />
