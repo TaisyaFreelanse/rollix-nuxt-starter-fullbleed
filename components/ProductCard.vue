@@ -109,7 +109,7 @@ const handleClick = () => {
         :src="imageUrl"
         :alt="product?.name || ''"
         loading="lazy"
-        class="w-full h-48 sm:h-56 object-cover opacity-95 transition-transform duration-300 group-hover:scale-110" />
+        class="w-full h-40 sm:h-48 md:h-56 object-cover opacity-95 transition-transform duration-300 group-hover:scale-110" />
       <!-- Бейдж акции -->
       <div
         v-if="hasDiscount"

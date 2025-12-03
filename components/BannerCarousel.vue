@@ -97,7 +97,7 @@ const handleMouseLeave = () => {
 <template>
   <section
     ref="carouselRef"
-    class="relative w-[100vw] h-[50vh] min-h-[400px] max-h-[600px] overflow-hidden"
+    class="relative w-[100vw] h-[30vh] md:h-[40vh] min-h-[200px] md:min-h-[300px] max-h-[400px] md:max-h-[500px] overflow-hidden"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
     @touchstart="handleTouchStart"

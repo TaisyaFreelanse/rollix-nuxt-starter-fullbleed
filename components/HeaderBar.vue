@@ -64,11 +64,11 @@ const handleAuthCancel = () => {
         ? 'bg-[#121315]/95 backdrop-blur-md border-b border-white/10 shadow-lg'
         : 'bg-[#121315]/90 backdrop-blur border-b border-white/5'
     ]">
-    <div class="w-[100vw] px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <button class="md:hidden p-2 rounded-lg bg-white/5 hover:bg-white/10" @click="mobileOpen=true">☰</button>
-        <NuxtLink to="/" class="flex items-center gap-3">
-          <img src="/logo.svg" class="h-20 sm:h-24 w-auto" alt="Уасаби" />
+    <div class="w-[100vw] px-3 sm:px-6 lg:px-8 h-14 md:h-16 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <button class="md:hidden p-1.5 rounded-lg bg-white/5 hover:bg-white/10" @click="mobileOpen=true">☰</button>
+        <NuxtLink to="/" class="flex items-center gap-2">
+          <img src="/logo.svg" class="h-8 sm:h-10 md:h-12 w-auto" alt="Уасаби" />
         </NuxtLink>
       </div>
       <div class="hidden md:flex items-center gap-4">

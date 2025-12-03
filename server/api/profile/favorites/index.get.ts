@@ -1,8 +1,9 @@
 import { prisma } from '~/server/utils/prisma'
+import { requireAuth } from '~/server/utils/auth'
 
 export default defineEventHandler(async (event) => {
   try {
-    const userId = 'user_123' // TODO: Получить из сессии/токена
+    const userId = await requireAuth(event)
 
     const favorites = await prisma.productFavorite.findMany({
       where: {
@@ -34,7 +35,11 @@ export default defineEventHandler(async (event) => {
         oldPrice: fav.product.oldPrice ? Number(fav.product.oldPrice) : null
       }
     }))
-  } catch (error) {
+  } catch (error: any) {
+    if (error.statusCode) {
+      throw error
+    }
+    console.error('Ошибка при получении избранного:', error)
     throw createError({
       statusCode: 500,
       message: 'Ошибка при получении избранного'
