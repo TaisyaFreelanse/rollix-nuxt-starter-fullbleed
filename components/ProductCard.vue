@@ -20,20 +20,22 @@ const isValidProduct = computed(() => {
 
 const isFavorite = ref(false)
 const isLoadingFavorite = ref(false)
+const showAuthModal = ref(false)
+
+const auth = useAuth()
+const toast = useToast()
 
 // Проверяем, в избранном ли товар
 const checkFavorite = async () => {
-  if (!props.product?.id) return
+  if (!props.product?.id || !auth.isAuthenticated.value) return
   try {
-    // TODO: Проверить через API
-    // const favorite = await $fetch(`/api/profile/favorites/${props.product.id}`)
-    // isFavorite.value = !!favorite
+    const response = await auth.$fetchWithAuth(`/api/profile/favorites/${props.product.id}`)
+    isFavorite.value = response.isFavorite || false
   } catch (error) {
-    // Товар не в избранном
+    // Товар не в избранном или ошибка
+    isFavorite.value = false
   }
 }
-
-const auth = useAuth()
 
 const toggleFavorite = async (e: Event) => {
   e.stopPropagation()
@@ -41,7 +43,7 @@ const toggleFavorite = async (e: Event) => {
 
   // Проверяем авторизацию
   if (!auth.isAuthenticated.value) {
-    // TODO: Показать модальное окно авторизации
+    showAuthModal.value = true
     return
   }
 
@@ -52,21 +54,35 @@ const toggleFavorite = async (e: Event) => {
         method: 'DELETE'
       })
       isFavorite.value = false
+      toast.success('Товар удален из избранного')
     } else {
       await auth.$fetchWithAuth(`/api/profile/favorites/${props.product.id}`, {
         method: 'POST'
       })
       isFavorite.value = true
+      toast.success('Товар добавлен в избранное')
     }
   } catch (error) {
     console.error('Ошибка изменения избранного', error)
+    toast.error('Ошибка при изменении избранного')
   } finally {
     isLoadingFavorite.value = false
   }
 }
 
+// Проверяем избранное при монтировании и при изменении авторизации
+watch(() => auth.isAuthenticated.value, (isAuth) => {
+  if (isAuth) {
+    checkFavorite()
+  } else {
+    isFavorite.value = false
+  }
+}, { immediate: true })
+
 onMounted(() => {
-  checkFavorite()
+  if (auth.isAuthenticated.value) {
+    checkFavorite()
+  }
 })
 
 const imageUrl = computed(() => props.product?.image || '/product.svg')
@@ -117,13 +133,13 @@ const handleClick = () => {
       <button
         type="button"
         :class="[
-          'absolute bottom-3 right-3 z-10 p-2 rounded-full backdrop-blur-sm transition',
+          'absolute bottom-3 right-3 z-10 p-2 rounded-full backdrop-blur-sm transition-all',
           isFavorite
-            ? 'bg-accent/20 border border-accent/50 text-accent'
+            ? 'bg-red-500/20 border border-red-500/50 text-red-500 hover:bg-red-500/30'
             : 'bg-white/10 border border-white/20 text-gray-400 hover:text-white hover:bg-white/20'
         ]"
         @click.stop="toggleFavorite">
-        {{ isFavorite ? '❤️' : '🤍' }}
+        {{ isFavorite ? '♥️' : '🤍' }}
       </button>
     </div>
     <div class="p-4">
@@ -151,6 +167,13 @@ const handleClick = () => {
         </div>
       </div>
     </div>
+
+    <!-- Модальное окно авторизации -->
+    <Modal :open="showAuthModal" title="Войдите, чтобы добавить в избранное" @close="showAuthModal = false">
+      <SmsAuth 
+        @success="(phone: string) => { showAuthModal.value = false; checkFavorite(); }" 
+        @cancel="showAuthModal.value = false" />
+    </Modal>
   </article>
 </template>
 

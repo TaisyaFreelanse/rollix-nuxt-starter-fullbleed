@@ -1,6 +1,9 @@
 
 <template>
-  <main class="w-full">
+  <main class="w-[100vw]">
+    <!-- Баннеры карусель -->
+    <BannerCarousel />
+
     <!-- Content full width -->
     <section class="px-4 sm:px-6 lg:px-8 mt-10">
       <h2 class="text-xl md:text-2xl font-semibold mb-4">Популярное</h2>

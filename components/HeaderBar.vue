@@ -1,14 +1,10 @@
 
 <script setup lang="ts">
 const mobileOpen = useState('mobileOpen', () => false)
-const cartStore = useCartStore()
 const auth = useAuth()
 const router = useRouter()
 const showAuthModal = ref(false)
 const isScrolled = ref(false)
-const cartItemsCount = computed(() => cartStore.totalItems)
-const prevCartCount = ref(cartItemsCount.value)
-const cartBounce = ref(false)
 
 // Отслеживание скролла для анимации шапки
 if (process.client) {
@@ -22,17 +18,6 @@ if (process.client) {
     window.removeEventListener('scroll', handleScroll)
   })
 }
-
-// Анимация при добавлении товара в корзину
-watch(cartItemsCount, (newCount, oldCount) => {
-  if (newCount > oldCount && oldCount > 0) {
-    cartBounce.value = true
-    setTimeout(() => {
-      cartBounce.value = false
-    }, 600)
-  }
-  prevCartCount.value = newCount
-})
 
 // Отслеживание изменений авторизации для обновления UI
 watch(() => auth.isAuthenticated.value, (isAuth) => {
@@ -79,42 +64,32 @@ const handleAuthCancel = () => {
         ? 'bg-[#121315]/95 backdrop-blur-md border-b border-white/10 shadow-lg'
         : 'bg-[#121315]/90 backdrop-blur border-b border-white/5'
     ]">
-    <div class="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <div class="w-[100vw] px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <button class="md:hidden p-2 rounded-lg bg-white/5 hover:bg-white/10" @click="mobileOpen=true">☰</button>
         <NuxtLink to="/" class="flex items-center gap-3">
-          <img src="/logo.svg" class="h-14 sm:h-16 w-auto" alt="Уасаби" />
+          <img src="/logo.svg" class="h-20 sm:h-24 w-auto" alt="Уасаби" />
         </NuxtLink>
       </div>
-      <nav class="hidden md:flex items-center gap-2">
-        <NuxtLink to="/promo" class="px-4 py-2 rounded-lg hover:bg-white/5 transition" exact-active-class="text-white">Акции</NuxtLink>
-        <NuxtLink to="/delivery" class="px-4 py-2 rounded-lg hover:bg-white/5 transition" exact-active-class="text-white">О доставке</NuxtLink>
-      </nav>
-      <div class="flex items-center gap-3">
-        <NuxtLink
-          :class="[
-            'relative px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-all text-sm',
-            cartBounce ? 'animate-bounce' : ''
-          ]"
-          to="/cart">
-          Корзина
-          <Transition name="cart-badge">
-            <span
-              v-if="cartItemsCount > 0"
-              data-cart-count
-              :class="[
-                'absolute -top-2 -right-2 text-xs bg-accent rounded-full px-1.5 min-w-[1.25rem] text-center font-semibold',
-                cartBounce ? 'scale-125' : ''
-              ]">
-              {{ cartItemsCount }}
-            </span>
-          </Transition>
-        </NuxtLink>
+      <div class="hidden md:flex items-center gap-4">
+        <nav class="flex items-center gap-2">
+          <NuxtLink to="/promo" class="px-4 py-2 rounded-lg hover:bg-white/5 transition" exact-active-class="text-white">Акции</NuxtLink>
+          <NuxtLink to="/delivery" class="px-4 py-2 rounded-lg hover:bg-white/5 transition" exact-active-class="text-white">О доставке</NuxtLink>
+        </nav>
+        <a href="tel:+74152313121" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/5 transition text-sm">
+          <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+          </svg>
+          <span class="text-white">+7 (415) 231-31-21</span>
+        </a>
         <button
           type="button"
-          class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition text-sm cursor-pointer relative z-10"
+          class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition text-sm cursor-pointer relative z-10 flex items-center gap-2"
           @click.stop="handleProfileClick">
-          {{ auth.isAuthenticated.value ? 'Профиль' : 'Войти' }}
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          <span>{{ auth.isAuthenticated.value ? 'Профиль' : 'Войти' }}</span>
         </button>
       </div>
     </div>
@@ -126,22 +101,3 @@ const handleAuthCancel = () => {
   </header>
 </template>
 
-<style scoped>
-.cart-badge-enter-active {
-  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-.cart-badge-leave-active {
-  transition: all 0.2s ease-in;
-}
-
-.cart-badge-enter-from {
-  opacity: 0;
-  transform: scale(0) rotate(-180deg);
-}
-
-.cart-badge-leave-to {
-  opacity: 0;
-  transform: scale(0);
-}
-</style>

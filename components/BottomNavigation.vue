@@ -54,6 +54,8 @@ const handleAuthCancel = () => {
   showAuthModal.value = false
 }
 
+const cartOpen = useState('cartOpen', () => false)
+
 const handleNavClick = (item: typeof navItems[0]) => {
   // Для "Заказы" проверяем авторизацию
   if (item.requiresAuth) {
@@ -66,6 +68,12 @@ const handleNavClick = (item: typeof navItems[0]) => {
       // Показываем модальное окно авторизации
       showAuthModal.value = true
     }
+    return
+  }
+  
+  // Для корзины открываем боковую панель вместо перехода на страницу
+  if (item.path === '/cart') {
+    cartOpen.value = true
     return
   }
   

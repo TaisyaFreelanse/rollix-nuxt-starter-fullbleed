@@ -34,7 +34,7 @@ const proceedToCheckout = () => {
 </script>
 
 <template>
-  <main class="w-full px-4 sm:px-6 lg:px-8 py-6">
+  <main class="w-[100vw] px-4 sm:px-6 lg:px-8 py-6">
     <h1 class="text-2xl font-semibold mb-6">Корзина</h1>
 
     <div v-if="cartStore.isEmpty" class="flex flex-col items-center justify-center py-12 text-gray-400">
