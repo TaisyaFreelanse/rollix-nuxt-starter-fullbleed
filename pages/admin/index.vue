@@ -572,8 +572,8 @@ const loadCurrentOrders = async () => {
 }
 
 // ========== АДМИНЫ ==========
-const adminAuth = useAdminAuth()
 const admins = ref<any[]>([])
+
 const adminsLoading = ref(false)
 const showAdminForm = ref(false)
 const editingAdmin = ref<any | null>(null)
