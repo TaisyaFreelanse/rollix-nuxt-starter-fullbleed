@@ -1,5 +1,6 @@
 export default defineNuxtRouteMiddleware(async (to, from) => {
-  // Проверяем авторизацию только на клиенте
+  // Middleware только инициализирует токен из localStorage
+  // Реальная проверка и показ модального окна происходит в layout
   if (process.client) {
     const adminAuth = useAdminAuth()
     
@@ -13,13 +14,6 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
       } catch (e) {
         console.error('Ошибка инициализации авторизации админа', e)
       }
-    }
-    
-    // Проверяем авторизацию
-    if (!adminAuth.isAuthenticated.value) {
-      // Сохраняем URL, на который пытались зайти, чтобы вернуться после входа
-      const returnUrl = to.fullPath
-      return navigateTo(`/admin?returnUrl=${encodeURIComponent(returnUrl)}`)
     }
   }
 })

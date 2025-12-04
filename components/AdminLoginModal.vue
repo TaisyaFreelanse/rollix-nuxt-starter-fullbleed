@@ -51,10 +51,12 @@ const handleLogin = async () => {
 
 const handleClose = () => {
   if (!loading.value) {
+    // Не закрываем модальное окно, если пользователь не авторизован
+    // Только сбрасываем форму
     login.value = ''
     password.value = ''
     error.value = null
-    emit('close')
+    // emit('close') - не закрываем модальное окно, так как требуется авторизация
   }
 }
 
@@ -67,7 +69,7 @@ const handleKeyPress = (e: KeyboardEvent) => {
 </script>
 
 <template>
-  <Modal :open="open" title="Вход для администраторов" @close="handleClose" size="md">
+  <Modal :open="open" title="Вход для администраторов" :close-on-overlay="false" @close="() => {}" size="md">
     <div class="space-y-4">
       <div v-if="error" class="p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm">
         {{ error }}

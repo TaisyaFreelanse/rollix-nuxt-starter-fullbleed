@@ -16,11 +16,31 @@ const handleLogout = async () => {
 // Проверяем авторизацию при загрузке
 onMounted(async () => {
   if (process.client) {
-    const isAuth = await adminAuth.checkAuth()
-    if (!isAuth) {
+    // Даем время на инициализацию токена из localStorage
+    await nextTick()
+    
+    // Быстро завершаем проверку, чтобы контент отобразился
+    isChecking.value = false
+    
+    // Проверяем авторизацию асинхронно, не блокируя UI
+    try {
+      // Если есть токен, проверяем его валидность
+      if (adminAuth.token.value) {
+        adminAuth.checkAuth().then((isAuth) => {
+          if (!isAuth) {
+            showLoginModal.value = true
+          }
+        }).catch(() => {
+          showLoginModal.value = true
+        })
+      } else {
+        // Если токена нет, сразу показываем модальное окно
+        showLoginModal.value = true
+      }
+    } catch (error) {
+      console.error('Ошибка проверки авторизации:', error)
       showLoginModal.value = true
     }
-    isChecking.value = false
   }
 })
 
@@ -36,14 +56,31 @@ watch(() => adminAuth.isAuthenticated.value, (isAuth) => {
 const handleLoginSuccess = () => {
   showLoginModal.value = false
 }
+
+const handleModalClose = () => {
+  // Если пользователь не авторизован, не позволяем закрыть модальное окно
+  // Оно должно оставаться открытым до авторизации
+  if (!adminAuth.isAuthenticated.value) {
+    return
+  }
+  showLoginModal.value = false
+}
+
+// Показываем модальное окно, если пользователь не авторизован после инициализации
+watch(() => [isChecking.value, adminAuth.isAuthenticated.value], ([checking, isAuth]) => {
+  if (!checking && !isAuth && !showLoginModal.value) {
+    showLoginModal.value = true
+  }
+}, { immediate: true })
 </script>
 
 <template>
   <div class="min-h-screen bg-gray-900">
     <!-- Модальное окно входа -->
     <AdminLoginModal
-      :open="showLoginModal && !isChecking"
-      @close="showLoginModal = false"
+      v-if="!isChecking"
+      :open="showLoginModal && !adminAuth.isAuthenticated.value"
+      @close="handleModalClose"
       @success="handleLoginSuccess" />
 
     <!-- Header -->
@@ -76,14 +113,8 @@ const handleLoginSuccess = () => {
     </header>
 
     <!-- Main Content -->
-    <main class="p-8">
-      <div v-if="isChecking" class="flex items-center justify-center min-h-[400px]">
-        <div class="text-gray-400">Проверка авторизации...</div>
-      </div>
-      <div v-else-if="!adminAuth.isAuthenticated.value" class="flex items-center justify-center min-h-[400px]">
-        <div class="text-gray-400">Требуется авторизация</div>
-      </div>
-      <slot v-else />
+    <main class="p-8 relative">
+      <slot />
     </main>
   </div>
 </template>
