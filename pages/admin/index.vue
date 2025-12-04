@@ -8,9 +8,6 @@ const route = useRoute()
 const router = useRouter()
 const adminAuth = useAdminAuth()
 
-// Флаг готовности к загрузке данных (устанавливается после авторизации)
-const isReady = ref(false)
-
 // Активная вкладка
 const activeTab = ref<string>(route.query.tab as string || 'dashboard')
 
@@ -686,9 +683,6 @@ const formatDateAdmin = (dateString: string) => {
 
 // Функция загрузки данных для текущей вкладки
 const loadTabData = async (tab: string) => {
-  // Не загружаем данные пока не авторизованы
-  if (!isReady.value) return
-  
   if (tab === 'dashboard') {
     await loadDashboardStats()
   } else if (tab === 'products') {
@@ -715,19 +709,16 @@ const loadTabData = async (tab: string) => {
   }
 }
 
-// Загрузка данных при переключении вкладок (только когда авторизован)
+// Загрузка данных при переключении вкладок
 watch(activeTab, async (newTab) => {
   await loadTabData(newTab)
 })
 
-// Ждём авторизацию и загружаем начальные данные
-watch(() => adminAuth.isAuthenticated.value, async (isAuth) => {
-  if (isAuth && !isReady.value) {
-    isReady.value = true
-    // Загружаем данные для текущей вкладки
-    await loadTabData(activeTab.value)
-  }
-}, { immediate: true })
+// Загружаем начальные данные при монтировании
+// Страница монтируется ТОЛЬКО когда пользователь уже авторизован (layout проверил токен)
+onMounted(async () => {
+  await loadTabData(activeTab.value)
+})
 </script>
 
 <template>

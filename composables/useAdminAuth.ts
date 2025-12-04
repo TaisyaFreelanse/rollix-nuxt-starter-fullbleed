@@ -1,35 +1,8 @@
 export const useAdminAuth = () => {
-  // НЕ инициализируем токен из localStorage при создании состояния!
-  // Это будет сделано только после проверки валидности
+  // Токен и админ НИКОГДА не инициализируются из localStorage автоматически!
+  // Только после успешной валидации на сервере
   const token = useState<string | null>('admin:token', () => null)
-  
   const admin = useState<any | null>('admin:user', () => null)
-  
-  // Флаг, показывающий, была ли проверка авторизации
-  const isAuthChecked = useState<boolean>('admin:authChecked', () => false)
-  
-  const isInitialized = useState<boolean>('admin:initialized', () => false)
-
-  // Инициализация на клиенте после монтирования
-  if (process.client) {
-    onMounted(() => {
-      if (!isInitialized.value) {
-        const savedToken = localStorage.getItem('admin_token')
-        const savedAdmin = localStorage.getItem('admin_user')
-        if (savedToken && !token.value) {
-          token.value = savedToken
-        }
-        if (savedAdmin && !admin.value) {
-          try {
-            admin.value = JSON.parse(savedAdmin)
-          } catch (e) {
-            console.error('Ошибка парсинга админа из localStorage', e)
-          }
-        }
-        isInitialized.value = true
-      }
-    })
-  }
 
   const isAuthenticated = computed(() => !!token.value)
 
@@ -51,24 +24,30 @@ export const useAdminAuth = () => {
     }
   }
 
-  // Настройка $fetch для автоматической отправки токена
-  const $fetchWithAuth = async (url: string, options: any = {}) => {
+  // $fetch с токеном (использует переданный токен, а не из state)
+  const fetchWithToken = async (url: string, authToken: string, options: any = {}) => {
     const headers = options.headers || {}
-    if (token.value) {
-      headers.Authorization = `Bearer ${token.value}`
-    }
+    headers.Authorization = `Bearer ${authToken}`
     return $fetch(url, {
       ...options,
       headers
     })
   }
 
+  // $fetch с текущим токеном из state
+  const $fetchWithAuth = async (url: string, options: any = {}) => {
+    if (!token.value) {
+      throw new Error('No auth token')
+    }
+    return fetchWithToken(url, token.value, options)
+  }
+
   // Вход в систему
-  const login = async (login: string, password: string) => {
+  const login = async (loginValue: string, password: string) => {
     try {
       const response = await $fetch('/api/admin/auth/login', {
         method: 'POST',
-        body: { login, password }
+        body: { login: loginValue, password }
       })
       
       if (response.success && response.token) {
@@ -86,43 +65,37 @@ export const useAdminAuth = () => {
     }
   }
 
-  // Проверка авторизации
-  const checkAuth = async () => {
-    // Проверяем наличие токена в localStorage
-    if (process.client) {
-      const savedToken = localStorage.getItem('admin_token')
-      if (savedToken && !token.value) {
-        // Восстанавливаем токен для проверки
-        token.value = savedToken
-        const savedAdmin = localStorage.getItem('admin_user')
-        if (savedAdmin) {
-          try {
-            admin.value = JSON.parse(savedAdmin)
-          } catch (e) {
-            console.error('Ошибка парсинга админа', e)
-          }
-        }
-      }
+  // Проверка авторизации - возвращает true только если токен ВАЛИДЕН на сервере
+  const checkAuth = async (): Promise<boolean> => {
+    if (!process.client) {
+      return false
     }
+
+    // Читаем токен из localStorage (НЕ устанавливаем в state!)
+    const savedToken = localStorage.getItem('admin_token')
     
-    if (!token.value) {
-      isAuthChecked.value = true
+    if (!savedToken) {
+      // Нет токена - очищаем state на всякий случай
+      clearAuth()
       return false
     }
 
     try {
-      const response = await $fetchWithAuth('/api/admin/auth/check')
+      // Проверяем токен на сервере
+      const response = await fetchWithToken('/api/admin/auth/check', savedToken)
+      
       if (response.success && response.admin) {
-        setAuth(token.value, response.admin)
-        isAuthChecked.value = true
+        // Токен валиден - ТЕПЕРЬ устанавливаем в state
+        setAuth(savedToken, response.admin)
         return true
       }
+      
+      // Токен невалиден
       clearAuth()
-      isAuthChecked.value = true
       return false
     } catch (error) {
+      // Ошибка проверки - очищаем всё
       clearAuth()
-      isAuthChecked.value = true
       return false
     }
   }
@@ -130,7 +103,9 @@ export const useAdminAuth = () => {
   // Выход из системы
   const logout = async () => {
     try {
-      await $fetchWithAuth('/api/admin/auth/logout', { method: 'POST' })
+      if (token.value) {
+        await $fetchWithAuth('/api/admin/auth/logout', { method: 'POST' })
+      }
     } catch (error) {
       console.error('Ошибка выхода:', error)
     } finally {
@@ -142,8 +117,6 @@ export const useAdminAuth = () => {
     token: readonly(token),
     admin: readonly(admin),
     isAuthenticated,
-    isAuthChecked: readonly(isAuthChecked),
-    isInitialized: readonly(isInitialized),
     setAuth,
     clearAuth,
     $fetchWithAuth,
@@ -152,4 +125,3 @@ export const useAdminAuth = () => {
     logout
   }
 }
-

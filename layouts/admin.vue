@@ -2,7 +2,8 @@
 const router = useRouter()
 const adminAuth = useAdminAuth()
 
-// КЛЮЧЕВОЕ: Контент скрыт по умолчанию, показывается ТОЛЬКО после успешного входа
+// КРИТИЧНО: Используем СОБСТВЕННОЕ состояние, не зависящее от composable
+// isAuthorized станет true ТОЛЬКО после успешной проверки токена на сервере
 const isAuthorized = ref(false)
 const isLoading = ref(true)
 
@@ -15,26 +16,26 @@ const handleLogout = async () => {
   isAuthorized.value = false
 }
 
-// При успешном входе - показываем контент
+// При успешном входе через модалку - показываем контент
 const handleLoginSuccess = () => {
   isAuthorized.value = true
 }
 
-// Проверяем авторизацию ТОЛЬКО при монтировании
+// Проверяем авторизацию при монтировании
 onMounted(async () => {
-  // Проверяем есть ли сохраненный токен и валиден ли он
-  const isValid = await adminAuth.checkAuth()
+  // Небольшая задержка чтобы гарантировать что мы на клиенте
+  await nextTick()
   
-  if (isValid) {
-    // Токен валиден - показываем контент
-    isAuthorized.value = true
-  } else {
-    // Токен невалиден или отсутствует - показываем модалку
+  try {
+    // checkAuth() вернёт true ТОЛЬКО если сервер подтвердил токен
+    const isValid = await adminAuth.checkAuth()
+    isAuthorized.value = isValid
+  } catch (error) {
+    console.error('Ошибка проверки авторизации:', error)
     isAuthorized.value = false
-    adminAuth.clearAuth()
+  } finally {
+    isLoading.value = false
   }
-  
-  isLoading.value = false
 })
 </script>
 
@@ -48,15 +49,15 @@ onMounted(async () => {
       </div>
     </div>
 
-    <!-- Модальное окно входа - показывается когда НЕ авторизован и НЕ загружается -->
+    <!-- Модальное окно входа - показывается когда НЕ авторизован и загрузка завершена -->
     <AdminLoginModal
-      v-if="!isLoading"
-      :open="!isAuthorized"
+      v-if="!isLoading && !isAuthorized"
+      :open="true"
       @close="() => {}"
       @success="handleLoginSuccess" />
 
     <!-- Контент админ-панели - показывается ТОЛЬКО когда авторизован -->
-    <div v-if="isAuthorized && !isLoading" class="relative">
+    <div v-if="!isLoading && isAuthorized" class="relative">
       <!-- Header -->
       <header class="bg-gray-800 border-b border-gray-700 px-8 py-4">
         <div class="flex items-center justify-between">
