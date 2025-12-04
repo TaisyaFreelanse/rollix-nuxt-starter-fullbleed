@@ -38,16 +38,74 @@ export async function createSmsCodesTable(): Promise<void> {
       `)
       
       await pool.query(`
-        CREATE INDEX "sms_codes_phone_code_idx" ON "sms_codes"("phone", "code");
+        CREATE INDEX IF NOT EXISTS "sms_codes_phone_code_idx" ON "sms_codes"("phone", "code");
       `)
       
       await pool.query(`
-        CREATE INDEX "sms_codes_expiresAt_idx" ON "sms_codes"("expiresAt");
+        CREATE INDEX IF NOT EXISTS "sms_codes_expiresAt_idx" ON "sms_codes"("expiresAt");
       `)
       
       console.log('✅ SMS codes table created')
     } else {
-      console.log('ℹ️  SMS codes table already exists')
+      console.log('ℹ️  SMS codes table already exists, checking structure...')
+      
+      // Проверяем и добавляем недостающие колонки
+      const columnsResult = await pool.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'sms_codes';
+      `)
+      
+      const existingColumns = columnsResult.rows.map((row: any) => row.column_name)
+      
+      // Добавляем недостающие колонки
+      if (!existingColumns.includes('verified')) {
+        console.log('🔄 Adding missing column: verified')
+        try {
+          await pool.query(`
+            ALTER TABLE "sms_codes" 
+            ADD COLUMN "verified" BOOLEAN NOT NULL DEFAULT false;
+          `)
+        } catch (colError: any) {
+          if (!colError.message?.includes('already exists') && colError.code !== '42701') {
+            throw colError
+          }
+        }
+      }
+      
+      if (!existingColumns.includes('createdAt')) {
+        console.log('🔄 Adding missing column: createdAt')
+        try {
+          await pool.query(`
+            ALTER TABLE "sms_codes" 
+            ADD COLUMN "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+          `)
+        } catch (colError: any) {
+          if (!colError.message?.includes('already exists') && colError.code !== '42701') {
+            throw colError
+          }
+        }
+      }
+      
+      // Также проверяем другие обязательные колонки
+      const requiredColumns = ['id', 'phone', 'code', 'expiresAt']
+      for (const col of requiredColumns) {
+        if (!existingColumns.includes(col)) {
+          console.warn(`⚠️  Missing required column: ${col}`)
+        }
+      }
+      
+      // Создаем индексы если их нет
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS "sms_codes_phone_code_idx" ON "sms_codes"("phone", "code");
+      `)
+      
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS "sms_codes_expiresAt_idx" ON "sms_codes"("expiresAt");
+      `)
+      
+      console.log('✅ SMS codes table structure verified')
     }
   } catch (error: any) {
     // Если таблица уже существует - это нормально

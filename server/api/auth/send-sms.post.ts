@@ -25,6 +25,13 @@ export default defineEventHandler(async (event) => {
     // Генерируем 4-значный код
     const code = Math.floor(1000 + Math.random() * 9000).toString()
 
+    // Убеждаемся, что таблица существует и имеет правильную структуру
+    try {
+      await createSmsCodesTable()
+    } catch (migrationError: any) {
+      console.error('Migration error (non-fatal):', migrationError.message)
+    }
+
     // Удаляем старые неиспользованные коды для этого номера
     try {
       await prisma.smsCode.deleteMany({
@@ -58,9 +65,11 @@ export default defineEventHandler(async (event) => {
         }
       })
     } catch (error: any) {
-      // Если таблица не существует, создаем её и повторяем
-      if (error.message?.includes('does not exist')) {
+      // Если колонка не существует, исправляем структуру таблицы
+      if (error.message?.includes('does not exist') || error.message?.includes('column') || error.message?.includes('verified')) {
+        console.log('⚠️  Fixing table structure...')
         await createSmsCodesTable()
+        // Повторяем попытку создания
         await prisma.smsCode.create({
           data: {
             phone: phoneNumber,
