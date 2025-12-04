@@ -3,13 +3,19 @@ definePageMeta({
   layout: 'admin'
 })
 
+const adminAuth = useAdminAuth()
 const zones = ref<any[]>([])
 const isLoading = ref(true)
 
 const loadZones = async () => {
   isLoading.value = true
   try {
-    zones.value = await $fetch('/api/delivery-zones')
+    zones.value = await adminAuth.$fetchWithAuth('/api/admin/delivery-zones')
+    // Исправляем несоответствие полей: API возвращает estimatedTime, но фронтенд ожидает deliveryTime
+    zones.value = zones.value.map((zone: any) => ({
+      ...zone,
+      deliveryTime: zone.deliveryTime || zone.estimatedTime
+    }))
   } catch (error) {
     console.error('Ошибка загрузки зон доставки:', error)
   } finally {
@@ -21,7 +27,7 @@ const deleteZone = async (id: string) => {
   if (!confirm('Вы уверены, что хотите удалить эту зону доставки?')) return
 
   try {
-    await $fetch(`/api/delivery-zones/${id}`, { method: 'DELETE' })
+    await adminAuth.$fetchWithAuth(`/api/delivery-zones/${id}`, { method: 'DELETE' })
     await loadZones()
   } catch (error) {
     alert('Ошибка удаления зоны доставки')

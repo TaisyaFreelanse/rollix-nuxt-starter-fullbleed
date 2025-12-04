@@ -33,10 +33,11 @@ const loadCategory = async () => {
       isActive: category.isActive ?? true,
       sortOrder: category.sortOrder || 0
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Ошибка загрузки категории:', error)
-    alert('Категория не найдена')
-    router.push('/admin/categories')
+    const errorMessage = error?.data?.message || error?.message || 'Категория не найдена'
+    alert(errorMessage)
+    router.push('/admin?tab=categories')
   } finally {
     isLoading.value = false
   }
@@ -69,9 +70,10 @@ const saveCategory = async () => {
         body: form.value
       })
     }
-    router.push('/admin/categories')
+    router.push('/admin?tab=categories')
   } catch (error: any) {
-    alert(error?.data?.message || 'Ошибка сохранения категории')
+    const errorMessage = error?.data?.message || error?.message || 'Ошибка сохранения категории'
+    alert(errorMessage)
   } finally {
     isLoading.value = false
   }
@@ -89,7 +91,7 @@ onMounted(() => {
         {{ isNew ? 'Добавить категорию' : 'Редактировать категорию' }}
       </h1>
       <NuxtLink
-        to="/admin/categories"
+        to="/admin?tab=categories"
         class="text-gray-400 hover:text-white transition-colors">
         ← Назад к списку
       </NuxtLink>
@@ -155,7 +157,7 @@ onMounted(() => {
 
       <div class="flex items-center justify-end gap-4 pt-4 border-t border-gray-700">
         <NuxtLink
-          to="/admin/categories"
+          to="/admin?tab=categories"
           class="px-6 py-2 text-gray-400 hover:text-white transition-colors">
           Отмена
         </NuxtLink>

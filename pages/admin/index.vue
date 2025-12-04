@@ -354,9 +354,8 @@ const loadPromotions = async () => {
   } catch (error: any) {
     console.error('Ошибка загрузки акций:', error)
     promotions.value = []
-    if (error.statusCode === 401 || error.message?.includes('No auth token')) {
-      isAuthorized.value = false
-    }
+    // Не сбрасываем авторизацию при ошибке загрузки данных
+    // Авторизация проверяется отдельно при входе в админку
   } finally {
     promotionsLoading.value = false
   }
@@ -376,9 +375,7 @@ const loadPromocodeWidget = async () => {
   } catch (error: any) {
     console.error('Ошибка загрузки виджета промокода:', error)
     promocodeWidget.value = null
-    if (error.statusCode === 401 || error.message?.includes('No auth token')) {
-      isAuthorized.value = false
-    }
+    // Не сбрасываем авторизацию при ошибке загрузки данных
   } finally {
     promocodeWidgetLoading.value = false
   }
@@ -518,9 +515,12 @@ const zonesLoading = ref(false)
 const loadZones = async () => {
   zonesLoading.value = true
   try {
-    const response = await $fetch('/api/delivery-zones')
-    // Фильтруем null значения
-    zones.value = Array.isArray(response) ? response.filter(z => z != null) : []
+    zones.value = await adminAuth.$fetchWithAuth('/api/admin/delivery-zones')
+    // Исправляем несоответствие полей: API возвращает estimatedTime, но фронтенд ожидает deliveryTime
+    zones.value = zones.value.map((zone: any) => ({
+      ...zone,
+      deliveryTime: zone.deliveryTime || zone.estimatedTime
+    }))
   } catch (error) {
     console.error('Ошибка загрузки зон доставки:', error)
     zones.value = []
@@ -532,7 +532,7 @@ const loadZones = async () => {
 const deleteZone = async (id: string) => {
   if (!confirm('Вы уверены, что хотите удалить эту зону доставки?')) return
   try {
-    await $fetch(`/api/delivery-zones/${id}`, { method: 'DELETE' })
+    await adminAuth.$fetchWithAuth(`/api/delivery-zones/${id}`, { method: 'DELETE' })
     await loadZones()
   } catch (error) {
     alert('Ошибка удаления зоны доставки')
