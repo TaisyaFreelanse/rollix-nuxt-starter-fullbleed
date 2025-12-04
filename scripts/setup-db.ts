@@ -1,19 +1,28 @@
 import 'dotenv/config'
+import { execSync } from 'child_process'
 
 // Простой скрипт для выполнения миграций и seed
 async function setup() {
-  const { execSync } = require('child_process')
-  
   try {
     console.log('🔄 Pushing database schema...')
-    execSync('npx prisma db push --accept-data-loss', { stdio: 'inherit' })
+    execSync('npx prisma db push --accept-data-loss --skip-generate', { 
+      stdio: 'inherit',
+      env: process.env
+    })
     
     console.log('🌱 Seeding database...')
-    execSync('npx tsx prisma/seed.ts', { stdio: 'inherit' })
+    try {
+      execSync('npx tsx prisma/seed.ts', { 
+        stdio: 'inherit',
+        env: process.env
+      })
+    } catch (seedError) {
+      console.warn('⚠️  Seed failed or skipped:', seedError)
+    }
     
     console.log('✅ Database setup completed!')
-  } catch (error) {
-    console.error('❌ Error:', error)
+  } catch (error: any) {
+    console.error('❌ Error:', error.message || error)
     process.exit(1)
   }
 }
