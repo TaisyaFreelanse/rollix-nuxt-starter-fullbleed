@@ -2,21 +2,37 @@
 const router = useRouter()
 const adminAuth = useAdminAuth()
 
-// Состояния - начинаем с показа формы входа по умолчанию
+// Простые состояния
 const isAuthorized = ref(false)
-const isChecking = ref(false) // Проверка идёт
-const mounted = ref(false) // Компонент смонтирован
+const isReady = ref(false)
 
 // Форма входа
-const loginForm = ref({
-  login: '',
-  password: ''
-})
-const loginError = ref('')
-const loginLoading = ref(false)
+const login = ref('')
+const password = ref('')
+const error = ref('')
+const loading = ref(false)
 
-const goToMain = () => {
-  router.push('/')
+const handleLogin = async () => {
+  if (!login.value || !password.value) {
+    error.value = 'Введите логин и пароль'
+    return
+  }
+  
+  loading.value = true
+  error.value = ''
+  
+  try {
+    const result = await adminAuth.login(login.value, password.value)
+    if (result.success) {
+      isAuthorized.value = true
+    } else {
+      error.value = result.error || 'Неверный логин или пароль'
+    }
+  } catch (e: any) {
+    error.value = e.message || 'Ошибка входа'
+  } finally {
+    loading.value = false
+  }
 }
 
 const handleLogout = async () => {
@@ -24,156 +40,96 @@ const handleLogout = async () => {
   isAuthorized.value = false
 }
 
-const handleLogin = async () => {
-  if (!loginForm.value.login || !loginForm.value.password) {
-    loginError.value = 'Введите логин и пароль'
-    return
-  }
-  
-  loginLoading.value = true
-  loginError.value = ''
-  
-  try {
-    const result = await adminAuth.login(loginForm.value.login, loginForm.value.password)
-    if (result.success) {
-      isAuthorized.value = true
-    } else {
-      loginError.value = result.error || 'Ошибка входа'
-    }
-  } catch (error: any) {
-    loginError.value = error.message || 'Ошибка входа'
-  } finally {
-    loginLoading.value = false
-  }
-}
-
-// Проверяем авторизацию только на клиенте
+// Проверка при монтировании
 onMounted(async () => {
-  mounted.value = true
-  isChecking.value = true
-  
-  try {
-    const isValid = await adminAuth.checkAuth()
-    isAuthorized.value = isValid
-  } catch (error) {
-    isAuthorized.value = false
-  } finally {
-    isChecking.value = false
-  }
-})
-
-// Вычисляемое свойство для показа формы
-const showLoginForm = computed(() => {
-  // На сервере всегда показываем форму
-  if (!mounted.value) return true
-  // Если проверка идёт - показываем спиннер
-  if (isChecking.value) return false
-  // Если не авторизован - показываем форму
-  return !isAuthorized.value
-})
-
-const showSpinner = computed(() => {
-  return mounted.value && isChecking.value
-})
-
-const showContent = computed(() => {
-  return mounted.value && !isChecking.value && isAuthorized.value
+  const valid = await adminAuth.checkAuth()
+  isAuthorized.value = valid
+  isReady.value = true
 })
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-900">
-    <!-- Спиннер проверки -->
-    <div v-if="showSpinner" class="fixed inset-0 flex items-center justify-center bg-gray-900 z-[9999]">
-      <div class="flex flex-col items-center gap-4">
-        <div class="w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
-        <p class="text-gray-400">Проверка авторизации...</p>
-      </div>
-    </div>
-
-    <!-- Форма входа -->
-    <div v-if="showLoginForm" class="fixed inset-0 flex items-center justify-center bg-gray-900 z-[9999]">
-      <div class="bg-gray-800 rounded-2xl p-8 w-full max-w-md border border-gray-700 shadow-2xl">
-        <h2 class="text-2xl font-bold text-white mb-6 text-center">🔐 Вход для администраторов</h2>
+  <div style="min-height: 100vh; background: #111827;">
+    <!-- ФОРМА ВХОДА - показываем если НЕ авторизован -->
+    <div 
+      v-show="!isAuthorized"
+      style="position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #111827; z-index: 99999;">
+      <div style="background: #1f2937; border-radius: 16px; padding: 32px; width: 100%; max-width: 400px; border: 1px solid #374151; margin: 16px;">
+        <h2 style="font-size: 24px; font-weight: bold; color: white; margin-bottom: 24px; text-align: center;">
+          🔐 Вход в админ-панель
+        </h2>
         
-        <div v-if="loginError" class="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm">
-          {{ loginError }}
+        <div v-if="error" style="margin-bottom: 16px; padding: 12px; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.5); border-radius: 8px; color: #f87171; font-size: 14px;">
+          {{ error }}
         </div>
         
-        <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">Логин</label>
-            <input
-              v-model="loginForm.login"
-              type="text"
-              placeholder="admin"
-              autocomplete="username"
-              class="w-full bg-gray-700 text-white px-4 py-3 rounded-lg border border-gray-600 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20"
-              :disabled="loginLoading"
-              @keypress.enter="handleLogin" />
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">Пароль</label>
-            <input
-              v-model="loginForm.password"
-              type="password"
-              placeholder="••••••••"
-              autocomplete="current-password"
-              class="w-full bg-gray-700 text-white px-4 py-3 rounded-lg border border-gray-600 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20"
-              :disabled="loginLoading"
-              @keypress.enter="handleLogin" />
-          </div>
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 14px; color: #d1d5db; margin-bottom: 8px;">Логин</label>
+          <input
+            v-model="login"
+            type="text"
+            placeholder="admin"
+            :disabled="loading"
+            @keypress.enter="handleLogin"
+            style="width: 100%; background: #374151; color: white; padding: 12px 16px; border-radius: 8px; border: 1px solid #4b5563; outline: none; box-sizing: border-box;" />
         </div>
         
-        <div class="mt-6 flex items-center justify-between">
-          <NuxtLink to="/" class="text-gray-400 hover:text-white text-sm transition-colors">
+        <div style="margin-bottom: 24px;">
+          <label style="display: block; font-size: 14px; color: #d1d5db; margin-bottom: 8px;">Пароль</label>
+          <input
+            v-model="password"
+            type="password"
+            placeholder="••••••••"
+            :disabled="loading"
+            @keypress.enter="handleLogin"
+            style="width: 100%; background: #374151; color: white; padding: 12px 16px; border-radius: 8px; border: 1px solid #4b5563; outline: none; box-sizing: border-box;" />
+        </div>
+        
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <NuxtLink to="/" style="color: #9ca3af; font-size: 14px; text-decoration: none;">
             ← На сайт
           </NuxtLink>
           <button
             @click="handleLogin"
-            :disabled="loginLoading || !loginForm.login || !loginForm.password"
-            class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-            {{ loginLoading ? 'Вход...' : 'Войти' }}
+            :disabled="loading || !login || !password"
+            style="padding: 12px 24px; background: #16a34a; color: white; border-radius: 8px; font-weight: 500; border: none; cursor: pointer; opacity: 1;"
+            :style="{ opacity: (loading || !login || !password) ? 0.5 : 1 }">
+            {{ loading ? 'Вход...' : 'Войти' }}
           </button>
         </div>
         
-        <p class="mt-4 text-center text-xs text-gray-500">
-          Логин: admin / Пароль: admin123
+        <p style="margin-top: 16px; text-align: center; font-size: 12px; color: #6b7280;">
+          Логин: <b>admin</b> / Пароль: <b>admin123</b>
         </p>
       </div>
     </div>
 
-    <!-- Контент админ-панели -->
-    <div v-if="showContent">
-      <header class="bg-gray-800 border-b border-gray-700 px-8 py-4">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-3 cursor-pointer" @click="goToMain">
-            <img src="/logo.svg" alt="Logo" class="h-12 w-auto" />
+    <!-- КОНТЕНТ АДМИН-ПАНЕЛИ - показываем если авторизован -->
+    <div v-show="isAuthorized">
+      <header style="background: #1f2937; border-bottom: 1px solid #374151; padding: 16px 32px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 12px; cursor: pointer;" @click="router.push('/')">
+            <img src="/logo.svg" alt="Logo" style="height: 48px; width: auto;" />
             <div>
-              <h1 class="text-xl font-bold text-white">Админ-панель</h1>
-              <p class="text-xs text-gray-400">Управление контентом</p>
+              <h1 style="font-size: 20px; font-weight: bold; color: white;">Админ-панель</h1>
+              <p style="font-size: 12px; color: #9ca3af;">Управление контентом</p>
             </div>
           </div>
-          <div class="flex items-center gap-4">
-            <div v-if="adminAuth.admin.value" class="text-sm text-gray-400">
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <span v-if="adminAuth.admin.value" style="font-size: 14px; color: #9ca3af;">
               {{ adminAuth.admin.value.name || adminAuth.admin.value.login }}
-            </div>
-            <button
-              @click="handleLogout"
-              class="text-gray-400 hover:text-white transition-colors text-sm">
+            </span>
+            <button @click="handleLogout" style="color: #9ca3af; background: none; border: none; cursor: pointer; font-size: 14px;">
               Выйти
             </button>
-            <NuxtLink
-              to="/"
-              class="text-gray-400 hover:text-white transition-colors text-sm">
-              ← Вернуться на сайт
+            <NuxtLink to="/" style="color: #9ca3af; font-size: 14px; text-decoration: none;">
+              ← На сайт
             </NuxtLink>
           </div>
         </div>
       </header>
 
-      <main class="p-8 relative">
+      <main style="padding: 32px;">
         <slot />
       </main>
     </div>
