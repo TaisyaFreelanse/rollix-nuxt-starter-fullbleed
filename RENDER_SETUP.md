@@ -9,7 +9,7 @@
 В настройках сервиса `rollix-delivery` на Render обновите Build Command на:
 
 ```bash
-npm install --production=false && npx prisma generate --schema=prisma/schema.prisma && npx prisma db push --accept-data-loss --skip-generate && npm run build
+npm install --production=false && npx prisma generate --schema=prisma/schema.prisma && npx prisma db push --accept-data-loss && npm run build
 ```
 
 Эта команда:

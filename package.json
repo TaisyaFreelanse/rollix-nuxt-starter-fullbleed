@@ -18,7 +18,7 @@
     "db:studio": "prisma studio",
     "db:dev": "prisma dev",
     "admin:create": "tsx scripts/create-admin.ts",
-    "render:build": "npm install --production=false && npx prisma generate --schema=prisma/schema.prisma && npx prisma db push --accept-data-loss --skip-generate && npm run build",
+    "render:build": "npm install --production=false && npx prisma generate --schema=prisma/schema.prisma && npx prisma db push --accept-data-loss && npm run build",
     "render:setup": "npx tsx scripts/setup-db.ts",
     "render:migrate": "npx tsx scripts/setup-db.ts"
   },

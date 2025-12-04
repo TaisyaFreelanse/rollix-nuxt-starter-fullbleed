@@ -5,7 +5,7 @@ import { execSync } from 'child_process'
 async function setup() {
   try {
     console.log('🔄 Pushing database schema...')
-    execSync('npx prisma db push --accept-data-loss --skip-generate', { 
+    execSync('npx prisma db push --accept-data-loss', { 
       stdio: 'inherit',
       env: process.env
     })
