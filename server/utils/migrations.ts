@@ -88,6 +88,40 @@ export async function createSmsCodesTable(): Promise<void> {
         }
       }
       
+      // Проверяем тип поля id - должно быть TEXT, не INTEGER
+      const idColumnInfo = await pool.query(`
+        SELECT data_type 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'sms_codes' 
+        AND column_name = 'id';
+      `)
+      
+      if (idColumnInfo.rows.length > 0 && idColumnInfo.rows[0].data_type !== 'text') {
+        const currentType = idColumnInfo.rows[0].data_type
+        console.warn(`⚠️  Table id column has wrong type: ${currentType} (should be TEXT)`)
+        
+        if (currentType === 'integer') {
+          console.log('🔄 Recreating table with correct id type (TEXT)...')
+          // Пересоздаем таблицу с правильным типом (удалит данные!)
+          await pool.query(`DROP TABLE IF EXISTS "sms_codes" CASCADE;`)
+          await pool.query(`
+            CREATE TABLE "sms_codes" (
+              "id" TEXT NOT NULL,
+              "phone" TEXT NOT NULL,
+              "code" TEXT NOT NULL,
+              "expiresAt" TIMESTAMP(3) NOT NULL,
+              "verified" BOOLEAN NOT NULL DEFAULT false,
+              "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              CONSTRAINT "sms_codes_pkey" PRIMARY KEY ("id")
+            );
+          `)
+          await pool.query(`CREATE INDEX "sms_codes_phone_code_idx" ON "sms_codes"("phone", "code");`)
+          await pool.query(`CREATE INDEX "sms_codes_expiresAt_idx" ON "sms_codes"("expiresAt");`)
+          console.log('✅ Table recreated with TEXT id type')
+        }
+      }
+      
       // Также проверяем другие обязательные колонки
       const requiredColumns = ['id', 'phone', 'code', 'expiresAt']
       for (const col of requiredColumns) {

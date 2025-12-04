@@ -65,10 +65,15 @@ export default defineEventHandler(async (event) => {
         }
       })
     } catch (error: any) {
-      // Если колонка не существует, исправляем структуру таблицы
-      if (error.message?.includes('does not exist') || error.message?.includes('column') || error.message?.includes('verified')) {
-        console.log('⚠️  Fixing table structure...')
+      // Если ошибка связана с типами данных или структурой таблицы
+      if (error.message?.includes('does not exist') || 
+          error.message?.includes('column') || 
+          error.message?.includes('verified') ||
+          error.message?.includes('invalid input syntax for type integer')) {
+        console.log('⚠️  Fixing table structure...', error.message)
         await createSmsCodesTable()
+        // Небольшая задержка для применения изменений
+        await new Promise(resolve => setTimeout(resolve, 500))
         // Повторяем попытку создания
         await prisma.smsCode.create({
           data: {
@@ -102,9 +107,22 @@ export default defineEventHandler(async (event) => {
       message: 'Код отправлен на номер телефона'
     }
   } catch (error: any) {
+    console.error('[SMS Send Error]', {
+      message: error.message,
+      code: error.code,
+      meta: error.meta,
+      stack: error.stack
+    })
+    
     if (error.statusCode) {
       throw error
     }
+    
+    // Улучшенная обработка ошибок
+    if (error.message?.includes('invalid input syntax for type integer')) {
+      console.error('❌ Integer type error - возможно проблема с типами данных в БД')
+    }
+    
     throw createError({
       statusCode: 500,
       message: error.message || 'Ошибка отправки SMS'
