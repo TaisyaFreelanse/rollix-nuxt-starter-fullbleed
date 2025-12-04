@@ -35,19 +35,15 @@ export async function sendSmsCode(phone: string, code: string): Promise<{ succes
     // Формируем текст сообщения
     const message = `Ваш код авторизации: ${code}. Не сообщайте его никому.`
 
-    // Отправляем SMS через SMS.RU API
-    const response = await $fetch<SmsRuResponse>(`${SMS_RU_BASE_URL}/sms/send`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: new URLSearchParams({
-        api_id: getSmsRuApiKey(),
-        to: phoneNumber,
-        msg: message,
-        json: '1'
-      }).toString()
+    // Отправляем SMS через SMS.RU API (GET запрос с query параметрами)
+    const params = new URLSearchParams({
+      api_id: getSmsRuApiKey(),
+      to: phoneNumber,
+      msg: message,
+      json: '1'
     })
+    
+    const response = await $fetch<SmsRuResponse>(`${SMS_RU_BASE_URL}/sms/send?${params.toString()}`)
 
     // Проверяем результат
     if (response.status === 'OK' || response.status_code === 100) {
@@ -79,17 +75,13 @@ export async function sendCodeViaCall(phone: string): Promise<{ success: boolean
       ? normalizedPhone
       : '7' + normalizedPhone
 
-    const response = await $fetch<SmsRuResponse>(`${SMS_RU_BASE_URL}/code/call`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: new URLSearchParams({
-        api_id: getSmsRuApiKey(),
-        phone: phoneNumber,
-        json: '1'
-      }).toString()
+    const params = new URLSearchParams({
+      api_id: getSmsRuApiKey(),
+      phone: phoneNumber,
+      json: '1'
     })
+    
+    const response = await $fetch<SmsRuResponse>(`${SMS_RU_BASE_URL}/code/call?${params.toString()}`)
 
     if (response.status === 'OK' || response.status_code === 100) {
       return {
@@ -120,18 +112,14 @@ export async function verifySmsCode(phone: string, code: string): Promise<{ succ
       ? normalizedPhone
       : '7' + normalizedPhone
 
-    const response = await $fetch<SmsRuResponse>(`${SMS_RU_BASE_URL}/code/check`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: new URLSearchParams({
-        api_id: getSmsRuApiKey(),
-        phone: phoneNumber,
-        code: code,
-        json: '1'
-      }).toString()
+    const params = new URLSearchParams({
+      api_id: getSmsRuApiKey(),
+      phone: phoneNumber,
+      code: code,
+      json: '1'
     })
+    
+    const response = await $fetch<SmsRuResponse>(`${SMS_RU_BASE_URL}/code/check?${params.toString()}`)
 
     if (response.status === 'OK' || response.status_code === 100) {
       return {
