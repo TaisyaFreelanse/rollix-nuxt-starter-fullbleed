@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const router = useRouter()
 const adminAuth = useAdminAuth()
-// По умолчанию показываем модальное окно сразу
+// Модальное окно показывается по умолчанию - скроем только после успешной авторизации
 const showLoginModal = ref(true)
 
 const goToMain = () => {
@@ -13,32 +13,34 @@ const handleLogout = async () => {
   showLoginModal.value = true
 }
 
-// Проверяем авторизацию при загрузке - синхронно
-onMounted(() => {
+// Проверяем авторизацию сразу при загрузке компонента
+onMounted(async () => {
   if (process.client) {
-    // Проверяем наличие токена синхронно
+    // Синхронно проверяем наличие токена
     const token = localStorage.getItem('admin_token')
     
     if (!token) {
-      // Нет токена - показываем модальное окно (уже true по умолчанию)
+      // Нет токена - модальное окно уже открыто (true по умолчанию)
       showLoginModal.value = true
       return
     }
     
     // Есть токен - проверяем его валидность асинхронно
-    // Но пока оставляем модальное окно видимым, скроем только после успешной проверки
-    adminAuth.checkAuth().then((isAuth) => {
+    // Модальное окно остается открытым, пока не подтвердим авторизацию
+    try {
+      const isAuth = await adminAuth.checkAuth()
       showLoginModal.value = !isAuth
-    }).catch(() => {
+    } catch (error) {
+      // Ошибка проверки - показываем модальное окно
       showLoginModal.value = true
-    })
+    }
   }
 })
 
-// Следим за изменением авторизации
+// Следим за изменением авторизации - автоматически показываем/скрываем модальное окно
 watch(() => adminAuth.isAuthenticated.value, (isAuth) => {
   showLoginModal.value = !isAuth
-})
+}, { immediate: true })
 
 const handleLoginSuccess = () => {
   showLoginModal.value = false
@@ -61,39 +63,41 @@ const handleModalClose = () => {
       @close="handleModalClose"
       @success="handleLoginSuccess" />
 
-    <!-- Header -->
-    <header class="bg-gray-800 border-b border-gray-700 px-8 py-4">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-3 cursor-pointer" @click="goToMain">
-          <img src="/logo.svg" alt="Logo" class="h-12 w-auto" />
-          <div>
-            <h1 class="text-xl font-bold text-white">Админ-панель</h1>
-            <p class="text-xs text-gray-400">Управление контентом</p>
+    <!-- Контент админ-панели показывается только если пользователь авторизован -->
+    <div v-if="adminAuth.isAuthenticated.value" class="relative">
+      <!-- Header -->
+      <header class="bg-gray-800 border-b border-gray-700 px-8 py-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3 cursor-pointer" @click="goToMain">
+            <img src="/logo.svg" alt="Logo" class="h-12 w-auto" />
+            <div>
+              <h1 class="text-xl font-bold text-white">Админ-панель</h1>
+              <p class="text-xs text-gray-400">Управление контентом</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-4">
+            <div v-if="adminAuth.admin.value" class="text-sm text-gray-400">
+              {{ adminAuth.admin.value.name || adminAuth.admin.value.login }}
+            </div>
+            <button
+              @click="handleLogout"
+              class="text-gray-400 hover:text-white transition-colors text-sm">
+              Выйти
+            </button>
+            <NuxtLink
+              to="/"
+              class="text-gray-400 hover:text-white transition-colors text-sm">
+              ← Вернуться на сайт
+            </NuxtLink>
           </div>
         </div>
-        <div class="flex items-center gap-4">
-          <div v-if="adminAuth.isAuthenticated.value && adminAuth.admin.value" class="text-sm text-gray-400">
-            {{ adminAuth.admin.value.name || adminAuth.admin.value.login }}
-          </div>
-          <button
-            v-if="adminAuth.isAuthenticated.value"
-            @click="handleLogout"
-            class="text-gray-400 hover:text-white transition-colors text-sm">
-            Выйти
-          </button>
-          <NuxtLink
-            to="/"
-            class="text-gray-400 hover:text-white transition-colors text-sm">
-            ← Вернуться на сайт
-          </NuxtLink>
-        </div>
-      </div>
-    </header>
+      </header>
 
-    <!-- Main Content -->
-    <main class="p-8 relative">
-      <slot />
-    </main>
+      <!-- Main Content -->
+      <main class="p-8 relative">
+        <slot />
+      </main>
+    </div>
   </div>
 </template>
 

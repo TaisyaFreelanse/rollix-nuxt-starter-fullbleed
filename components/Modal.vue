@@ -34,7 +34,7 @@ const close = () => {
 
 <template>
   <TransitionRoot appear :show="open" as="template">
-    <Dialog as="div" class="relative z-[100]" :initial-focus="closeButtonRef" @close="closeOnOverlay ? close() : undefined">
+    <Dialog as="div" class="relative z-[9999]" :initial-focus="closeButtonRef" @close="closeOnOverlay ? close() : undefined">
       <TransitionChild
         as="template"
         enter="duration-300 ease-out"

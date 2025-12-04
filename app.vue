@@ -1,29 +1,41 @@
 
 <script setup lang="ts">
+const route = useRoute()
 const mobileOpen = useState('mobileOpen', () => false)
 const cartOpen = useState('cartOpen', () => false)
+
+// Проверяем, используется ли админ-лейаут
+const isAdminPage = computed(() => route.path.startsWith('/admin'))
 </script>
 
 <template>
   <div class="min-h-dvh flex flex-col bg-bg overflow-x-hidden max-w-full">
-    <HeaderBar />
-    <MobileSidebar v-model="mobileOpen" />
-    <CartSidebar v-model="cartOpen" />
+    <!-- Основной контент сайта - скрыт на админ-страницах -->
+    <template v-if="!isAdminPage">
+      <HeaderBar />
+      <MobileSidebar v-model="mobileOpen" />
+      <CartSidebar v-model="cartOpen" />
 
-    <!-- Full-width site grid -->
-    <div class="flex-1 w-full pb-20 lg:pb-0">
-      <div class="grid lg:grid-cols-[16rem_1fr]">
-        <SidebarMenu class="hidden lg:block" />
-        <div class="min-w-0">
-          <NuxtPage />
+      <!-- Full-width site grid -->
+      <div class="flex-1 w-full pb-20 lg:pb-0">
+        <div class="grid lg:grid-cols-[16rem_1fr]">
+          <SidebarMenu class="hidden lg:block" />
+          <div class="min-w-0">
+            <NuxtPage />
+          </div>
         </div>
       </div>
-    </div>
 
-    <FooterBar />
-    <BottomNavigation />
-    <FloatingCartButton />
-    <CookieBar />
+      <FooterBar />
+      <BottomNavigation />
+      <FloatingCartButton />
+      <CookieBar />
+    </template>
+    
+    <!-- Админ-страницы рендерятся через свой layout -->
+    <NuxtPage v-else />
+
+    <!-- ToastContainer показываем всегда -->
     <ToastContainer />
   </div>
 </template>
