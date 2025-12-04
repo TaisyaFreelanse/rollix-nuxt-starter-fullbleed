@@ -25,12 +25,31 @@ export async function createSmsCodesTable(): Promise<void> {
 
     if (!checkResult.rows[0]?.exists) {
       console.log('🔄 Creating sms_codes table...')
-      const sql = readFileSync(
-        join(process.cwd(), 'prisma/migrations/add_sms_codes.sql'),
-        'utf-8'
-      )
-      await pool.query(sql)
+      
+      // Выполняем SQL напрямую, разбивая на отдельные запросы
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS "sms_codes" (
+          "id" TEXT NOT NULL,
+          "phone" TEXT NOT NULL,
+          "code" TEXT NOT NULL,
+          "expiresAt" TIMESTAMP(3) NOT NULL,
+          "verified" BOOLEAN NOT NULL DEFAULT false,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT "sms_codes_pkey" PRIMARY KEY ("id")
+        );
+      `)
+      
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS "sms_codes_phone_code_idx" ON "sms_codes"("phone", "code");
+      `)
+      
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS "sms_codes_expiresAt_idx" ON "sms_codes"("expiresAt");
+      `)
+      
       console.log('✅ SMS codes table created')
+    } else {
+      console.log('ℹ️  SMS codes table already exists')
     }
   } catch (error: any) {
     // Если таблица уже существует - это нормально
