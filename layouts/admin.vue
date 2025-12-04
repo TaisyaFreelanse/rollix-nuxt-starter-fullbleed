@@ -1,7 +1,8 @@
 <script setup lang="ts">
 const router = useRouter()
 const adminAuth = useAdminAuth()
-const showLoginModal = ref(false)
+// По умолчанию показываем модальное окно сразу
+const showLoginModal = ref(true)
 
 const goToMain = () => {
   router.push('/')
@@ -12,28 +13,31 @@ const handleLogout = async () => {
   showLoginModal.value = true
 }
 
-// Следим за изменением авторизации и сразу показываем модальное окно, если не авторизован
-watch(() => adminAuth.isAuthenticated.value, (isAuth) => {
-  if (!isAuth) {
-    showLoginModal.value = true
-  } else {
-    showLoginModal.value = false
-  }
-}, { immediate: true })
-
-// Проверяем авторизацию при загрузке
+// Проверяем авторизацию при загрузке - синхронно
 onMounted(() => {
   if (process.client) {
-    // Если нет токена, сразу показываем модальное окно (уже показано через watch)
-    if (!adminAuth.token.value) {
+    // Проверяем наличие токена синхронно
+    const token = localStorage.getItem('admin_token')
+    
+    if (!token) {
+      // Нет токена - показываем модальное окно (уже true по умолчанию)
       showLoginModal.value = true
-    } else {
-      // Если есть токен, проверяем его валидность асинхронно
-      adminAuth.checkAuth().catch(() => {
-        showLoginModal.value = true
-      })
+      return
     }
+    
+    // Есть токен - проверяем его валидность асинхронно
+    // Но пока оставляем модальное окно видимым, скроем только после успешной проверки
+    adminAuth.checkAuth().then((isAuth) => {
+      showLoginModal.value = !isAuth
+    }).catch(() => {
+      showLoginModal.value = true
+    })
   }
+})
+
+// Следим за изменением авторизации
+watch(() => adminAuth.isAuthenticated.value, (isAuth) => {
+  showLoginModal.value = !isAuth
 })
 
 const handleLoginSuccess = () => {
@@ -51,9 +55,9 @@ const handleModalClose = () => {
 
 <template>
   <div class="min-h-screen bg-gray-900">
-    <!-- Модальное окно входа -->
+    <!-- Модальное окно входа - показывается всегда, если пользователь не авторизован -->
     <AdminLoginModal
-      :open="showLoginModal && !adminAuth.isAuthenticated.value"
+      :open="showLoginModal"
       @close="handleModalClose"
       @success="handleLoginSuccess" />
 
