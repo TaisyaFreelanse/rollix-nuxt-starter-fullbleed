@@ -124,7 +124,7 @@ const closeProductModal = () => {
     <div
       v-else-if="products.length > 0"
       :class="[
-        'grid gap-4',
+        'grid gap-4 auto-rows-fr',
         viewMode === 'grid'
           ? 'sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6'
           : 'grid-cols-1'
@@ -133,7 +133,7 @@ const closeProductModal = () => {
         v-for="(product, index) in products.filter(p => p && p.id && p.name)"
         :key="product.id"
         :product="product"
-        :class="`stagger-item`"
+        :class="`stagger-item h-full`"
         :style="{ animationDelay: `${Math.min(index * 50, 500)}ms` }"
         @click="openProductModal(product)" />
     </div>

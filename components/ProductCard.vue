@@ -102,14 +102,15 @@ const handleClick = () => {
 <template>
   <article
     v-if="isValidProduct"
-    class="card card-hover group cursor-pointer"
+    class="card card-hover group cursor-pointer h-full flex flex-col"
     @click="handleClick">
-    <div class="relative overflow-hidden rounded-t-lg">
+    <!-- Изображение - фиксированная высота -->
+    <div class="relative overflow-hidden rounded-t-lg flex-shrink-0">
       <img
         :src="imageUrl"
         :alt="product?.name || ''"
         loading="lazy"
-        class="w-full h-40 sm:h-48 md:h-56 object-cover opacity-95 transition-transform duration-300 group-hover:scale-110" />
+        class="w-full h-44 sm:h-48 object-cover opacity-95 transition-transform duration-300 group-hover:scale-110" />
       <!-- Бейдж акции -->
       <div
         v-if="hasDiscount"
@@ -142,16 +143,18 @@ const handleClick = () => {
         {{ isFavorite ? '♥️' : '🤍' }}
       </button>
     </div>
-    <div class="p-4">
-      <h3 class="text-white font-medium group-hover:text-accent transition-colors">
+    <!-- Контент карточки - растягивается для выравнивания -->
+    <div class="p-4 flex flex-col flex-grow">
+      <!-- Название - фиксированная высота с обрезкой -->
+      <h3 class="text-white font-medium group-hover:text-accent transition-colors line-clamp-2 h-12">
         {{ product?.name || '' }}
       </h3>
-      <p
-        v-if="product?.description"
-        class="text-sm text-gray-400 line-clamp-2 mt-1 group-hover:text-gray-300 transition-colors">
-        {{ product.description }}
+      <!-- Описание - фиксированная высота с обрезкой -->
+      <p class="text-sm text-gray-400 line-clamp-2 mt-1 group-hover:text-gray-300 transition-colors h-10">
+        {{ product?.description || '' }}
       </p>
-      <div class="flex items-center justify-between mt-4">
+      <!-- Цена и вес - всегда внизу -->
+      <div class="flex items-center justify-between mt-auto pt-3">
         <div class="flex items-center gap-2">
           <div class="text-white font-semibold text-lg">{{ product?.price || 0 }} ₽</div>
           <div

@@ -66,7 +66,7 @@ const handleAuthCancel = () => {
     ]">
     <div class="w-full px-3 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
       <div class="flex items-center gap-2">
-        <button class="md:hidden p-1.5 rounded-lg bg-white/5 hover:bg-white/10" @click="mobileOpen=true">☰</button>
+        <!-- Логотип на месте кнопки меню в мобильной версии -->
         <NuxtLink to="/" class="flex items-center gap-2">
           <img src="/logo.svg" class="h-10 sm:h-12 md:h-14 lg:h-16 w-auto" alt="Уасаби" />
         </NuxtLink>

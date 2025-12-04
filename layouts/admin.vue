@@ -22,25 +22,15 @@ onMounted(async () => {
     showLoginModal.value = true
     isCheckingAuth.value = true
     
-    // Синхронно проверяем наличие токена в localStorage
-    const token = localStorage.getItem('admin_token')
-    
-    if (!token) {
-      // Нет токена - модальное окно остается открытым
-      isCheckingAuth.value = false
-      return
-    }
-    
-    // Есть токен - проверяем его валидность асинхронно
+    // Проверяем авторизацию (checkAuth сам проверит localStorage)
     try {
       const isAuth = await adminAuth.checkAuth()
       if (isAuth) {
         // Авторизация подтверждена - скрываем модальное окно
         showLoginModal.value = false
       } else {
-        // Токен невалиден - показываем модальное окно
+        // Токен невалиден или отсутствует - показываем модальное окно
         showLoginModal.value = true
-        adminAuth.clearAuth() // Очищаем невалидный токен
       }
     } catch (error) {
       // Ошибка проверки - показываем модальное окно

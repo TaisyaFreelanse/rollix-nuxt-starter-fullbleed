@@ -1,27 +1,12 @@
 export const useAdminAuth = () => {
-  const token = useState<string | null>('admin:token', () => {
-    // Инициализация из localStorage только на клиенте
-    if (process.client) {
-      return localStorage.getItem('admin_token')
-    }
-    return null
-  })
+  // НЕ инициализируем токен из localStorage при создании состояния!
+  // Это будет сделано только после проверки валидности
+  const token = useState<string | null>('admin:token', () => null)
   
-  const admin = useState<any | null>('admin:user', () => {
-    // Инициализация из localStorage только на клиенте
-    if (process.client) {
-      const savedAdmin = localStorage.getItem('admin_user')
-      if (savedAdmin) {
-        try {
-          return JSON.parse(savedAdmin)
-        } catch (e) {
-          console.error('Ошибка парсинга админа из localStorage', e)
-          return null
-        }
-      }
-    }
-    return null
-  })
+  const admin = useState<any | null>('admin:user', () => null)
+  
+  // Флаг, показывающий, была ли проверка авторизации
+  const isAuthChecked = useState<boolean>('admin:authChecked', () => false)
   
   const isInitialized = useState<boolean>('admin:initialized', () => false)
 
@@ -103,7 +88,25 @@ export const useAdminAuth = () => {
 
   // Проверка авторизации
   const checkAuth = async () => {
+    // Проверяем наличие токена в localStorage
+    if (process.client) {
+      const savedToken = localStorage.getItem('admin_token')
+      if (savedToken && !token.value) {
+        // Восстанавливаем токен для проверки
+        token.value = savedToken
+        const savedAdmin = localStorage.getItem('admin_user')
+        if (savedAdmin) {
+          try {
+            admin.value = JSON.parse(savedAdmin)
+          } catch (e) {
+            console.error('Ошибка парсинга админа', e)
+          }
+        }
+      }
+    }
+    
     if (!token.value) {
+      isAuthChecked.value = true
       return false
     }
 
@@ -111,11 +114,15 @@ export const useAdminAuth = () => {
       const response = await $fetchWithAuth('/api/admin/auth/check')
       if (response.success && response.admin) {
         setAuth(token.value, response.admin)
+        isAuthChecked.value = true
         return true
       }
+      clearAuth()
+      isAuthChecked.value = true
       return false
     } catch (error) {
       clearAuth()
+      isAuthChecked.value = true
       return false
     }
   }
@@ -135,6 +142,7 @@ export const useAdminAuth = () => {
     token: readonly(token),
     admin: readonly(admin),
     isAuthenticated,
+    isAuthChecked: readonly(isAuthChecked),
     isInitialized: readonly(isInitialized),
     setAuth,
     clearAuth,

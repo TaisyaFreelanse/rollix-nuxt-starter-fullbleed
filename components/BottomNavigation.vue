@@ -21,7 +21,8 @@ const navItems = [
     name: 'Меню',
     path: '/catalog',
     icon: '📋',
-    hasBadge: false
+    hasBadge: false,
+    isMenu: true // Флаг для открытия вертикального меню
   },
   {
     name: 'Акции',
@@ -55,8 +56,15 @@ const handleAuthCancel = () => {
 }
 
 const cartOpen = useState('cartOpen', () => false)
+const mobileOpen = useState('mobileOpen', () => false)
 
 const handleNavClick = (item: typeof navItems[0]) => {
+  // Для "Меню" открываем вертикальное меню (MobileSidebar)
+  if (item.name === 'Меню') {
+    mobileOpen.value = true
+    return
+  }
+  
   // Для "Заказы" проверяем авторизацию
   if (item.requiresAuth) {
     const isAuth = auth.isAuthenticated.value
@@ -90,7 +98,7 @@ const handleNavClick = (item: typeof navItems[0]) => {
         :key="`nav-${index}-${item.name}`"
         :class="[
           'flex flex-col items-center justify-center gap-1 flex-1 h-full relative transition-colors',
-          isActive(item.path)
+          (isActive(item.path) || (item.isMenu && mobileOpen))
             ? 'text-accent'
             : 'text-gray-400 hover:text-gray-300'
         ]"
@@ -109,13 +117,13 @@ const handleNavClick = (item: typeof navItems[0]) => {
         <span
           :class="[
             'text-[10px] font-medium transition-colors',
-            isActive(item.path) ? 'text-accent' : 'text-gray-400'
+            (isActive(item.path) || (item.isMenu && mobileOpen)) ? 'text-accent' : 'text-gray-400'
           ]">
           {{ item.name }}
         </span>
         <!-- Индикатор активной страницы -->
         <div
-          v-if="isActive(item.path)"
+          v-if="isActive(item.path) || (item.isMenu && mobileOpen)"
           class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-accent rounded-t-full" />
       </button>
     </div>
