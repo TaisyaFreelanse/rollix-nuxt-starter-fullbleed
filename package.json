@@ -17,6 +17,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "db:dev": "prisma dev",
+    "admin:create": "tsx scripts/create-admin.ts",
     "render:build": "npm install --production=false && npx prisma generate --schema=prisma/schema.prisma && npm run build",
     "render:setup": "npx tsx scripts/setup-db.ts"
   },

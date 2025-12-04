@@ -1,6 +1,7 @@
 <script setup lang="ts">
 definePageMeta({
-  layout: 'admin'
+  layout: 'admin',
+  middleware: 'admin-auth'
 })
 
 const route = useRoute()
@@ -16,9 +17,11 @@ const tabs = [
   { id: 'categories', label: 'Категории', icon: '📁' },
   { id: 'orders', label: 'Заказы', icon: '📋' },
   { id: 'promocodes', label: 'Промокоды', icon: '🎟️' },
-  { id: 'bonuses', label: 'Бонусная программа', icon: '🎁' },
+  { id: 'promotions', label: 'Акции', icon: '🎁' },
+  { id: 'bonuses', label: 'Бонусная программа', icon: '💎' },
   { id: 'banners', label: 'Баннеры', icon: '🖼️' },
   { id: 'delivery-zones', label: 'Зоны доставки', icon: '🚚' },
+  { id: 'admins', label: 'Админы', icon: '👥' },
   { id: 'settings', label: 'Настройки', icon: '⚙️' }
 ]
 
@@ -274,6 +277,172 @@ const deletePromocode = async (id: string) => {
   }
 }
 
+// ========== АКЦИИ ==========
+const promotions = ref<any[]>([])
+const promotionsLoading = ref(false)
+const showPromotionForm = ref(false)
+const editingPromotion = ref<any | null>(null)
+const promotionFormData = ref({
+  title: '',
+  description: '',
+  image: '',
+  date: '',
+  isActive: true,
+  sortOrder: 0
+})
+
+// Виджет промокода
+const promocodeWidget = ref<any | null>(null)
+const promocodeWidgetLoading = ref(false)
+const showPromocodeWidgetForm = ref(false)
+const promocodeWidgetFormData = ref({
+  code: '',
+  description: '',
+  isActive: true
+})
+
+const loadPromotions = async () => {
+  promotionsLoading.value = true
+  try {
+    promotions.value = await adminAuth.$fetchWithAuth('/api/admin/promotions')
+  } catch (error: any) {
+    console.error('Ошибка загрузки акций:', error)
+    if (error.statusCode === 401) {
+      alert('Сессия истекла. Пожалуйста, войдите заново.')
+    }
+  } finally {
+    promotionsLoading.value = false
+  }
+}
+
+const loadPromocodeWidget = async () => {
+  promocodeWidgetLoading.value = true
+  try {
+    promocodeWidget.value = await adminAuth.$fetchWithAuth('/api/admin/promocode-widget')
+    if (promocodeWidget.value) {
+      promocodeWidgetFormData.value = {
+        code: promocodeWidget.value.code || '',
+        description: promocodeWidget.value.description || '',
+        isActive: promocodeWidget.value.isActive !== undefined ? promocodeWidget.value.isActive : true
+      }
+    }
+  } catch (error: any) {
+    console.error('Ошибка загрузки виджета промокода:', error)
+  } finally {
+    promocodeWidgetLoading.value = false
+  }
+}
+
+const openPromotionForm = (promotion: any = null) => {
+  editingPromotion.value = promotion
+  if (promotion) {
+    promotionFormData.value = {
+      title: promotion.title || '',
+      description: promotion.description || '',
+      image: promotion.image || '',
+      date: promotion.date ? new Date(promotion.date).toISOString().split('T')[0] : '',
+      isActive: promotion.isActive !== undefined ? promotion.isActive : true,
+      sortOrder: promotion.sortOrder || 0
+    }
+  } else {
+    promotionFormData.value = {
+      title: '',
+      description: '',
+      image: '',
+      date: '',
+      isActive: true,
+      sortOrder: promotions.value.length
+    }
+  }
+  showPromotionForm.value = true
+}
+
+const closePromotionForm = () => {
+  showPromotionForm.value = false
+  editingPromotion.value = null
+  promotionFormData.value = {
+    title: '',
+    description: '',
+    image: '',
+    date: '',
+    isActive: true,
+    sortOrder: 0
+  }
+}
+
+const savePromotion = async () => {
+  if (!promotionFormData.value.title) {
+    alert('Введите название акции')
+    return
+  }
+
+  try {
+    if (editingPromotion.value) {
+      await adminAuth.$fetchWithAuth(`/api/admin/promotions/${editingPromotion.value.id}`, {
+        method: 'PUT',
+        body: promotionFormData.value
+      })
+    } else {
+      await adminAuth.$fetchWithAuth('/api/admin/promotions', {
+        method: 'POST',
+        body: promotionFormData.value
+      })
+    }
+    await loadPromotions()
+    closePromotionForm()
+  } catch (error: any) {
+    alert(error.data?.message || 'Ошибка сохранения акции')
+  }
+}
+
+const deletePromotion = async (id: string) => {
+  if (!confirm('Вы уверены, что хотите удалить эту акцию?')) return
+  try {
+    await adminAuth.$fetchWithAuth(`/api/admin/promotions/${id}`, {
+      method: 'DELETE'
+    })
+    await loadPromotions()
+  } catch (error: any) {
+    alert(error.data?.message || 'Ошибка удаления акции')
+  }
+}
+
+const openPromocodeWidgetForm = () => {
+  showPromocodeWidgetForm.value = true
+}
+
+const closePromocodeWidgetForm = () => {
+  showPromocodeWidgetForm.value = false
+}
+
+const savePromocodeWidget = async () => {
+  if (!promocodeWidgetFormData.value.code || !promocodeWidgetFormData.value.description) {
+    alert('Введите код и описание промокода')
+    return
+  }
+
+  try {
+    await adminAuth.$fetchWithAuth('/api/admin/promocode-widget', {
+      method: 'PUT',
+      body: promocodeWidgetFormData.value
+    })
+    await loadPromocodeWidget()
+    closePromocodeWidgetForm()
+  } catch (error: any) {
+    alert(error.data?.message || 'Ошибка сохранения виджета промокода')
+  }
+}
+
+const formatPromotionDate = (dateString: string) => {
+  if (!dateString) return '-'
+  const date = new Date(dateString)
+  return date.toLocaleString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  })
+}
+
 // ========== БАННЕРЫ ==========
 const banners = ref([
   {
@@ -398,6 +567,119 @@ const loadCurrentOrders = async () => {
   }
 }
 
+// ========== АДМИНЫ ==========
+const adminAuth = useAdminAuth()
+const admins = ref<any[]>([])
+const adminsLoading = ref(false)
+const showAdminForm = ref(false)
+const editingAdmin = ref<any | null>(null)
+const adminFormData = ref({
+  login: '',
+  password: '',
+  name: '',
+  isActive: true
+})
+
+const loadAdmins = async () => {
+  adminsLoading.value = true
+  try {
+    admins.value = await adminAuth.$fetchWithAuth('/api/admin/admins')
+  } catch (error: any) {
+    console.error('Ошибка загрузки администраторов:', error)
+    if (error.statusCode === 401) {
+      alert('Сессия истекла. Пожалуйста, войдите заново.')
+    }
+  } finally {
+    adminsLoading.value = false
+  }
+}
+
+const openAdminForm = (admin: any = null) => {
+  editingAdmin.value = admin
+  if (admin) {
+    adminFormData.value = {
+      login: admin.login,
+      password: '',
+      name: admin.name || '',
+      isActive: admin.isActive
+    }
+  } else {
+    adminFormData.value = {
+      login: '',
+      password: '',
+      name: '',
+      isActive: true
+    }
+  }
+  showAdminForm.value = true
+}
+
+const closeAdminForm = () => {
+  showAdminForm.value = false
+  editingAdmin.value = null
+  adminFormData.value = {
+    login: '',
+    password: '',
+    name: '',
+    isActive: true
+  }
+}
+
+const saveAdmin = async () => {
+  if (!adminFormData.value.login) {
+    alert('Введите логин')
+    return
+  }
+
+  if (!editingAdmin.value && !adminFormData.value.password) {
+    alert('Введите пароль')
+    return
+  }
+
+  try {
+    if (editingAdmin.value) {
+      // Обновляем существующего админа
+      await adminAuth.$fetchWithAuth(`/api/admin/admins/${editingAdmin.value.id}`, {
+        method: 'PUT',
+        body: adminFormData.value
+      })
+    } else {
+      // Создаем нового админа
+      await adminAuth.$fetchWithAuth('/api/admin/admins', {
+        method: 'POST',
+        body: adminFormData.value
+      })
+    }
+    await loadAdmins()
+    closeAdminForm()
+  } catch (error: any) {
+    alert(error.data?.message || 'Ошибка сохранения администратора')
+  }
+}
+
+const deleteAdmin = async (id: string) => {
+  if (!confirm('Вы уверены, что хотите удалить этого администратора?')) return
+  try {
+    await adminAuth.$fetchWithAuth(`/api/admin/admins/${id}`, {
+      method: 'DELETE'
+    })
+    await loadAdmins()
+  } catch (error: any) {
+    alert(error.data?.message || 'Ошибка удаления администратора')
+  }
+}
+
+const formatDateAdmin = (dateString: string) => {
+  const date = new Date(dateString)
+  return date.toLocaleString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
 // Загрузка данных при переключении вкладок
 watch(activeTab, async (newTab) => {
   if (newTab === 'dashboard') {
@@ -411,6 +693,9 @@ watch(activeTab, async (newTab) => {
     await loadOrders()
   } else if (newTab === 'promocodes') {
     await loadPromocodes()
+  } else if (newTab === 'promotions') {
+    await loadPromotions()
+    await loadPromocodeWidget()
   } else if (newTab === 'delivery-zones') {
     await loadZones()
   } else if (newTab === 'bonuses') {
@@ -418,6 +703,8 @@ watch(activeTab, async (newTab) => {
   } else if (newTab === 'settings') {
     await loadSettings()
     await loadCurrentOrders()
+  } else if (newTab === 'admins') {
+    await loadAdmins()
   }
 }, { immediate: true })
 </script>
@@ -851,6 +1138,273 @@ watch(activeTab, async (newTab) => {
         </div>
       </div>
 
+      <!-- АКЦИИ -->
+      <div v-else-if="activeTab === 'promotions'">
+        <h1 class="text-3xl font-bold text-white mb-6">Акции и объявления</h1>
+
+        <!-- Виджет промокода -->
+        <div class="bg-gray-800 rounded-lg p-6 border border-gray-700 mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold text-white">Виджет промокода</h2>
+            <button
+              @click="openPromocodeWidgetForm()"
+              class="bg-accent hover:bg-accent-700 text-white px-4 py-2 rounded-lg transition-colors text-sm">
+              ✏️ Редактировать
+            </button>
+          </div>
+          
+          <div v-if="promocodeWidgetLoading" class="text-gray-400 text-sm">
+            Загрузка...
+          </div>
+          <div v-else-if="promocodeWidget" class="bg-accent/10 border border-accent/30 rounded-lg p-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-sm text-gray-400 mb-1">Промокод</div>
+                <div class="text-white font-semibold">{{ promocodeWidget.description }}</div>
+              </div>
+              <div class="bg-accent text-white font-bold text-xl px-6 py-3 rounded-lg">
+                {{ promocodeWidget.code }}
+              </div>
+            </div>
+            <div class="mt-3">
+              <span
+                :class="[
+                  'px-2 py-1 rounded text-xs font-medium',
+                  promocodeWidget.isActive
+                    ? 'bg-green-500/20 text-green-400'
+                    : 'bg-red-500/20 text-red-400'
+                ]">
+                {{ promocodeWidget.isActive ? 'Активен' : 'Неактивен' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Акции/Объявления -->
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-2xl font-semibold text-white">Акции</h2>
+          <button
+            @click="openPromotionForm()"
+            class="bg-accent hover:bg-accent-700 text-white px-6 py-3 rounded-lg transition-colors">
+            ➕ Добавить акцию
+          </button>
+        </div>
+
+        <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+          <div v-if="promotionsLoading" class="p-8 text-center text-gray-400">
+            Загрузка...
+          </div>
+          <div v-else-if="promotions.length === 0" class="p-8 text-center text-gray-400">
+            Акции не найдены
+          </div>
+          <table v-else class="w-full">
+            <thead class="bg-gray-700">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">Изображение</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">Название</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">Дата</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">Порядок</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">Статус</th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase">Действия</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-700">
+              <tr v-for="promo in promotions" :key="promo.id" class="hover:bg-gray-700">
+                <td class="px-6 py-4">
+                  <img
+                    v-if="promo.image"
+                    :src="promo.image"
+                    :alt="promo.title"
+                    class="w-16 h-16 object-cover rounded" />
+                  <div v-else class="w-16 h-16 bg-gray-700 rounded flex items-center justify-center text-gray-500 text-xs">
+                    Нет фото
+                  </div>
+                </td>
+                <td class="px-6 py-4">
+                  <div class="font-medium text-white">{{ promo.title }}</div>
+                  <div v-if="promo.description" class="text-sm text-gray-400 line-clamp-1 mt-1">
+                    {{ promo.description }}
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-gray-300 text-sm">
+                  {{ formatPromotionDate(promo.date) }}
+                </td>
+                <td class="px-6 py-4 text-gray-300">
+                  {{ promo.sortOrder }}
+                </td>
+                <td class="px-6 py-4">
+                  <span
+                    :class="[
+                      'px-2 py-1 rounded text-xs font-medium',
+                      promo.isActive
+                        ? 'bg-green-500/20 text-green-400'
+                        : 'bg-red-500/20 text-red-400'
+                    ]">
+                    {{ promo.isActive ? 'Активна' : 'Неактивна' }}
+                  </span>
+                </td>
+                <td class="px-6 py-4 text-right">
+                  <div class="flex items-center justify-end gap-2">
+                    <button
+                      @click="openPromotionForm(promo)"
+                      class="text-accent hover:text-accent-700 transition-colors">
+                      ✏️
+                    </button>
+                    <button
+                      @click="deletePromotion(promo.id)"
+                      class="text-red-400 hover:text-red-500 transition-colors">
+                      🗑️
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Модальное окно создания/редактирования акции -->
+        <Modal :open="showPromotionForm" :title="editingPromotion ? 'Редактировать акцию' : 'Добавить акцию'" @close="closePromotionForm" size="lg">
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                Название *
+              </label>
+              <input
+                v-model="promotionFormData.title"
+                type="text"
+                class="w-full bg-gray-700 text-white px-4 py-2 rounded-lg border border-gray-600 focus:border-accent focus:outline-none"
+                placeholder="Введите название акции" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                Описание
+              </label>
+              <textarea
+                v-model="promotionFormData.description"
+                rows="3"
+                class="w-full bg-gray-700 text-white px-4 py-2 rounded-lg border border-gray-600 focus:border-accent focus:outline-none"
+                placeholder="Введите описание акции"></textarea>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                URL изображения
+              </label>
+              <input
+                v-model="promotionFormData.image"
+                type="text"
+                class="w-full bg-gray-700 text-white px-4 py-2 rounded-lg border border-gray-600 focus:border-accent focus:outline-none"
+                placeholder="Введите URL изображения" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                Дата
+              </label>
+              <input
+                v-model="promotionFormData.date"
+                type="date"
+                class="w-full bg-gray-700 text-white px-4 py-2 rounded-lg border border-gray-600 focus:border-accent focus:outline-none" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                  Порядок сортировки
+                </label>
+                <input
+                  v-model.number="promotionFormData.sortOrder"
+                  type="number"
+                  min="0"
+                  class="w-full bg-gray-700 text-white px-4 py-2 rounded-lg border border-gray-600 focus:border-accent focus:outline-none" />
+              </div>
+
+              <div class="flex items-center gap-3 pt-8">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    v-model="promotionFormData.isActive"
+                    type="checkbox"
+                    class="w-5 h-5 text-accent bg-gray-700 border-gray-600 rounded focus:ring-accent" />
+                  <span class="text-gray-300">Активна</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <template #footer>
+            <div class="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                @click="closePromotionForm"
+                class="px-4 py-2 text-gray-400 hover:text-white transition-colors">
+                Отмена
+              </button>
+              <button
+                type="button"
+                @click="savePromotion"
+                class="px-6 py-2 bg-accent hover:bg-accent-700 text-white rounded-lg transition-colors">
+                Сохранить
+              </button>
+            </div>
+          </template>
+        </Modal>
+
+        <!-- Модальное окно редактирования виджета промокода -->
+        <Modal :open="showPromocodeWidgetForm" title="Редактировать виджет промокода" @close="closePromocodeWidgetForm" size="md">
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                Код промокода *
+              </label>
+              <input
+                v-model="promocodeWidgetFormData.code"
+                type="text"
+                class="w-full bg-gray-700 text-white px-4 py-2 rounded-lg border border-gray-600 focus:border-accent focus:outline-none"
+                placeholder="Введите код промокода" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                Описание *
+              </label>
+              <input
+                v-model="promocodeWidgetFormData.description"
+                type="text"
+                class="w-full bg-gray-700 text-white px-4 py-2 rounded-lg border border-gray-600 focus:border-accent focus:outline-none"
+                placeholder="Введите описание" />
+            </div>
+
+            <div class="flex items-center gap-3">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input
+                  v-model="promocodeWidgetFormData.isActive"
+                  type="checkbox"
+                  class="w-5 h-5 text-accent bg-gray-700 border-gray-600 rounded focus:ring-accent" />
+                <span class="text-gray-300">Активен</span>
+              </label>
+            </div>
+          </div>
+
+          <template #footer>
+            <div class="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                @click="closePromocodeWidgetForm"
+                class="px-4 py-2 text-gray-400 hover:text-white transition-colors">
+                Отмена
+              </button>
+              <button
+                type="button"
+                @click="savePromocodeWidget"
+                class="px-6 py-2 bg-accent hover:bg-accent-700 text-white rounded-lg transition-colors">
+                Сохранить
+              </button>
+            </div>
+          </template>
+        </Modal>
+      </div>
+
       <!-- БОНУСНАЯ ПРОГРАММА -->
       <div v-else-if="activeTab === 'bonuses'">
         <h1 class="text-3xl font-bold text-white mb-6">Бонусная программа</h1>
@@ -1157,6 +1711,146 @@ watch(activeTab, async (newTab) => {
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- АДМИНЫ -->
+      <div v-else-if="activeTab === 'admins'">
+        <div class="flex items-center justify-between mb-6">
+          <h1 class="text-3xl font-bold text-white">Администраторы</h1>
+          <button
+            @click="openAdminForm()"
+            class="bg-accent hover:bg-accent-700 text-white px-6 py-3 rounded-lg transition-colors">
+            ➕ Добавить администратора
+          </button>
+        </div>
+
+        <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+          <div v-if="adminsLoading" class="p-8 text-center text-gray-400">
+            Загрузка...
+          </div>
+          <div v-else-if="admins.length === 0" class="p-8 text-center text-gray-400">
+            Администраторы не найдены
+          </div>
+          <table v-else class="w-full">
+            <thead class="bg-gray-700">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">Логин</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">Имя</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">Статус</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">Создан</th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase">Действия</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-700">
+              <tr v-for="admin in admins" :key="admin.id" class="hover:bg-gray-700">
+                <td class="px-6 py-4">
+                  <div class="font-medium text-white">{{ admin.login }}</div>
+                </td>
+                <td class="px-6 py-4 text-gray-300">
+                  {{ admin.name || '-' }}
+                </td>
+                <td class="px-6 py-4">
+                  <span
+                    :class="[
+                      'px-2 py-1 rounded text-xs font-medium',
+                      admin.isActive
+                        ? 'bg-green-500/20 text-green-400'
+                        : 'bg-red-500/20 text-red-400'
+                    ]">
+                    {{ admin.isActive ? 'Активен' : 'Заблокирован' }}
+                  </span>
+                </td>
+                <td class="px-6 py-4 text-gray-300 text-sm">
+                  {{ formatDateAdmin(admin.createdAt) }}
+                </td>
+                <td class="px-6 py-4 text-right">
+                  <div class="flex items-center justify-end gap-2">
+                    <button
+                      @click="openAdminForm(admin)"
+                      class="text-accent hover:text-accent-700 transition-colors">
+                      ✏️
+                    </button>
+                    <button
+                      @click="deleteAdmin(admin.id)"
+                      :disabled="admin.id === adminAuth.admin.value?.id"
+                      class="text-red-400 hover:text-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      :title="admin.id === adminAuth.admin.value?.id ? 'Нельзя удалить собственный аккаунт' : 'Удалить'">
+                      🗑️
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Модальное окно создания/редактирования админа -->
+        <Modal :open="showAdminForm" :title="editingAdmin ? 'Редактировать администратора' : 'Добавить администратора'" @close="closeAdminForm" size="md">
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                Логин *
+              </label>
+              <input
+                v-model="adminFormData.login"
+                type="text"
+                :disabled="!!editingAdmin"
+                class="w-full bg-gray-700 text-white px-4 py-2 rounded-lg border border-gray-600 focus:border-accent focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                placeholder="Введите логин" />
+              <p v-if="editingAdmin" class="text-xs text-gray-400 mt-1">Логин нельзя изменить</p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                Пароль {{ editingAdmin ? '' : '*' }}
+              </label>
+              <input
+                v-model="adminFormData.password"
+                type="password"
+                class="w-full bg-gray-700 text-white px-4 py-2 rounded-lg border border-gray-600 focus:border-accent focus:outline-none"
+                :placeholder="editingAdmin ? 'Оставьте пустым, чтобы не менять пароль' : 'Введите пароль'" />
+              <p v-if="editingAdmin" class="text-xs text-gray-400 mt-1">Оставьте пустым, чтобы не менять пароль</p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                Имя
+              </label>
+              <input
+                v-model="adminFormData.name"
+                type="text"
+                class="w-full bg-gray-700 text-white px-4 py-2 rounded-lg border border-gray-600 focus:border-accent focus:outline-none"
+                placeholder="Введите имя (необязательно)" />
+            </div>
+
+            <div class="flex items-center gap-3">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input
+                  v-model="adminFormData.isActive"
+                  type="checkbox"
+                  class="w-5 h-5 text-accent bg-gray-700 border-gray-600 rounded focus:ring-accent" />
+                <span class="text-gray-300">Активен</span>
+              </label>
+            </div>
+          </div>
+
+          <template #footer>
+            <div class="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                @click="closeAdminForm"
+                class="px-4 py-2 text-gray-400 hover:text-white transition-colors">
+                Отмена
+              </button>
+              <button
+                type="button"
+                @click="saveAdmin"
+                class="px-6 py-2 bg-accent hover:bg-accent-700 text-white rounded-lg transition-colors">
+                Сохранить
+              </button>
+            </div>
+          </template>
+        </Modal>
       </div>
 
       <!-- НАСТРОЙКИ -->

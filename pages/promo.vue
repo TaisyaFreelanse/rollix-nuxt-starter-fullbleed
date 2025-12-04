@@ -1,25 +1,78 @@
 
+<script setup lang="ts">
+const promocodeWidget = ref<any | null>(null)
+const promotions = ref<any[]>([])
+const loading = ref(true)
+
+const loadPromocodeWidget = async () => {
+  try {
+    promocodeWidget.value = await $fetch('/api/promocode-widget')
+  } catch (error) {
+    console.error('Ошибка загрузки виджета промокода:', error)
+  }
+}
+
+const loadPromotions = async () => {
+  try {
+    promotions.value = await $fetch('/api/promotions')
+  } catch (error) {
+    console.error('Ошибка загрузки акций:', error)
+  }
+}
+
+const formatDate = (dateString: string | null) => {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  return date.toLocaleDateString('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  })
+}
+
+onMounted(async () => {
+  loading.value = true
+  await Promise.all([loadPromocodeWidget(), loadPromotions()])
+  loading.value = false
+})
+</script>
+
 <template>
   <main class="w-full px-4 lg:px-8">
     <h1 class="text-2xl font-semibold mt-6 mb-6">Новости и акции</h1>
     
     <!-- Промокод карточка -->
-    <div class="mb-8">
-      <PromocodeCard code="3101" description="Специальное предложение для новых клиентов" />
+    <div v-if="promocodeWidget && promocodeWidget.isActive" class="mb-8">
+      <PromocodeCard :code="promocodeWidget.code" :description="promocodeWidget.description" />
     </div>
     
-    <div class="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
-      <article v-for="i in 12" :key="i" class="card overflow-hidden">
-        <img src="/product.svg" alt="promo" class="w-full h-48 md:h-56 object-cover" />
+    <div v-if="loading" class="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+      <article v-for="i in 6" :key="i" class="card overflow-hidden">
+        <div class="w-full h-48 md:h-56 bg-gray-800 animate-pulse"></div>
         <div class="p-4">
-          <div class="text-xs text-gray-400">1 октября 2025</div>
-          <h3 class="text-white font-semibold mt-1">Согреваемся в Rollix!</h3>
-          <p class="text-sm text-gray-400 mt-1">Сезонные горячие напитки и специальные предложения.</p>
+          <div class="h-4 bg-gray-800 rounded animate-pulse mb-2"></div>
+          <div class="h-5 bg-gray-800 rounded animate-pulse mb-2"></div>
+          <div class="h-4 bg-gray-800 rounded animate-pulse w-3/4"></div>
         </div>
       </article>
     </div>
-    <div class="flex justify-center">
-      <button class="mt-8 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10">Загрузить еще</button>
+    
+    <div v-else-if="promotions.length === 0" class="text-center py-12 text-gray-400">
+      Акции пока не добавлены
+    </div>
+    
+    <div v-else class="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+      <article v-for="promo in promotions" :key="promo.id" class="card overflow-hidden">
+        <img
+          :src="promo.image || '/product.svg'"
+          :alt="promo.title"
+          class="w-full h-48 md:h-56 object-cover" />
+        <div class="p-4">
+          <div v-if="promo.date" class="text-xs text-gray-400">{{ formatDate(promo.date) }}</div>
+          <h3 class="text-white font-semibold mt-1">{{ promo.title }}</h3>
+          <p v-if="promo.description" class="text-sm text-gray-400 mt-1">{{ promo.description }}</p>
+        </div>
+      </article>
     </div>
   </main>
 </template>

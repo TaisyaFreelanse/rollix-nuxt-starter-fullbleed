@@ -295,3 +295,43 @@ model ProductFavorite {
   @@unique([userId, productId])
   @@map("product_favorites")
 }
+
+// Администраторы
+model Admin {
+  id        String   @id @default(cuid())
+  login     String   @unique
+  password  String   // Хэшированный пароль
+  name      String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("admins")
+}
+
+// Акции/Объявления
+model Promotion {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  image       String?   // URL изображения
+  date        DateTime? // Дата акции
+  isActive    Boolean   @default(true)
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("promotions")
+}
+
+// Виджет промокода (отображается на странице акций)
+model PromocodeWidget {
+  id          String    @id @default(cuid())
+  code        String
+  description String
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("promocode_widgets")
+}

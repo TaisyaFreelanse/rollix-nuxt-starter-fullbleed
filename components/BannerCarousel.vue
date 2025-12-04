@@ -135,8 +135,8 @@ const handleMouseLeave = () => {
       </svg>
     </button>
 
-    <!-- Индикаторы (точки) -->
-    <div class="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5">
+    <!-- Индикаторы (точки) - только для десктопа -->
+    <div class="hidden md:flex absolute bottom-3 left-1/2 -translate-x-1/2 z-10 items-center gap-1.5">
       <button
         v-for="(banner, index) in banners"
         :key="`indicator-${index}`"
