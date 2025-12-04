@@ -24,5 +24,9 @@ export default defineNuxtConfig({
   tailwindcss: {
     viewer: false
   },
-  compatibilityDate: '2024-12-01'
+  compatibilityDate: '2024-12-01',
+  runtimeConfig: {
+    // Private keys (only available on server-side)
+    smsRuApiKey: process.env.SMS_RU_API_KEY || '66CCA90D-74B8-6CCB-30C5-05A1D6661AE6'
+  }
 })

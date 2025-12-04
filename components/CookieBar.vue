@@ -23,13 +23,15 @@ const acceptCookies = () => {
   <Transition name="slide-up">
     <div
       v-if="isVisible"
-      class="fixed bottom-0 inset-x-0 z-50 bg-black/90 backdrop-blur border-t border-white/10 p-3 flex items-center justify-center gap-4 text-xs md:text-sm">
-      <span class="text-gray-300">Продолжая пользоваться сайтом, вы соглашаетесь с политикой и cookie.</span>
-      <button
-        class="px-4 py-2 rounded bg-accent hover:bg-accent-700 text-white font-medium transition cursor-pointer"
-        @click="acceptCookies">
-        Согласен
-      </button>
+      class="fixed bottom-0 left-0 right-0 z-50 bg-black/90 backdrop-blur border-t border-white/10 p-4 md:p-3">
+      <div class="flex flex-col md:flex-row items-center justify-center gap-3 md:gap-4 text-xs md:text-sm max-w-7xl mx-auto">
+        <span class="text-gray-300 text-center">Продолжая пользоваться сайтом, вы соглашаетесь с политикой и cookie.</span>
+        <button
+          class="px-6 py-2.5 md:px-4 md:py-2 rounded-lg bg-accent hover:bg-accent-700 text-white font-medium transition cursor-pointer whitespace-nowrap"
+          @click="acceptCookies">
+          Согласен
+        </button>
+      </div>
     </div>
   </Transition>
 </template>

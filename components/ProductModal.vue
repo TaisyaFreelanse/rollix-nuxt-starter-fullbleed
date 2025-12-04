@@ -101,8 +101,6 @@ const decrementQuantity = () => {
 const cartStore = useCartStore()
 const toast = useToast()
 
-const cartOpen = useState('cartOpen', () => false)
-
 const addToCart = () => {
   if (!props.product) return
 
@@ -118,8 +116,7 @@ const addToCart = () => {
   toast.success(`${props.product.name} добавлен в корзину`)
   emit('close')
   
-  // Открываем боковую панель корзины
-  cartOpen.value = true
+  // Не открываем корзину автоматически - просто увеличивается счетчик
 }
 
 const closeButtonRef = ref<HTMLButtonElement | null>(null)

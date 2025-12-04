@@ -1,4 +1,5 @@
 import { prisma } from '~/server/utils/prisma'
+import { verifySmsCode } from '~/server/utils/sms-ru'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -12,33 +13,52 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // TODO: Проверка кода из сессии/БД
-    // const sessionCode = getSession(event, 'sms_code')
-    // const sessionPhone = getSession(event, 'sms_phone')
-    // const sessionExpires = getSession(event, 'sms_expires')
+    // Нормализуем номер телефона
+    const normalizedPhone = phone.replace(/\D/g, '')
+    const phoneNumber = normalizedPhone.startsWith('8') 
+      ? '7' + normalizedPhone.slice(1)
+      : normalizedPhone.startsWith('7')
+      ? normalizedPhone
+      : '7' + normalizedPhone
 
-    // if (!sessionCode || sessionPhone !== phone || Date.now() > sessionExpires) {
-    //   throw createError({
-    //     statusCode: 400,
-    //     message: 'Код неверен или истек'
-    //   })
-    // }
+    // Ищем код в БД
+    const smsCodeRecord = await prisma.smsCode.findFirst({
+      where: {
+        phone: phoneNumber,
+        code: code,
+        verified: false,
+        expiresAt: {
+          gt: new Date() // Код еще не истек
+        }
+      },
+      orderBy: {
+        createdAt: 'desc' // Берем последний код
+      }
+    })
 
-    // if (sessionCode !== code) {
-    //   throw createError({
-    //     statusCode: 400,
-    //     message: 'Неверный код'
-    //   })
-    // }
-
-    // Заглушка - всегда успешная проверка для демо
-    console.log(`[SMS] Проверка кода ${code} для ${phone}: успешно`)
+    if (!smsCodeRecord) {
+      // Пробуем проверить через SMS.RU API (на случай если код был отправлен через звонок)
+      const verifyResult = await verifySmsCode(phoneNumber, code)
+      
+      if (!verifyResult.success) {
+        throw createError({
+          statusCode: 400,
+          message: 'Код неверен или истек'
+        })
+      }
+    } else {
+      // Помечаем код как использованный
+      await prisma.smsCode.update({
+        where: { id: smsCodeRecord.id },
+        data: { verified: true }
+      })
+    }
 
     // Создаем или находим пользователя в БД
     const user = await prisma.user.upsert({
-      where: { phone },
+      where: { phone: phoneNumber },
       create: {
-        phone,
+        phone: phoneNumber,
         name: null
       },
       update: {}
@@ -67,8 +87,7 @@ export default defineEventHandler(async (event) => {
     }
     throw createError({
       statusCode: 500,
-      message: 'Ошибка проверки кода'
+      message: error.message || 'Ошибка проверки кода'
     })
   }
 })
-

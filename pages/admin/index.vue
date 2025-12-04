@@ -349,11 +349,13 @@ const promocodeWidgetFormData = ref({
 const loadPromotions = async () => {
   promotionsLoading.value = true
   try {
-    promotions.value = await adminAuth.$fetchWithAuth('/api/admin/promotions')
+    const response = await adminAuth.$fetchWithAuth('/api/admin/promotions')
+    promotions.value = Array.isArray(response) ? response.filter(p => p != null) : []
   } catch (error: any) {
     console.error('Ошибка загрузки акций:', error)
-    if (error.statusCode === 401) {
-      alert('Сессия истекла. Пожалуйста, войдите заново.')
+    promotions.value = []
+    if (error.statusCode === 401 || error.message?.includes('No auth token')) {
+      isAuthorized.value = false
     }
   } finally {
     promotionsLoading.value = false
@@ -373,6 +375,10 @@ const loadPromocodeWidget = async () => {
     }
   } catch (error: any) {
     console.error('Ошибка загрузки виджета промокода:', error)
+    promocodeWidget.value = null
+    if (error.statusCode === 401 || error.message?.includes('No auth token')) {
+      isAuthorized.value = false
+    }
   } finally {
     promocodeWidgetLoading.value = false
   }
@@ -512,9 +518,12 @@ const zonesLoading = ref(false)
 const loadZones = async () => {
   zonesLoading.value = true
   try {
-    zones.value = await $fetch('/api/delivery-zones')
+    const response = await $fetch('/api/delivery-zones')
+    // Фильтруем null значения
+    zones.value = Array.isArray(response) ? response.filter(z => z != null) : []
   } catch (error) {
     console.error('Ошибка загрузки зон доставки:', error)
+    zones.value = []
   } finally {
     zonesLoading.value = false
   }
@@ -1784,9 +1793,9 @@ watch(isAuthorized, async (val) => {
             Зоны доставки не найдены
           </div>
           <div v-else class="divide-y divide-gray-700">
+            <template v-for="zone in zones" :key="zone?.id">
             <div
-              v-for="zone in zones"
-              :key="zone.id"
+              v-if="zone"
               class="p-6 hover:bg-gray-700 transition-colors">
               <div class="flex items-center justify-between">
                 <div>
@@ -1835,6 +1844,7 @@ watch(isAuthorized, async (val) => {
                 </div>
               </div>
             </div>
+            </template>
           </div>
         </div>
       </div>
