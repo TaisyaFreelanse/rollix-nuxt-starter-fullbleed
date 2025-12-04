@@ -34,7 +34,7 @@ const close = () => {
 
 <template>
   <TransitionRoot appear :show="open" as="template">
-    <Dialog as="div" class="relative z-[9999]" :initial-focus="closeButtonRef" @close="closeOnOverlay ? close() : undefined">
+    <Dialog as="div" class="relative z-[9999]" :initial-focus="closeButtonRef" @close="closeOnOverlay && close()">
       <TransitionChild
         as="template"
         enter="duration-300 ease-out"
@@ -61,8 +61,9 @@ const close = () => {
                 'w-full transform overflow-hidden rounded-2xl bg-card border border-white/10 shadow-xl transition-all relative',
                 sizeClasses[size]
               ]">
-              <!-- Кнопка закрытия всегда видна -->
+              <!-- Кнопка закрытия - скрыта если closeOnOverlay=false -->
               <button
+                v-if="closeOnOverlay"
                 ref="closeButtonRef"
                 type="button"
                 class="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/5 hover:bg-white/10 transition text-gray-400 hover:text-white"

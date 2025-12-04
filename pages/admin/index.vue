@@ -6,6 +6,10 @@ definePageMeta({
 
 const route = useRoute()
 const router = useRouter()
+const adminAuth = useAdminAuth()
+
+// Флаг готовности к загрузке данных (устанавливается после авторизации)
+const isReady = ref(false)
 
 // Активная вкладка
 const activeTab = ref<string>(route.query.tab as string || 'dashboard')
@@ -680,31 +684,48 @@ const formatDateAdmin = (dateString: string) => {
   })
 }
 
-// Загрузка данных при переключении вкладок
-watch(activeTab, async (newTab) => {
-  if (newTab === 'dashboard') {
+// Функция загрузки данных для текущей вкладки
+const loadTabData = async (tab: string) => {
+  // Не загружаем данные пока не авторизованы
+  if (!isReady.value) return
+  
+  if (tab === 'dashboard') {
     await loadDashboardStats()
-  } else if (newTab === 'products') {
+  } else if (tab === 'products') {
     await loadProducts()
     await loadProductsCategories()
-  } else if (newTab === 'categories') {
+  } else if (tab === 'categories') {
     await loadCategories()
-  } else if (newTab === 'orders') {
+  } else if (tab === 'orders') {
     await loadOrders()
-  } else if (newTab === 'promocodes') {
+  } else if (tab === 'promocodes') {
     await loadPromocodes()
-  } else if (newTab === 'promotions') {
+  } else if (tab === 'promotions') {
     await loadPromotions()
     await loadPromocodeWidget()
-  } else if (newTab === 'delivery-zones') {
+  } else if (tab === 'delivery-zones') {
     await loadZones()
-  } else if (newTab === 'bonuses') {
+  } else if (tab === 'bonuses') {
     await loadBonusSettings()
-  } else if (newTab === 'settings') {
+  } else if (tab === 'settings') {
     await loadSettings()
     await loadCurrentOrders()
-  } else if (newTab === 'admins') {
+  } else if (tab === 'admins') {
     await loadAdmins()
+  }
+}
+
+// Загрузка данных при переключении вкладок (только когда авторизован)
+watch(activeTab, async (newTab) => {
+  await loadTabData(newTab)
+})
+
+// Ждём авторизацию и загружаем начальные данные
+watch(() => adminAuth.isAuthenticated.value, async (isAuth) => {
+  if (isAuth && !isReady.value) {
+    isReady.value = true
+    // Загружаем данные для текущей вкладки
+    await loadTabData(activeTab.value)
   }
 }, { immediate: true })
 </script>

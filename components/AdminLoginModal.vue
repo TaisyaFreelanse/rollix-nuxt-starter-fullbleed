@@ -103,14 +103,12 @@ const handleKeyPress = (e: KeyboardEvent) => {
     </div>
 
     <template #footer>
-      <div class="flex items-center justify-end gap-3">
-        <button
-          type="button"
-          @click="handleClose"
-          :disabled="loading"
-          class="px-4 py-2 text-gray-400 hover:text-white transition-colors disabled:opacity-50">
-          Отмена
-        </button>
+      <div class="flex items-center justify-between gap-3">
+        <NuxtLink
+          to="/"
+          class="px-4 py-2 text-gray-400 hover:text-white transition-colors text-sm">
+          ← На сайт
+        </NuxtLink>
         <button
           type="button"
           @click="handleLogin"
