@@ -11,6 +11,16 @@ interface SmsRuResponse {
   status: string
   status_code: number
   status_text?: string
+  sms?: {
+    [phone: string]: {
+      status: string
+      status_code: number
+      status_text?: string
+      sms_id?: string
+      cost?: string
+      balance?: number
+    }
+  }
   [key: string]: any
 }
 
@@ -43,17 +53,36 @@ export async function sendSmsCode(phone: string, code: string): Promise<{ succes
       json: '1'
     })
     
-    const response = await $fetch<SmsRuResponse>(`${SMS_RU_BASE_URL}/sms/send?${params.toString()}`)
+    const url = `${SMS_RU_BASE_URL}/sms/send?${params.toString()}`
+    console.log('[SMS.RU] Request URL:', url.replace(getSmsRuApiKey(), '***'))
+    console.log('[SMS.RU] Phone:', phoneNumber)
+    console.log('[SMS.RU] Message:', message)
+    
+    const response = await $fetch<SmsRuResponse>(url)
+    
+    console.log('[SMS.RU] Full response:', JSON.stringify(response, null, 2))
 
-    // Проверяем результат
-    if (response.status === 'OK' || response.status_code === 100) {
+    // Проверяем результат - статус 100 означает успех
+    // Ответ может быть в формате: { status: "OK", status_code: 100, sms: { "79991234567": { status: "OK", status_code: 100, ... } } }
+    const globalSuccess = response.status === 'OK' || response.status_code === 100
+    const smsResult = response.sms?.[phoneNumber]
+    const smsSuccess = smsResult?.status === 'OK' || smsResult?.status_code === 100
+    
+    if (globalSuccess && (smsSuccess || !smsResult)) {
+      console.log('[SMS.RU] ✅ SMS sent successfully')
+      if (smsResult?.sms_id) {
+        console.log('[SMS.RU] SMS ID:', smsResult.sms_id)
+      }
       return {
         success: true,
         message: 'SMS отправлено успешно'
       }
     } else {
-      console.error('SMS.RU API Error:', response)
-      throw new Error(response.status_text || `Ошибка отправки SMS: ${response.status_code}`)
+      console.error('[SMS.RU] ❌ API Error:', JSON.stringify(response, null, 2))
+      const errorMessage = smsResult?.status_text || 
+                          response.status_text || 
+                          `Ошибка отправки SMS: ${smsResult?.status_code || response.status_code || 'unknown'}`
+      throw new Error(errorMessage)
     }
   } catch (error: any) {
     console.error('Ошибка отправки SMS через SMS.RU:', error)
