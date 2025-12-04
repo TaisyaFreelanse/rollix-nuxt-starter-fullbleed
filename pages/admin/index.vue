@@ -1,13 +1,56 @@
 <script setup lang="ts">
 definePageMeta({
-  layout: 'admin',
-  middleware: 'admin-auth',
-  ssr: false // Рендерим только на клиенте
+  layout: false, // Без layout - всё в странице
+  ssr: false
 })
 
 const route = useRoute()
 const router = useRouter()
 const adminAuth = useAdminAuth()
+
+// ========== АВТОРИЗАЦИЯ ==========
+const isAuthorized = ref(false)
+const isChecking = ref(true)
+const loginForm = reactive({ login: '', password: '' })
+const loginError = ref('')
+const loginLoading = ref(false)
+
+const handleLogin = async () => {
+  if (!loginForm.login || !loginForm.password) {
+    loginError.value = 'Введите логин и пароль'
+    return
+  }
+  loginLoading.value = true
+  loginError.value = ''
+  try {
+    const result = await adminAuth.login(loginForm.login, loginForm.password)
+    if (result.success) {
+      isAuthorized.value = true
+    } else {
+      loginError.value = result.error || 'Неверный логин или пароль'
+    }
+  } catch (e: any) {
+    loginError.value = e.message || 'Ошибка входа'
+  } finally {
+    loginLoading.value = false
+  }
+}
+
+const handleLogout = async () => {
+  await adminAuth.logout()
+  isAuthorized.value = false
+}
+
+onMounted(async () => {
+  try {
+    const valid = await adminAuth.checkAuth()
+    isAuthorized.value = valid
+  } catch {
+    isAuthorized.value = false
+  } finally {
+    isChecking.value = false
+  }
+})
 
 // Активная вкладка
 const activeTab = ref<string>(route.query.tab as string || 'dashboard')
@@ -715,39 +758,106 @@ watch(activeTab, async (newTab) => {
   await loadTabData(newTab)
 })
 
-// Загружаем начальные данные при монтировании
-// Страница монтируется ТОЛЬКО когда пользователь уже авторизован (layout проверил токен)
-onMounted(async () => {
-  // Дополнительная проверка - загружаем данные только если есть токен
-  if (adminAuth.isAuthenticated.value) {
+// Загружаем начальные данные после авторизации
+watch(isAuthorized, async (val) => {
+  if (val) {
     await loadTabData(activeTab.value)
   }
-})
+}, { immediate: false })
 </script>
 
 <template>
-  <div class="w-full">
-    <!-- Вкладки -->
-    <div class="bg-gray-800 border-b border-gray-700 mb-6">
-      <div class="flex overflow-x-auto">
-        <button
-          v-for="tab in tabs"
-          :key="tab.id"
-          @click="switchTab(tab.id)"
-          :class="[
-            'px-6 py-4 text-sm font-medium transition-colors whitespace-nowrap border-b-2',
-            activeTab === tab.id
-              ? 'border-accent text-white'
-              : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-600'
-          ]">
-          <span class="mr-2">{{ tab.icon }}</span>
-          {{ tab.label }}
-        </button>
+  <div style="min-height: 100vh; background: #111827;">
+    <!-- ЗАГРУЗКА -->
+    <div v-if="isChecking" style="position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #111827; z-index: 99999;">
+      <div style="text-align: center;">
+        <div style="width: 48px; height: 48px; border: 4px solid #22c55e; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px;"></div>
+        <p style="color: #9ca3af;">Проверка авторизации...</p>
       </div>
     </div>
 
-    <!-- Контент вкладок -->
-    <div class="min-h-[500px]">
+    <!-- ФОРМА ВХОДА -->
+    <div v-else-if="!isAuthorized" style="position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #111827; z-index: 99999;">
+      <div style="background: #1f2937; border-radius: 16px; padding: 32px; width: 100%; max-width: 400px; border: 1px solid #374151; margin: 16px;">
+        <h2 style="font-size: 24px; font-weight: bold; color: white; margin-bottom: 24px; text-align: center;">
+          🔐 Вход в админ-панель
+        </h2>
+        
+        <div v-if="loginError" style="margin-bottom: 16px; padding: 12px; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.5); border-radius: 8px; color: #f87171; font-size: 14px;">
+          {{ loginError }}
+        </div>
+        
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 14px; color: #d1d5db; margin-bottom: 8px;">Логин</label>
+          <input v-model="loginForm.login" type="text" placeholder="admin" :disabled="loginLoading" @keypress.enter="handleLogin"
+            style="width: 100%; background: #374151; color: white; padding: 12px 16px; border-radius: 8px; border: 1px solid #4b5563; outline: none; box-sizing: border-box;" />
+        </div>
+        
+        <div style="margin-bottom: 24px;">
+          <label style="display: block; font-size: 14px; color: #d1d5db; margin-bottom: 8px;">Пароль</label>
+          <input v-model="loginForm.password" type="password" placeholder="••••••••" :disabled="loginLoading" @keypress.enter="handleLogin"
+            style="width: 100%; background: #374151; color: white; padding: 12px 16px; border-radius: 8px; border: 1px solid #4b5563; outline: none; box-sizing: border-box;" />
+        </div>
+        
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <NuxtLink to="/" style="color: #9ca3af; font-size: 14px; text-decoration: none;">← На сайт</NuxtLink>
+          <button type="button" @click="handleLogin" :disabled="loginLoading || !loginForm.login || !loginForm.password"
+            :style="{ padding: '12px 24px', background: '#16a34a', color: 'white', borderRadius: '8px', fontWeight: '500', border: 'none', cursor: 'pointer', opacity: (loginLoading || !loginForm.login || !loginForm.password) ? 0.5 : 1 }">
+            {{ loginLoading ? 'Вход...' : 'Войти' }}
+          </button>
+        </div>
+        
+        <p style="margin-top: 16px; text-align: center; font-size: 12px; color: #6b7280;">
+          Логин: <b style="color: #10b981;">admin</b> / Пароль: <b style="color: #10b981;">admin123</b>
+        </p>
+      </div>
+    </div>
+
+    <!-- АДМИН-ПАНЕЛЬ (после авторизации) -->
+    <div v-else>
+      <!-- Header -->
+      <header style="background: #1f2937; border-bottom: 1px solid #374151; padding: 16px 32px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 12px; cursor: pointer;" @click="router.push('/')">
+            <img src="/logo.svg" alt="Logo" style="height: 48px; width: auto;" />
+            <div>
+              <h1 style="font-size: 20px; font-weight: bold; color: white; margin: 0;">Админ-панель</h1>
+              <p style="font-size: 12px; color: #9ca3af; margin: 0;">Управление контентом</p>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <span v-if="adminAuth.admin.value" style="font-size: 14px; color: #9ca3af;">
+              {{ adminAuth.admin.value.name || adminAuth.admin.value.login }}
+            </span>
+            <button type="button" @click="handleLogout" style="color: #9ca3af; background: none; border: none; cursor: pointer; font-size: 14px;">Выйти</button>
+            <NuxtLink to="/" style="color: #9ca3af; font-size: 14px; text-decoration: none;">← На сайт</NuxtLink>
+          </div>
+        </div>
+      </header>
+
+      <!-- Контент -->
+      <div style="padding: 32px;">
+        <!-- Вкладки -->
+        <div class="bg-gray-800 border-b border-gray-700 mb-6">
+          <div class="flex overflow-x-auto">
+            <button
+              v-for="tab in tabs"
+              :key="tab.id"
+              @click="switchTab(tab.id)"
+              :class="[
+                'px-6 py-4 text-sm font-medium transition-colors whitespace-nowrap border-b-2',
+                activeTab === tab.id
+                  ? 'border-accent text-white'
+                  : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-600'
+              ]">
+              <span class="mr-2">{{ tab.icon }}</span>
+              {{ tab.label }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Контент вкладок -->
+        <div class="min-h-[500px]">
       <!-- ДАШБОРД -->
       <div v-if="activeTab === 'dashboard'">
         <h1 class="text-3xl font-bold text-white mb-8">Панель управления</h1>
@@ -1950,7 +2060,15 @@ onMounted(async () => {
             </button>
           </div>
         </div>
+        </div>
+      </div>
       </div>
     </div>
   </div>
 </template>
+
+<style>
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>
