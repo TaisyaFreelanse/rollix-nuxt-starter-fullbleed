@@ -1,8 +1,9 @@
 <script setup lang="ts">
 const router = useRouter()
 const adminAuth = useAdminAuth()
-// Модальное окно показывается по умолчанию - скроем только после успешной авторизации
+// Модальное окно показывается по умолчанию - скроем только после успешной проверки авторизации
 const showLoginModal = ref(true)
+const isCheckingAuth = ref(true) // Флаг проверки авторизации
 
 const goToMain = () => {
   router.push('/')
@@ -11,36 +12,53 @@ const goToMain = () => {
 const handleLogout = async () => {
   await adminAuth.logout()
   showLoginModal.value = true
+  isCheckingAuth.value = false
 }
 
 // Проверяем авторизацию сразу при загрузке компонента
 onMounted(async () => {
   if (process.client) {
-    // Синхронно проверяем наличие токена
+    // Модальное окно открыто по умолчанию - показываем его сразу
+    showLoginModal.value = true
+    isCheckingAuth.value = true
+    
+    // Синхронно проверяем наличие токена в localStorage
     const token = localStorage.getItem('admin_token')
     
     if (!token) {
-      // Нет токена - модальное окно уже открыто (true по умолчанию)
-      showLoginModal.value = true
+      // Нет токена - модальное окно остается открытым
+      isCheckingAuth.value = false
       return
     }
     
     // Есть токен - проверяем его валидность асинхронно
-    // Модальное окно остается открытым, пока не подтвердим авторизацию
     try {
       const isAuth = await adminAuth.checkAuth()
-      showLoginModal.value = !isAuth
+      if (isAuth) {
+        // Авторизация подтверждена - скрываем модальное окно
+        showLoginModal.value = false
+      } else {
+        // Токен невалиден - показываем модальное окно
+        showLoginModal.value = true
+        adminAuth.clearAuth() // Очищаем невалидный токен
+      }
     } catch (error) {
       // Ошибка проверки - показываем модальное окно
       showLoginModal.value = true
+      adminAuth.clearAuth()
+    } finally {
+      isCheckingAuth.value = false
     }
   }
 })
 
 // Следим за изменением авторизации - автоматически показываем/скрываем модальное окно
 watch(() => adminAuth.isAuthenticated.value, (isAuth) => {
-  showLoginModal.value = !isAuth
-}, { immediate: true })
+  // Только после завершения проверки авторизации
+  if (!isCheckingAuth.value) {
+    showLoginModal.value = !isAuth
+  }
+})
 
 const handleLoginSuccess = () => {
   showLoginModal.value = false
@@ -63,8 +81,8 @@ const handleModalClose = () => {
       @close="handleModalClose"
       @success="handleLoginSuccess" />
 
-    <!-- Контент админ-панели показывается только если пользователь авторизован -->
-    <div v-if="adminAuth.isAuthenticated.value" class="relative">
+    <!-- Контент админ-панели показывается только если пользователь авторизован и проверка завершена -->
+    <div v-if="adminAuth.isAuthenticated.value && !isCheckingAuth && !showLoginModal" class="relative">
       <!-- Header -->
       <header class="bg-gray-800 border-b border-gray-700 px-8 py-4">
         <div class="flex items-center justify-between">
