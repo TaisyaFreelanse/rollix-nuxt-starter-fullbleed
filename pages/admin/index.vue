@@ -1,7 +1,8 @@
 <script setup lang="ts">
 definePageMeta({
   layout: 'admin',
-  middleware: 'admin-auth'
+  middleware: 'admin-auth',
+  ssr: false // Рендерим только на клиенте
 })
 
 const route = useRoute()
@@ -717,7 +718,10 @@ watch(activeTab, async (newTab) => {
 // Загружаем начальные данные при монтировании
 // Страница монтируется ТОЛЬКО когда пользователь уже авторизован (layout проверил токен)
 onMounted(async () => {
-  await loadTabData(activeTab.value)
+  // Дополнительная проверка - загружаем данные только если есть токен
+  if (adminAuth.isAuthenticated.value) {
+    await loadTabData(activeTab.value)
+  }
 })
 </script>
 
