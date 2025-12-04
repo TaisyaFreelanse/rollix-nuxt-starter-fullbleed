@@ -1,6 +1,4 @@
 import { Pool } from 'pg'
-import { readFileSync } from 'fs'
-import { join } from 'path'
 
 export async function createSmsCodesTable(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL
@@ -26,9 +24,9 @@ export async function createSmsCodesTable(): Promise<void> {
     if (!checkResult.rows[0]?.exists) {
       console.log('🔄 Creating sms_codes table...')
       
-      // Выполняем SQL напрямую, разбивая на отдельные запросы
+      // Выполняем SQL напрямую
       await pool.query(`
-        CREATE TABLE IF NOT EXISTS "sms_codes" (
+        CREATE TABLE "sms_codes" (
           "id" TEXT NOT NULL,
           "phone" TEXT NOT NULL,
           "code" TEXT NOT NULL,
@@ -40,11 +38,11 @@ export async function createSmsCodesTable(): Promise<void> {
       `)
       
       await pool.query(`
-        CREATE INDEX IF NOT EXISTS "sms_codes_phone_code_idx" ON "sms_codes"("phone", "code");
+        CREATE INDEX "sms_codes_phone_code_idx" ON "sms_codes"("phone", "code");
       `)
       
       await pool.query(`
-        CREATE INDEX IF NOT EXISTS "sms_codes_expiresAt_idx" ON "sms_codes"("expiresAt");
+        CREATE INDEX "sms_codes_expiresAt_idx" ON "sms_codes"("expiresAt");
       `)
       
       console.log('✅ SMS codes table created')
@@ -53,10 +51,10 @@ export async function createSmsCodesTable(): Promise<void> {
     }
   } catch (error: any) {
     // Если таблица уже существует - это нормально
-    if (error.message?.includes('already exists') || error.code === '42P07') {
+    if (error.message?.includes('already exists') || error.code === '42P07' || error.code === '23505') {
       console.log('ℹ️  Table already exists')
     } else {
-      console.error('Error creating sms_codes table:', error.message)
+      console.error('❌ Error creating sms_codes table:', error.message)
       throw error
     }
   } finally {
