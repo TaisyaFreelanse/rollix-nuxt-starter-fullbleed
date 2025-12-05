@@ -29,15 +29,24 @@ export async function verifyAdminToken(token: string): Promise<AdminJWTPayload> 
     // return jwt.verify(token, ADMIN_JWT_SECRET) as AdminJWTPayload
     
     // Заглушка - декодируем токен
-    const decoded = JSON.parse(Buffer.from(token, 'base64url').toString()) as AdminJWTPayload
+    const decodedStr = Buffer.from(token, 'base64url').toString()
+    console.log('[JWT] Декодированная строка:', decodedStr)
+    
+    const decoded = JSON.parse(decodedStr) as AdminJWTPayload
+    console.log('[JWT] Декодированный объект:', JSON.stringify(decoded))
+    console.log('[JWT] Тип decoded:', typeof decoded)
+    console.log('[JWT] Ключи decoded:', Object.keys(decoded))
     
     // Проверяем срок действия
     if (decoded.exp && decoded.exp < Math.floor(Date.now() / 1000)) {
+      console.log('[JWT] Токен истек')
       throw new Error('Token expired')
     }
     
     return decoded
-  } catch (error) {
+  } catch (error: any) {
+    console.error('[JWT] Ошибка декодирования токена:', error.message || error)
+    console.error('[JWT] Токен (первые 50 символов):', token.substring(0, 50))
     throw new Error('Invalid token')
   }
 }
