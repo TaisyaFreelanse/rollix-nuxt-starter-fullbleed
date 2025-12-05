@@ -7,7 +7,10 @@ export default defineEventHandler(async (event) => {
     const body = await readBody(event)
     const { login, password } = body
 
+    console.log('[Admin Login] Попытка входа:', { login, passwordLength: password?.length })
+
     if (!login || !password) {
+      console.log('[Admin Login] Отсутствует логин или пароль')
       throw createError({
         statusCode: 400,
         message: 'Не указан логин или пароль'
@@ -20,13 +23,17 @@ export default defineEventHandler(async (event) => {
     })
 
     if (!admin) {
+      console.log('[Admin Login] Админ не найден:', login)
       throw createError({
         statusCode: 401,
         message: 'Неверный логин или пароль'
       })
     }
 
+    console.log('[Admin Login] Админ найден:', { id: admin.id, login: admin.login, isActive: admin.isActive })
+
     if (!admin.isActive) {
+      console.log('[Admin Login] Админ заблокирован:', admin.id)
       throw createError({
         statusCode: 403,
         message: 'Аккаунт администратора заблокирован'
@@ -34,9 +41,12 @@ export default defineEventHandler(async (event) => {
     }
 
     // Проверяем пароль
+    console.log('[Admin Login] Проверка пароля...')
     const isPasswordValid = await comparePassword(password, admin.password)
+    console.log('[Admin Login] Результат проверки пароля:', isPasswordValid)
     
     if (!isPasswordValid) {
+      console.log('[Admin Login] Неверный пароль для админа:', admin.login)
       throw createError({
         statusCode: 401,
         message: 'Неверный логин или пароль'
@@ -72,12 +82,15 @@ export default defineEventHandler(async (event) => {
       }
     }
   } catch (error: any) {
+    console.error('[Admin Login] Ошибка при входе:', error)
+    console.error('[Admin Login] Stack:', error.stack)
     if (error.statusCode) {
       throw error
     }
+    console.error('[Admin Login] Неизвестная ошибка, возвращаем 500')
     throw createError({
       statusCode: 500,
-      message: 'Ошибка входа в систему'
+      message: error.message || 'Ошибка входа в систему'
     })
   }
 })
