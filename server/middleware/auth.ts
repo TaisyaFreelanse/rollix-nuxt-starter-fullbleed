@@ -26,6 +26,7 @@ export default defineEventHandler(async (event) => {
     '/api/auth',
     '/api/delivery-zones',
     '/api/promo-codes',
+    '/api/banners', // Публичный эндпоинт для баннеров
     '/api/orders' // Разрешаем гостевые заказы
   ]
 

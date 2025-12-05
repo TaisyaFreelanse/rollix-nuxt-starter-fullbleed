@@ -1819,11 +1819,6 @@ watch(isAuthorized, async (val) => {
           </div>
         </div>
 
-        <div class="mt-6 p-4 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
-          <p class="text-yellow-400 text-sm">
-            ⚠️ Управление баннерами - заглушка. Реальная реализация будет добавлена позже.
-          </p>
-        </div>
       </div>
 
       <!-- ЗОНЫ ДОСТАВКИ -->
