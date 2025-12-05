@@ -21,30 +21,10 @@ const handleLogin = async () => {
     return
   }
   
-  // Очищаем все токены перед логином, чтобы избежать путаницы
+  // Очищаем все токены перед логином
   if (process.client) {
-    // Очищаем токен пользователя, если он есть
     localStorage.removeItem('auth_token')
     localStorage.removeItem('auth_user')
-    // Очищаем старый токен админа, если он есть
-    const adminToken = localStorage.getItem('admin_token')
-    if (adminToken) {
-      try {
-        const base64 = adminToken.replace(/-/g, '+').replace(/_/g, '/')
-        const decodedStr = atob(base64)
-        const decoded = JSON.parse(decodedStr)
-        if (decoded.userId || decoded.phone) {
-          // Это токен пользователя - очищаем
-          console.log('⚠️ Очищаю токен пользователя перед логином админа')
-          localStorage.removeItem('admin_token')
-          localStorage.removeItem('admin_user')
-        }
-      } catch (e) {
-        // Если не удалось декодировать, очищаем на всякий случай
-        localStorage.removeItem('admin_token')
-        localStorage.removeItem('admin_user')
-      }
-    }
     adminAuth.clearAuth()
   }
   

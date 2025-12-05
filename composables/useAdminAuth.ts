@@ -120,72 +120,8 @@ export const useAdminAuth = () => {
       })
       
       if (response.success && response.token) {
-        // Проверяем, что это действительно токен админа
-        if (process.client) {
-          try {
-            const base64 = response.token.replace(/-/g, '+').replace(/_/g, '/')
-            const decodedStr = atob(base64)
-            const decoded = JSON.parse(decodedStr)
-            
-            if (decoded.userId || decoded.phone) {
-              console.error('⚠️ ОШИБКА: Получен токен пользователя вместо токена админа!')
-              return {
-                success: false,
-                error: 'Ошибка: получен токен пользователя. Попробуйте еще раз.'
-              }
-            }
-            
-            if (!decoded.adminId || !decoded.login) {
-              console.error('⚠️ ОШИБКА: Токен не содержит adminId или login!')
-              return {
-                success: false,
-                error: 'Ошибка: токен не содержит необходимых данных. Попробуйте еще раз.'
-              }
-            }
-            
-            console.log('✅ Получен правильный токен админа с adminId:', decoded.adminId)
-          } catch (e) {
-            console.error('⚠️ Ошибка проверки токена админа:', e)
-            return {
-              success: false,
-              error: 'Ошибка проверки токена. Попробуйте еще раз.'
-            }
-          }
-        }
-        
+        // Сервер уже проверил токен, просто сохраняем его
         setAuth(response.token, response.admin)
-        
-        // Убеждаемся, что токен действительно сохранен
-        if (process.client) {
-          await nextTick()
-          const savedToken = localStorage.getItem('admin_token')
-          if (!savedToken || savedToken !== response.token) {
-            console.error('⚠️ Токен не сохранился после логина! Сохраняем еще раз...')
-            localStorage.setItem('admin_token', response.token)
-            localStorage.setItem('admin_user', JSON.stringify(response.admin))
-            token.value = response.token
-            admin.value = response.admin
-          } else {
-            // Проверяем еще раз, что сохранен правильный токен
-            try {
-              const base64 = savedToken.replace(/-/g, '+').replace(/_/g, '/')
-              const decodedStr = atob(base64)
-              const decoded = JSON.parse(decodedStr)
-              if (decoded.userId || decoded.phone) {
-                console.error('⚠️ ОШИБКА: В localStorage сохранен токен пользователя! Очищаю...')
-                localStorage.removeItem('admin_token')
-                localStorage.removeItem('admin_user')
-                return {
-                  success: false,
-                  error: 'Ошибка сохранения токена. Попробуйте еще раз.'
-                }
-              }
-            } catch (e) {
-              console.error('⚠️ Ошибка проверки сохраненного токена:', e)
-            }
-          }
-        }
-        
         return { success: true, admin: response.admin }
       }
       
