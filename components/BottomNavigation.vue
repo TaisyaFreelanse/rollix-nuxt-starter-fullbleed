@@ -12,6 +12,9 @@ const isActive = (path: string) => {
   if (path === '/profile') {
     return route.path.startsWith('/profile')
   }
+  if (path === '/') {
+    return route.path === '/' || route.path === '/catalog' || route.path.startsWith('/catalog')
+  }
   return route.path === path || route.path.startsWith(path + '/')
 }
 
@@ -19,10 +22,9 @@ const isActive = (path: string) => {
 const navItems = [
   {
     name: 'Меню',
-    path: '/catalog',
+    path: '/',
     icon: '📋',
-    hasBadge: false,
-    isMenu: true // Флаг для открытия вертикального меню
+    hasBadge: false
   },
   {
     name: 'Акции',
@@ -108,7 +110,6 @@ const handleNavClick = (item: typeof navItems[0]) => {
           </Transition>
         </span>
         <span
-          v-if="!item.isMenu"
           :class="[
             'text-[10px] font-medium transition-colors',
             isActive(item.path) ? 'text-accent' : 'text-gray-400'

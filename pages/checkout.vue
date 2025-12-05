@@ -3,8 +3,21 @@ const cartStore = useCartStore()
 const router = useRouter()
 const auth = useAuth()
 
+const showAuthModal = ref(false)
+
 if (cartStore.isEmpty) {
   router.push('/cart')
+}
+
+const handleAuthSuccess = async (phone: string) => {
+  showAuthModal.value = false
+  await nextTick()
+}
+
+const handleAuthCancel = () => {
+  // Если пользователь отменил авторизацию, возвращаем в корзину
+  router.push('/cart')
+  showAuthModal.value = false
 }
 
 const deliveryType = ref<'delivery' | 'pickup'>('delivery')
@@ -34,6 +47,11 @@ const loadDeliveryZones = async () => {
 }
 
 onMounted(() => {
+  // Проверяем авторизацию при загрузке страницы
+  if (!auth.isAuthenticated.value) {
+    showAuthModal.value = true
+  }
+  
   if (deliveryType.value === 'delivery') {
     loadDeliveryZones()
   }
@@ -406,6 +424,11 @@ const processPayment = async (paymentMethod: 'card' | 'cash') => {
           Отмена
         </button>
       </template>
+    </Modal>
+
+    <!-- Модальное окно авторизации -->
+    <Modal :open="showAuthModal" title="Для оформления заказа требуется регистрация" @close="handleAuthCancel">
+      <SmsAuth @success="handleAuthSuccess" @cancel="handleAuthCancel" />
     </Modal>
   </main>
 </template>

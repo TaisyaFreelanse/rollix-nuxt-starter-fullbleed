@@ -1,10 +1,12 @@
 <script setup lang="ts">
 const cartStore = useCartStore()
 const router = useRouter()
+const auth = useAuth()
 
 const promoCodeInput = ref('')
 const isApplyingPromo = ref(false)
 const promoError = ref<string | null>(null)
+const showAuthModal = ref(false)
 
 const applyPromo = async () => {
   if (!promoCodeInput.value.trim()) return
@@ -29,7 +31,27 @@ const removePromo = () => {
 
 const proceedToCheckout = () => {
   if (cartStore.isEmpty) return
+  
+  // Проверяем авторизацию перед переходом к оформлению заказа
+  if (!auth.isAuthenticated.value) {
+    // Показываем модальное окно авторизации
+    showAuthModal.value = true
+    return
+  }
+  
+  // Если пользователь авторизован, переходим к оформлению заказа
   router.push('/checkout')
+}
+
+const handleAuthSuccess = async (phone: string) => {
+  showAuthModal.value = false
+  // После успешной авторизации ждем обновления состояния и переходим к оформлению
+  await nextTick()
+  router.push('/checkout')
+}
+
+const handleAuthCancel = () => {
+  showAuthModal.value = false
 }
 </script>
 
@@ -115,5 +137,10 @@ const proceedToCheckout = () => {
         </div>
       </div>
     </div>
+
+    <!-- Модальное окно авторизации -->
+    <Modal :open="showAuthModal" title="Для оформления заказа требуется регистрация" @close="handleAuthCancel">
+      <SmsAuth @success="handleAuthSuccess" @cancel="handleAuthCancel" />
+    </Modal>
   </main>
 </template>

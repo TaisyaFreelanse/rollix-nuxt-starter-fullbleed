@@ -214,7 +214,7 @@ onMounted(() => {
             v-model="form.isPopular"
             type="checkbox"
             class="w-4 h-4 text-accent bg-gray-700 border-gray-600 rounded focus:ring-accent" />
-          <span class="text-gray-300">Популярный</span>
+          <span class="text-gray-300">⭐ Популярное</span>
         </label>
 
         <label class="flex items-center gap-2 cursor-pointer">
@@ -222,7 +222,7 @@ onMounted(() => {
             v-model="form.isNew"
             type="checkbox"
             class="w-4 h-4 text-accent bg-gray-700 border-gray-600 rounded focus:ring-accent" />
-          <span class="text-gray-300">New (тег)</span>
+          <span class="text-gray-300">🆕 New</span>
         </label>
 
         <label class="flex items-center gap-2 cursor-pointer">
@@ -230,7 +230,7 @@ onMounted(() => {
             v-model="form.isHot"
             type="checkbox"
             class="w-4 h-4 text-accent bg-gray-700 border-gray-600 rounded focus:ring-accent" />
-          <span class="text-gray-300">Hot (тег)</span>
+          <span class="text-gray-300">🔥 Hot</span>
         </label>
       </div>
 
