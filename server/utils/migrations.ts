@@ -154,3 +154,57 @@ export async function createSmsCodesTable(): Promise<void> {
   }
 }
 
+export async function createBannersTable(): Promise<void> {
+  const databaseUrl = process.env.DATABASE_URL
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL is not set')
+  }
+
+  const pool = new Pool({
+    connectionString: databaseUrl,
+    ssl: databaseUrl.includes('render.com') ? { rejectUnauthorized: false } : false
+  })
+
+  try {
+    // Проверяем существование таблицы
+    const checkResult = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'banners'
+      );
+    `)
+
+    if (!checkResult.rows[0]?.exists) {
+      console.log('🔄 Creating banners table...')
+      
+      await pool.query(`
+        CREATE TABLE "banners" (
+          "id" TEXT NOT NULL,
+          "title" TEXT NOT NULL,
+          "image" TEXT NOT NULL,
+          "link" TEXT,
+          "isActive" BOOLEAN NOT NULL DEFAULT true,
+          "sortOrder" INTEGER NOT NULL DEFAULT 0,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT "banners_pkey" PRIMARY KEY ("id")
+        );
+      `)
+      
+      console.log('✅ Banners table created')
+    } else {
+      console.log('ℹ️  Banners table already exists')
+    }
+  } catch (error: any) {
+    if (error.message?.includes('already exists') || error.code === '42P07') {
+      console.log('ℹ️  Banners table already exists')
+    } else {
+      console.error('❌ Error creating banners table:', error.message)
+      throw error
+    }
+  } finally {
+    await pool.end()
+  }
+}
+
