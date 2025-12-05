@@ -28,20 +28,11 @@ export async function getAdminIdFromToken(event: H3Event): Promise<string | null
       return null
     }
 
+    // Проверяем токен админа
     const payload = await verifyAdminToken(token)
     
-    // Детальное логирование для отладки
-    if (!payload) {
-      console.log('[Admin Auth] Payload пустой после декодирования')
-      return null
-    }
-    
-    console.log('[Admin Auth] Декодированный payload:', JSON.stringify(payload))
-    console.log('[Admin Auth] Payload keys:', Object.keys(payload))
-    console.log('[Admin Auth] adminId в payload:', payload.adminId)
-    
-    if (!payload.adminId) {
-      console.log('[Admin Auth] Токен не содержит adminId. Весь payload:', payload)
+    if (!payload || !payload.adminId) {
+      console.log('[Admin Auth] Токен не содержит adminId')
       return null
     }
     

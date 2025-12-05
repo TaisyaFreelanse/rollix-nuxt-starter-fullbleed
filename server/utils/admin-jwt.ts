@@ -30,24 +30,38 @@ export async function verifyAdminToken(token: string): Promise<AdminJWTPayload> 
     
     // Заглушка - декодируем токен
     const decodedStr = Buffer.from(token, 'base64url').toString()
-    console.log('[JWT] Декодированная строка:', decodedStr)
+    const decoded = JSON.parse(decodedStr) as any
     
-    const decoded = JSON.parse(decodedStr) as AdminJWTPayload
-    console.log('[JWT] Декодированный объект:', JSON.stringify(decoded))
-    console.log('[JWT] Тип decoded:', typeof decoded)
-    console.log('[JWT] Ключи decoded:', Object.keys(decoded))
+    // Проверяем, что это токен админа, а не пользователя
+    if (decoded.userId || decoded.phone) {
+      console.log('[JWT Admin] Обнаружен токен пользователя вместо токена администратора!')
+      throw new Error('This is a user token, not an admin token')
+    }
+    
+    // Проверяем наличие обязательных полей админа
+    if (!decoded.adminId || !decoded.login) {
+      console.log('[JWT Admin] Токен не содержит обязательных полей админа (adminId, login)')
+      throw new Error('Token does not contain adminId or login')
+    }
+    
+    const adminPayload: AdminJWTPayload = {
+      adminId: decoded.adminId,
+      login: decoded.login,
+      iat: decoded.iat,
+      exp: decoded.exp
+    }
     
     // Проверяем срок действия
-    if (decoded.exp && decoded.exp < Math.floor(Date.now() / 1000)) {
-      console.log('[JWT] Токен истек')
+    if (adminPayload.exp && adminPayload.exp < Math.floor(Date.now() / 1000)) {
       throw new Error('Token expired')
     }
     
-    return decoded
+    return adminPayload
   } catch (error: any) {
-    console.error('[JWT] Ошибка декодирования токена:', error.message || error)
-    console.error('[JWT] Токен (первые 50 символов):', token.substring(0, 50))
-    throw new Error('Invalid token')
+    if (error.message && (error.message.includes('user token') || error.message.includes('adminId'))) {
+      throw error
+    }
+    throw new Error('Invalid admin token')
   }
 }
 

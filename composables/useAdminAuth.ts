@@ -10,6 +10,10 @@ export const useAdminAuth = () => {
     token.value = newToken
     admin.value = newAdmin
     if (process.client) {
+      // Очищаем токен пользователя, если он есть, чтобы избежать путаницы
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('auth_user')
+      // Сохраняем токен админа
       localStorage.setItem('admin_token', newToken)
       localStorage.setItem('admin_user', JSON.stringify(newAdmin))
     }
@@ -54,17 +58,41 @@ export const useAdminAuth = () => {
     
     if (process.client) {
       currentToken = localStorage.getItem('admin_token')
-      // Обновляем state из localStorage, если токен найден
+      
+      // Если токен найден, проверяем, что это токен админа, а не пользователя
       if (currentToken) {
-        token.value = currentToken
-        // Также восстанавливаем админа из localStorage
-        const savedAdmin = localStorage.getItem('admin_user')
-        if (savedAdmin) {
-          try {
-            admin.value = JSON.parse(savedAdmin)
-          } catch {
-            // Игнорируем ошибки парсинга
+        try {
+          // Декодируем токен (base64url на клиенте)
+          // base64url использует - и _ вместо + и /
+          const base64 = currentToken.replace(/-/g, '+').replace(/_/g, '/')
+          const decodedStr = atob(base64)
+          const decoded = JSON.parse(decodedStr)
+          
+          // Если это токен пользователя (содержит userId/phone), очищаем его
+          if (decoded.userId || decoded.phone) {
+            console.error('⚠️ Обнаружен токен пользователя в admin_token! Очищаю...')
+            localStorage.removeItem('admin_token')
+            localStorage.removeItem('admin_user')
+            currentToken = null
+          } else if (decoded.adminId && decoded.login) {
+            // Это токен админа - все хорошо
+            token.value = currentToken
+            // Также восстанавливаем админа из localStorage
+            const savedAdmin = localStorage.getItem('admin_user')
+            if (savedAdmin) {
+              try {
+                admin.value = JSON.parse(savedAdmin)
+              } catch {
+                // Игнорируем ошибки парсинга
+              }
+            }
           }
+        } catch (e) {
+          // Если не удалось декодировать, возможно токен поврежден
+          console.error('⚠️ Не удалось декодировать токен админа:', e)
+          localStorage.removeItem('admin_token')
+          localStorage.removeItem('admin_user')
+          currentToken = null
         }
       }
     }
@@ -124,11 +152,29 @@ export const useAdminAuth = () => {
       return false
     }
 
-    // Читаем токен из localStorage (НЕ устанавливаем в state!)
+    // Читаем токен из localStorage
     const savedToken = localStorage.getItem('admin_token')
     
     if (!savedToken) {
-      // Нет токена - очищаем state на всякий случай
+      clearAuth()
+      return false
+    }
+
+    // Проверяем, что это токен админа, а не пользователя
+    try {
+      // Декодируем токен (base64url на клиенте)
+      const base64 = savedToken.replace(/-/g, '+').replace(/_/g, '/')
+      const decodedStr = atob(base64)
+      const decoded = JSON.parse(decodedStr)
+      
+      // Если это токен пользователя, очищаем его
+      if (decoded.userId || decoded.phone) {
+        console.error('⚠️ Обнаружен токен пользователя в admin_token при checkAuth! Очищаю...')
+        clearAuth()
+        return false
+      }
+    } catch (e) {
+      // Если не удалось декодировать, очищаем токен
       clearAuth()
       return false
     }
@@ -138,22 +184,17 @@ export const useAdminAuth = () => {
       const response = await fetchWithToken('/api/admin/auth/check', savedToken)
       
       if (response.success && response.admin) {
-        // Токен валиден - ТЕПЕРЬ устанавливаем в state
+        // Токен валиден - устанавливаем в state
         setAuth(savedToken, response.admin)
         return true
       }
       
-      // Токен невалиден - НЕ очищаем сразу, чтобы пользователь мог увидеть ошибку
       return false
     } catch (error: any) {
-      // Ошибка проверки - НЕ очищаем сразу, если это 401, возможно это временная ошибка
+      // Если получили 401, очищаем авторизацию
       if (error.statusCode === 401 || error.status === 401) {
-        // Только если токен действительно истек, очищаем авторизацию
-        // Но не сразу - дадим пользователю возможность увидеть ошибку
-        return false
+        clearAuth()
       }
-      
-      // Другие ошибки - не очищаем авторизацию
       return false
     }
   }
