@@ -5,6 +5,7 @@ definePageMeta({
 
 const route = useRoute()
 const router = useRouter()
+const adminAuth = useAdminAuth()
 const bannerId = route.params.id as string
 const isNew = bannerId === 'new'
 
@@ -13,7 +14,7 @@ const form = ref({
   image: '',
   link: '',
   isActive: true,
-  sortOrder: 1
+  sortOrder: 0
 })
 
 const isLoading = ref(false)
@@ -23,12 +24,17 @@ const loadBanner = async () => {
 
   isLoading.value = true
   try {
-    // Баннеры пока заглушка, используем данные из списка
-    alert('Редактирование баннера будет доступно после реализации API')
-    router.push('/admin?tab=banners')
-  } catch (error) {
+    const banner = await adminAuth.$fetchWithAuth(`/api/admin/banners/${bannerId}`)
+    form.value = {
+      title: banner.title || '',
+      image: banner.image || '',
+      link: banner.link || '',
+      isActive: banner.isActive !== undefined ? banner.isActive : true,
+      sortOrder: banner.sortOrder || 0
+    }
+  } catch (error: any) {
     console.error('Ошибка загрузки баннера:', error)
-    alert('Баннер не найден')
+    alert(error?.data?.message || 'Баннер не найден')
     router.push('/admin?tab=banners')
   } finally {
     isLoading.value = false
@@ -43,8 +49,17 @@ const saveBanner = async () => {
 
   isLoading.value = true
   try {
-    // Баннеры пока заглушка
-    alert('Сохранение баннера будет доступно после реализации API')
+    if (isNew) {
+      await adminAuth.$fetchWithAuth('/api/admin/banners', {
+        method: 'POST',
+        body: form.value
+      })
+    } else {
+      await adminAuth.$fetchWithAuth(`/api/admin/banners/${bannerId}`, {
+        method: 'PUT',
+        body: form.value
+      })
+    }
     router.push('/admin?tab=banners')
   } catch (error: any) {
     alert(error?.data?.message || 'Ошибка сохранения баннера')
@@ -71,7 +86,10 @@ onMounted(() => {
       </NuxtLink>
     </div>
 
-    <form v-if="!isLoading || isNew" @submit.prevent="saveBanner" class="bg-gray-800 rounded-lg p-6 border border-gray-700 space-y-6">
+    <div v-if="isLoading && !isNew" class="text-center py-12 text-gray-400">
+      Загрузка...
+    </div>
+    <form v-else @submit.prevent="saveBanner" class="bg-gray-800 rounded-lg p-6 border border-gray-700 space-y-6">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-2">Название *</label>
@@ -119,11 +137,6 @@ onMounted(() => {
         </label>
       </div>
 
-      <div class="p-4 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
-        <p class="text-yellow-400 text-sm">
-          ⚠️ Управление баннерами - заглушка. Реальная реализация будет добавлена позже.
-        </p>
-      </div>
 
       <div class="flex items-center justify-end gap-4 pt-4 border-t border-gray-700">
         <NuxtLink

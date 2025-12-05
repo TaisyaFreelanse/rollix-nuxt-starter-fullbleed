@@ -3,24 +3,39 @@ definePageMeta({
   layout: 'admin'
 })
 
-// Заглушка для баннеров
-const banners = ref([
-  {
-    id: '1',
-    title: 'Главный баннер',
-    image: '/banner1.jpg',
-    link: '/catalog',
-    isActive: true,
-    sortOrder: 1
-  }
-])
-
+const adminAuth = useAdminAuth()
+const banners = ref<any[]>([])
 const isLoading = ref(false)
+
+const loadBanners = async () => {
+  isLoading.value = true
+  try {
+    banners.value = await adminAuth.$fetchWithAuth('/api/admin/banners')
+  } catch (error: any) {
+    console.error('Ошибка загрузки баннеров:', error)
+    alert('Ошибка загрузки баннеров')
+  } finally {
+    isLoading.value = false
+  }
+}
 
 const deleteBanner = async (id: string) => {
   if (!confirm('Вы уверены, что хотите удалить этот баннер?')) return
-  banners.value = banners.value.filter((b) => b.id !== id)
+
+  try {
+    await adminAuth.$fetchWithAuth(`/api/admin/banners/${id}`, {
+      method: 'DELETE'
+    })
+    await loadBanners()
+  } catch (error: any) {
+    console.error('Ошибка удаления баннера:', error)
+    alert('Ошибка удаления баннера')
+  }
 }
+
+onMounted(() => {
+  loadBanners()
+})
 </script>
 
 <template>
@@ -35,7 +50,10 @@ const deleteBanner = async (id: string) => {
     </div>
 
     <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-      <div v-if="banners.length === 0" class="p-8 text-center text-gray-400">
+      <div v-if="isLoading" class="p-8 text-center text-gray-400">
+        Загрузка...
+      </div>
+      <div v-else-if="banners.length === 0" class="p-8 text-center text-gray-400">
         Баннеры не найдены
       </div>
       <div v-else class="divide-y divide-gray-700">
@@ -51,7 +69,7 @@ const deleteBanner = async (id: string) => {
                 class="w-24 h-24 object-cover rounded" />
               <div>
                 <h3 class="text-lg font-semibold text-white">{{ banner.title }}</h3>
-                <p class="text-sm text-gray-400 mt-1">Ссылка: {{ banner.link }}</p>
+                <p class="text-sm text-gray-400 mt-1">Ссылка: {{ banner.link || '-' }}</p>
                 <div class="flex items-center gap-4 mt-2">
                   <span class="text-xs text-gray-500">Порядок: {{ banner.sortOrder }}</span>
                   <span
@@ -83,11 +101,6 @@ const deleteBanner = async (id: string) => {
       </div>
     </div>
 
-    <div class="mt-6 p-4 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
-      <p class="text-yellow-400 text-sm">
-        ⚠️ Управление баннерами - заглушка. Реальная реализация будет добавлена позже.
-      </p>
-    </div>
   </div>
 </template>
 

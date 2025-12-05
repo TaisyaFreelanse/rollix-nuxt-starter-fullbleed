@@ -8,23 +8,25 @@ import { verifyAdminToken } from './admin-jwt'
  */
 export async function getAdminIdFromToken(event: H3Event): Promise<string | null> {
   try {
-    const authHeader = getHeader(event, 'authorization')
+    const authHeader = getHeader(event, 'authorization') || getHeader(event, 'Authorization')
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('[Admin Auth] Нет заголовка Authorization или неверный формат')
       return null
     }
 
     const token = authHeader.substring(7) // Убираем "Bearer "
     
     if (!token) {
+      console.log('[Admin Auth] Токен пустой после извлечения')
       return null
     }
 
     const payload = await verifyAdminToken(token)
     return payload.adminId || null
-  } catch (error) {
+  } catch (error: any) {
     // Токен невалиден или истек
-    console.error('Ошибка проверки токена админа:', error)
+    console.error('[Admin Auth] Ошибка проверки токена:', error.message || error)
     return null
   }
 }

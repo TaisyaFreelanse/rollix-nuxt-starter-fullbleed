@@ -36,29 +36,36 @@ export const useAdminAuth = () => {
 
   // $fetch с текущим токеном из state
   const $fetchWithAuth = async (url: string, options: any = {}) => {
-    // Если токена нет в state, пытаемся восстановить из localStorage
-    if (!token.value) {
-      const savedToken = process.client ? localStorage.getItem('admin_token') : null
+    // Всегда проверяем, есть ли токен - если нет в state, берем из localStorage
+    let currentToken = token.value
+    
+    // Если токена нет в state, берем из localStorage
+    if (!currentToken && process.client) {
+      const savedToken = localStorage.getItem('admin_token')
       if (savedToken) {
-        try {
-          const isValid = await checkAuth()
-          if (!isValid) {
-            throw new Error('No valid auth token')
+        currentToken = savedToken
+        // Восстанавливаем токен в state
+        token.value = savedToken
+        // Также восстанавливаем админа из localStorage
+        const savedAdmin = localStorage.getItem('admin_user')
+        if (savedAdmin) {
+          try {
+            admin.value = JSON.parse(savedAdmin)
+          } catch {
+            // Игнорируем ошибки парсинга
           }
-        } catch {
-          throw new Error('No valid auth token')
         }
-      } else {
-        throw new Error('No auth token')
       }
     }
 
+    if (!currentToken) {
+      throw new Error('No auth token')
+    }
+
     try {
-      return await fetchWithToken(url, token.value, options)
+      return await fetchWithToken(url, currentToken, options)
     } catch (error: any) {
-      // Если получили 401, просто пробрасываем ошибку дальше
-      // НЕ делаем повторную проверку токена, чтобы избежать бесконечного цикла
-      // НЕ очищаем авторизацию сразу - пусть пользователь видит ошибку и может продолжить работу
+      // Если получили 401, просто пробрасываем ошибку
       throw error
     }
   }

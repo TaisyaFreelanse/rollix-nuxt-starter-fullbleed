@@ -1,8 +1,9 @@
 import { prisma } from '~/server/utils/prisma'
+import { requireAuth } from '~/server/utils/auth'
 
 export default defineEventHandler(async (event) => {
   try {
-    const userId = 'user_123' // TODO: Получить из сессии/токена
+    const userId = await requireAuth(event)
 
     const orders = await prisma.order.findMany({
       where: {

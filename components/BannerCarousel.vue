@@ -1,14 +1,25 @@
 <script setup lang="ts">
-const banners = [
-  '/baner1.jpg',
-  '/baner3.jpg',
-  '/baner4.jpg'
-]
-
+const banners = ref<any[]>([])
 const currentIndex = ref(0)
 const autoplayInterval = ref<NodeJS.Timeout | null>(null)
 const autoplayDelay = 5000 // 5 секунд
 const carouselRef = ref<HTMLElement | null>(null)
+
+// Загрузка баннеров из API
+const loadBanners = async () => {
+  try {
+    const data = await $fetch('/api/banners')
+    banners.value = data || []
+  } catch (error) {
+    console.error('Ошибка загрузки баннеров:', error)
+    // В случае ошибки используем дефолтные баннеры
+    banners.value = [
+      { id: '1', image: '/baner1.jpg', link: null },
+      { id: '2', image: '/baner3.jpg', link: null },
+      { id: '3', image: '/baner4.jpg', link: null }
+    ]
+  }
+}
 
 // Автоматическая прокрутка
 const startAutoplay = () => {
@@ -17,7 +28,9 @@ const startAutoplay = () => {
   }
   
   autoplayInterval.value = setInterval(() => {
-    currentIndex.value = (currentIndex.value + 1) % banners.length
+    if (banners.value.length > 0) {
+      currentIndex.value = (currentIndex.value + 1) % banners.value.length
+    }
   }, autoplayDelay)
 }
 
@@ -35,15 +48,19 @@ const goToSlide = (index: number) => {
 }
 
 const nextSlide = () => {
-  currentIndex.value = (currentIndex.value + 1) % banners.length
-  stopAutoplay()
-  startAutoplay()
+  if (banners.value.length > 0) {
+    currentIndex.value = (currentIndex.value + 1) % banners.value.length
+    stopAutoplay()
+    startAutoplay()
+  }
 }
 
 const prevSlide = () => {
-  currentIndex.value = (currentIndex.value - 1 + banners.length) % banners.length
-  stopAutoplay()
-  startAutoplay()
+  if (banners.value.length > 0) {
+    currentIndex.value = (currentIndex.value - 1 + banners.value.length) % banners.value.length
+    stopAutoplay()
+    startAutoplay()
+  }
 }
 
 let touchStartX = 0
@@ -75,8 +92,17 @@ const handleSwipe = () => {
   }
 }
 
-onMounted(() => {
-  startAutoplay()
+const handleBannerClick = (banner: any) => {
+  if (banner.link) {
+    navigateTo(banner.link)
+  }
+}
+
+onMounted(async () => {
+  await loadBanners()
+  if (banners.value.length > 0) {
+    startAutoplay()
+  }
 })
 
 onUnmounted(() => {
@@ -95,6 +121,7 @@ const handleMouseLeave = () => {
 
 <template>
   <section
+    v-if="banners.length > 0"
     ref="carouselRef"
     class="relative w-full h-[30vh] md:h-[40vh] min-h-[200px] md:min-h-[300px] max-h-[400px] md:max-h-[500px] overflow-hidden"
     @mouseenter="handleMouseEnter"
@@ -108,11 +135,12 @@ const handleMouseLeave = () => {
         :style="{ transform: `translateX(-${currentIndex * 100}%)` }">
         <div
           v-for="(banner, index) in banners"
-          :key="banner"
-          class="min-w-full h-full flex-shrink-0">
+          :key="banner.id || index"
+          class="min-w-full h-full flex-shrink-0 cursor-pointer"
+          @click="handleBannerClick(banner)">
           <img
-            :src="banner"
-            :alt="`Баннер ${index + 1}`"
+            :src="banner.image"
+            :alt="banner.title || `Баннер ${index + 1}`"
             class="w-full h-full object-cover" />
         </div>
       </div>
