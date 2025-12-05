@@ -41,42 +41,14 @@ const handleLogout = async () => {
   isAuthorized.value = false
 }
 
-// Периодическая проверка токена (каждые 5 минут)
-let authCheckInterval: NodeJS.Timeout | null = null
-
 onMounted(async () => {
   try {
     const valid = await adminAuth.checkAuth()
     isAuthorized.value = valid
-    
-    // Запускаем периодическую проверку токена, если авторизованы
-    if (valid) {
-      authCheckInterval = setInterval(async () => {
-        try {
-          const stillValid = await adminAuth.checkAuth()
-          if (!stillValid) {
-            isAuthorized.value = false
-            if (authCheckInterval) {
-              clearInterval(authCheckInterval)
-              authCheckInterval = null
-            }
-          }
-        } catch {
-          // Игнорируем ошибки при периодической проверке
-        }
-      }, 5 * 60 * 1000) // Проверяем каждые 5 минут
-    }
   } catch {
     isAuthorized.value = false
   } finally {
     isChecking.value = false
-  }
-})
-
-onUnmounted(() => {
-  if (authCheckInterval) {
-    clearInterval(authCheckInterval)
-    authCheckInterval = null
   }
 })
 
@@ -382,11 +354,8 @@ const loadPromotions = async () => {
   } catch (error: any) {
     console.error('Ошибка загрузки акций:', error)
     promotions.value = []
-    // Если токен истек, $fetchWithAuth уже очистил авторизацию
-    if (error.statusCode === 401 || error.status === 401) {
-      // Токен истек - перенаправляем на страницу входа
-      isAuthorized.value = false
-    }
+    // Не сбрасываем авторизацию сразу - пользователь может продолжить работу
+    // Авторизация будет проверена при следующей попытке
   } finally {
     promotionsLoading.value = false
   }
@@ -406,10 +375,7 @@ const loadPromocodeWidget = async () => {
   } catch (error: any) {
     console.error('Ошибка загрузки виджета промокода:', error)
     promocodeWidget.value = null
-    // Если токен истек, $fetchWithAuth уже очистил авторизацию
-    if (error.statusCode === 401 || error.status === 401) {
-      isAuthorized.value = false
-    }
+    // Не сбрасываем авторизацию сразу
   } finally {
     promocodeWidgetLoading.value = false
   }
@@ -558,10 +524,7 @@ const loadZones = async () => {
   } catch (error: any) {
     console.error('Ошибка загрузки зон доставки:', error)
     zones.value = []
-    // Если токен истек, $fetchWithAuth уже очистил авторизацию
-    if (error.statusCode === 401 || error.status === 401) {
-      isAuthorized.value = false
-    }
+    // Не сбрасываем авторизацию сразу
   } finally {
     zonesLoading.value = false
   }
@@ -678,10 +641,7 @@ const loadAdmins = async () => {
     admins.value = await adminAuth.$fetchWithAuth('/api/admin/admins')
   } catch (error: any) {
     console.error('Ошибка загрузки администраторов:', error)
-    // Если токен истек, $fetchWithAuth уже очистил авторизацию
-    if (error.statusCode === 401 || error.status === 401) {
-      isAuthorized.value = false
-    }
+    // Не сбрасываем авторизацию сразу - пользователь может продолжить работу
   } finally {
     adminsLoading.value = false
   }
@@ -806,13 +766,9 @@ const loadTabData = async (tab: string) => {
       await loadAdmins()
     }
   } catch (error: any) {
-    // Если получили 401 при загрузке данных, проверяем авторизацию
-    if (error.statusCode === 401 || error.status === 401) {
-      const stillValid = await adminAuth.checkAuth()
-      if (!stillValid) {
-        isAuthorized.value = false
-      }
-    }
+    // Не делаем повторную проверку токена - это может создать бесконечный цикл
+    // Просто логируем ошибку, пользователь может продолжить работу
+    console.error('Ошибка загрузки данных вкладки:', error)
   }
 }
 
