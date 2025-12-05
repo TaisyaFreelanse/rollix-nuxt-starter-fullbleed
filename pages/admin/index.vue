@@ -534,20 +534,35 @@ const formatPromotionDate = (dateString: string) => {
 }
 
 // ========== БАННЕРЫ ==========
-const banners = ref([
-  {
-    id: '1',
-    title: 'Главный баннер',
-    image: '/baner1.jpg',
-    link: '/catalog',
-    isActive: true,
-    sortOrder: 1
+const banners = ref<any[]>([])
+const bannersLoading = ref(false)
+
+const loadBanners = async () => {
+  if (!isAuthorized.value) return
+  
+  bannersLoading.value = true
+  try {
+    banners.value = await adminAuth.$fetchWithAuth('/api/admin/banners')
+  } catch (error: any) {
+    console.error('Ошибка загрузки баннеров:', error)
+    banners.value = []
+  } finally {
+    bannersLoading.value = false
   }
-])
+}
 
 const deleteBanner = async (id: string) => {
   if (!confirm('Вы уверены, что хотите удалить этот баннер?')) return
-  banners.value = banners.value.filter((b) => b.id !== id)
+  
+  try {
+    await adminAuth.$fetchWithAuth(`/api/admin/banners/${id}`, {
+      method: 'DELETE'
+    })
+    await loadBanners()
+  } catch (error: any) {
+    console.error('Ошибка удаления баннера:', error)
+    alert('Ошибка удаления баннера')
+  }
 }
 
 // ========== ЗОНЫ ДОСТАВКИ ==========
@@ -806,6 +821,8 @@ const loadTabData = async (tab: string) => {
       await loadCurrentOrders()
     } else if (tab === 'admins') {
       await loadAdmins()
+    } else if (tab === 'banners') {
+      await loadBanners()
     }
   } catch (error: any) {
     // Не делаем повторную проверку токена - это может создать бесконечный цикл
@@ -1771,7 +1788,10 @@ watch(isAuthorized, async (val) => {
         </div>
 
         <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-          <div v-if="banners.length === 0" class="p-8 text-center text-gray-400">
+          <div v-if="bannersLoading" class="p-8 text-center text-gray-400">
+            Загрузка...
+          </div>
+          <div v-else-if="banners.length === 0" class="p-8 text-center text-gray-400">
             Баннеры не найдены
           </div>
           <div v-else class="divide-y divide-gray-700">

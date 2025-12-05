@@ -35,7 +35,7 @@ const loadBanner = async () => {
   } catch (error: any) {
     console.error('Ошибка загрузки баннера:', error)
     alert(error?.data?.message || 'Баннер не найден')
-    router.push('/admin?tab=banners')
+    router.push('/admin/banners')
   } finally {
     isLoading.value = false
   }
@@ -60,7 +60,7 @@ const saveBanner = async () => {
         body: form.value
       })
     }
-    router.push('/admin?tab=banners')
+    router.push('/admin/banners')
   } catch (error: any) {
     alert(error?.data?.message || 'Ошибка сохранения баннера')
   } finally {
@@ -80,7 +80,7 @@ onMounted(() => {
         {{ isNew ? 'Добавить баннер' : 'Редактировать баннер' }}
       </h1>
       <NuxtLink
-        to="/admin?tab=banners"
+        to="/admin/banners"
         class="text-gray-400 hover:text-white transition-colors">
         ← Назад к списку
       </NuxtLink>
@@ -140,7 +140,7 @@ onMounted(() => {
 
       <div class="flex items-center justify-end gap-4 pt-4 border-t border-gray-700">
         <NuxtLink
-          to="/admin?tab=banners"
+          to="/admin/banners"
           class="px-6 py-2 text-gray-400 hover:text-white transition-colors">
           Отмена
         </NuxtLink>

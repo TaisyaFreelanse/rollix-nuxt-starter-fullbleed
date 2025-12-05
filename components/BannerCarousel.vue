@@ -9,7 +9,16 @@ const carouselRef = ref<HTMLElement | null>(null)
 const loadBanners = async () => {
   try {
     const data = await $fetch('/api/banners')
-    banners.value = data || []
+    banners.value = Array.isArray(data) ? data : []
+    
+    // Если нет активных баннеров, используем дефолтные
+    if (banners.value.length === 0) {
+      banners.value = [
+        { id: '1', image: '/baner1.jpg', link: null },
+        { id: '2', image: '/baner3.jpg', link: null },
+        { id: '3', image: '/baner4.jpg', link: null }
+      ]
+    }
   } catch (error) {
     console.error('Ошибка загрузки баннеров:', error)
     // В случае ошибки используем дефолтные баннеры
@@ -98,15 +107,43 @@ const handleBannerClick = (banner: any) => {
   }
 }
 
+// Обновление баннеров периодически (каждые 10 секунд) для отображения изменений
+let refreshInterval: NodeJS.Timeout | null = null
+
+// Обновление при фокусе окна
+const handleFocus = () => {
+  loadBanners()
+}
+
 onMounted(async () => {
   await loadBanners()
   if (banners.value.length > 0) {
     startAutoplay()
   }
+  
+  // Обновляем баннеры каждые 10 секунд для быстрого отображения изменений
+  refreshInterval = setInterval(async () => {
+    await loadBanners()
+    if (banners.value.length > 0 && !autoplayInterval.value) {
+      startAutoplay()
+    }
+  }, 10000)
+  
+  // Обновляем при возврате фокуса на страницу
+  if (process.client) {
+    window.addEventListener('focus', handleFocus)
+  }
 })
 
 onUnmounted(() => {
   stopAutoplay()
+  if (refreshInterval) {
+    clearInterval(refreshInterval)
+    refreshInterval = null
+  }
+  if (process.client) {
+    window.removeEventListener('focus', handleFocus)
+  }
 })
 
 // Останавливаем автопрокрутку при наведении
