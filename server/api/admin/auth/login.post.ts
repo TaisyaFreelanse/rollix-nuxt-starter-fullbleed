@@ -49,6 +49,18 @@ export default defineEventHandler(async (event) => {
       login: admin.login
     })
 
+    // Проверяем, что токен правильно создан (для отладки)
+    try {
+      const decodedStr = Buffer.from(token, 'base64url').toString()
+      const decoded = JSON.parse(decodedStr)
+      console.log('[Admin Login] Создан токен админа с adminId:', decoded.adminId)
+      if (decoded.userId || decoded.phone) {
+        console.error('⚠️ ОШИБКА: Токен админа содержит поля пользователя!')
+      }
+    } catch (e) {
+      console.error('⚠️ Ошибка проверки созданного токена:', e)
+    }
+
     return {
       success: true,
       token,

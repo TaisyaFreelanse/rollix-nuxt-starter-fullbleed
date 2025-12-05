@@ -20,6 +20,34 @@ const handleLogin = async () => {
     loginError.value = 'Введите логин и пароль'
     return
   }
+  
+  // Очищаем все токены перед логином, чтобы избежать путаницы
+  if (process.client) {
+    // Очищаем токен пользователя, если он есть
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('auth_user')
+    // Очищаем старый токен админа, если он есть
+    const adminToken = localStorage.getItem('admin_token')
+    if (adminToken) {
+      try {
+        const base64 = adminToken.replace(/-/g, '+').replace(/_/g, '/')
+        const decodedStr = atob(base64)
+        const decoded = JSON.parse(decodedStr)
+        if (decoded.userId || decoded.phone) {
+          // Это токен пользователя - очищаем
+          console.log('⚠️ Очищаю токен пользователя перед логином админа')
+          localStorage.removeItem('admin_token')
+          localStorage.removeItem('admin_user')
+        }
+      } catch (e) {
+        // Если не удалось декодировать, очищаем на всякий случай
+        localStorage.removeItem('admin_token')
+        localStorage.removeItem('admin_user')
+      }
+    }
+    adminAuth.clearAuth()
+  }
+  
   loginLoading.value = true
   loginError.value = ''
   try {
@@ -53,6 +81,29 @@ const handleLogout = async () => {
 }
 
 onMounted(async () => {
+  // Очищаем токен пользователя из admin_token, если он там есть
+  if (process.client) {
+    try {
+      const adminToken = localStorage.getItem('admin_token')
+      if (adminToken) {
+        // Проверяем, что это токен админа, а не пользователя
+        const base64 = adminToken.replace(/-/g, '+').replace(/_/g, '/')
+        const decodedStr = atob(base64)
+        const decoded = JSON.parse(decodedStr)
+        
+        // Если это токен пользователя, очищаем его
+        if (decoded.userId || decoded.phone) {
+          console.log('⚠️ Обнаружен токен пользователя в admin_token при загрузке страницы. Очищаю...')
+          localStorage.removeItem('admin_token')
+          localStorage.removeItem('admin_user')
+          adminAuth.clearAuth()
+        }
+      }
+    } catch (e) {
+      // Игнорируем ошибки декодирования
+    }
+  }
+  
   try {
     const valid = await adminAuth.checkAuth()
     isAuthorized.value = valid
