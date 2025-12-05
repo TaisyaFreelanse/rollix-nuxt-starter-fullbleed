@@ -17,9 +17,11 @@ const form = ref({
   categoryId: '',
   weight: null as number | null,
   calories: null as number | null,
-  isActive: true,
-  isPopular: false,
-  sortOrder: 0
+      isActive: true,
+      isPopular: false,
+      isNew: false,
+      isHot: false,
+      sortOrder: 0
 })
 
 const categories = ref<any[]>([])
@@ -50,6 +52,8 @@ const loadProduct = async () => {
       calories: product.calories || null,
       isActive: product.isActive ?? true,
       isPopular: product.isPopular ?? false,
+      isNew: product.isNew ?? false,
+      isHot: product.isHot ?? false,
       sortOrder: product.sortOrder || 0
     }
   } catch (error) {
@@ -211,6 +215,22 @@ onMounted(() => {
             type="checkbox"
             class="w-4 h-4 text-accent bg-gray-700 border-gray-600 rounded focus:ring-accent" />
           <span class="text-gray-300">Популярный</span>
+        </label>
+
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input
+            v-model="form.isNew"
+            type="checkbox"
+            class="w-4 h-4 text-accent bg-gray-700 border-gray-600 rounded focus:ring-accent" />
+          <span class="text-gray-300">New (тег)</span>
+        </label>
+
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input
+            v-model="form.isHot"
+            type="checkbox"
+            class="w-4 h-4 text-accent bg-gray-700 border-gray-600 rounded focus:ring-accent" />
+          <span class="text-gray-300">Hot (тег)</span>
         </label>
       </div>
 

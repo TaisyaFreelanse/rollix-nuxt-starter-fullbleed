@@ -7,6 +7,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // Пользователи
@@ -82,6 +83,8 @@ model Product {
   calories    Int?      // Калории
   isActive    Boolean   @default(true)
   isPopular   Boolean   @default(false)
+  isNew       Boolean   @default(false)  // Тег "New"
+  isHot       Boolean   @default(false)  // Тег "Hot"
   sortOrder   Int       @default(0)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt

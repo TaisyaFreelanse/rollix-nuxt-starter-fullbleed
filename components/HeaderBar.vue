@@ -1,6 +1,5 @@
 
 <script setup lang="ts">
-const mobileOpen = useState('mobileOpen', () => false)
 const auth = useAuth()
 const router = useRouter()
 const showAuthModal = ref(false)

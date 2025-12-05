@@ -13,7 +13,7 @@ export async function generateAdminToken(payload: Omit<AdminJWTPayload, 'iat' | 
   const jwtPayload: AdminJWTPayload = {
     ...payload,
     iat: now,
-    exp: now + 24 * 60 * 60 // 24 часа для админов
+    exp: now + 7 * 24 * 60 * 60 // 7 дней для админов (было 24 часа)
   }
 
   // В реальном приложении использовать библиотеку jsonwebtoken

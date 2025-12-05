@@ -18,21 +18,20 @@
     "db:studio": "prisma studio",
     "db:dev": "prisma dev",
     "admin:create": "tsx scripts/create-admin.ts",
-    "render:build": "npm install --production=false && npx prisma generate --schema=prisma/schema.prisma && npx tsx scripts/create-sms-table.ts && npm run build",
+    "render:build": "npm install --production=false && npx prisma generate --schema=prisma/schema.prisma && npx tsx scripts/create-sms-table.ts && npx tsx scripts/add-product-tags.ts && npm run build",
     "render:setup": "npx tsx scripts/setup-db.ts",
     "render:migrate": "npx tsx scripts/run-migration.ts"
   },
   "dependencies": {
     "@headlessui/vue": "^1.7.23",
     "@pinia/nuxt": "^0.11.3",
-    "@prisma/adapter-pg": "^7.0.1",
-    "@prisma/client": "^7.0.1",
+    "@prisma/adapter-pg": "6.19.0",
+    "@prisma/client": "6.19.0",
     "@types/ws": "^8.18.1",
     "@vueuse/core": "^14.1.0",
     "@vueuse/nuxt": "^14.1.0",
     "nuxt": "^3.12.0",
     "pg": "^8.16.3",
-    "prisma": "^7.0.1",
     "ws": "^8.18.3"
   },
   "devDependencies": {
@@ -45,6 +44,7 @@
     "eslint-plugin-prettier": "^5.5.4",
     "postcss": "^8.4.47",
     "prettier": "^3.7.3",
+    "prisma": "6.19.0",
     "tailwindcss": "^3.4.13",
     "tsx": "^4.19.1",
     "typescript": "^5.9.3"

@@ -15,6 +15,7 @@ const emit = defineEmits<{
 
 const quantity = ref(1)
 const selectedModifiers = ref<Record<string, string[]>>({})
+const showComposition = ref(false)
 
 // Сброс состояния при открытии модального окна
 watch(
@@ -22,6 +23,7 @@ watch(
   (isOpen) => {
     if (isOpen) {
       quantity.value = 1
+      showComposition.value = false
       initModifiers()
     }
   }
@@ -176,14 +178,42 @@ const closeModal = () => {
                     {{ product?.name }}
                   </DialogTitle>
 
+                  <!-- Краткое описание (ингредиенты) -->
                   <p v-if="product?.description" class="text-gray-400 mb-4">
                     {{ product.description }}
                   </p>
 
-                  <div class="flex items-center gap-4 mb-6 text-sm text-gray-400">
-                    <span v-if="product?.weight">{{ product.weight }}г</span>
-                    <span v-if="product?.calories">{{ product.calories }} ккал</span>
+                  <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-4 text-sm text-gray-400">
+                      <span v-if="product?.weight">{{ product.weight }}г</span>
+                      <span v-if="product?.calories">{{ product.calories }} ккал</span>
+                    </div>
+                    <button
+                      v-if="product?.description"
+                      type="button"
+                      class="text-xs px-3 py-1.5 border border-white/20 rounded-lg text-gray-300 hover:border-white/40 hover:text-white transition"
+                      @click="showComposition = !showComposition">
+                      {{ showComposition ? 'Скрыть состав' : 'Показать состав' }}
+                    </button>
                   </div>
+
+                  <!-- Расширенный состав товара -->
+                  <Transition
+                    enter-active-class="transition duration-200 ease-out"
+                    enter-from-class="opacity-0 transform scale-95"
+                    enter-to-class="opacity-100 transform scale-100"
+                    leave-active-class="transition duration-150 ease-in"
+                    leave-from-class="opacity-100 transform scale-100"
+                    leave-to-class="opacity-0 transform scale-95">
+                    <div
+                      v-if="showComposition && product?.description"
+                      class="mb-6 p-4 bg-white/5 rounded-lg border border-white/10">
+                      <h3 class="text-white font-medium mb-2">Состав:</h3>
+                      <p class="text-gray-300 text-sm leading-relaxed whitespace-pre-line">
+                        {{ product.description }}
+                      </p>
+                    </div>
+                  </Transition>
 
                   <!-- Модификаторы -->
                   <div v-if="product?.modifiers && product.modifiers.length > 0" class="space-y-4 mb-6">
@@ -225,27 +255,28 @@ const closeModal = () => {
 
                   <!-- Количество и цена -->
                   <div class="mt-auto pt-6 border-t border-white/10">
-                    <div class="flex items-center justify-between mb-4">
-                      <div class="flex items-center gap-3">
-                        <span class="text-gray-400">Количество:</span>
+                    <div class="flex items-center justify-between mb-4 gap-2 sm:gap-3 flex-wrap">
+                      <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                        <span class="text-gray-400 whitespace-nowrap text-sm sm:text-base">Количество:</span>
                         <div class="flex items-center gap-2 border border-white/10 rounded-lg">
                           <button
                             type="button"
-                            class="px-3 py-1 hover:bg-white/10 transition"
+                            class="quantity-btn px-2 sm:px-3 py-1 hover:bg-white/10 transition"
                             @click="decrementQuantity">
                             −
                           </button>
-                          <span class="px-4 py-1 text-white font-medium">{{ quantity }}</span>
+                          <span class="px-3 sm:px-4 py-1 text-white font-medium">{{ quantity }}</span>
                           <button
                             type="button"
-                            class="px-3 py-1 hover:bg-white/10 transition"
+                            class="quantity-btn px-2 sm:px-3 py-1 hover:bg-white/10 transition"
                             @click="incrementQuantity">
                             +
                           </button>
                         </div>
                       </div>
-                      <div class="text-2xl font-semibold text-white">
-                        {{ totalPrice.toFixed(2) }} ₽
+                      <div class="text-lg sm:text-xl md:text-2xl font-semibold text-white whitespace-nowrap flex items-baseline gap-0.5 sm:gap-1">
+                        <span>{{ totalPrice.toFixed(2) }}</span>
+                        <span class="text-base sm:text-lg md:text-xl">₽</span>
                       </div>
                     </div>
 
@@ -265,3 +296,18 @@ const closeModal = () => {
     </Dialog>
   </TransitionRoot>
 </template>
+
+<style scoped>
+/* Предотвращение зума при двойном тапе на кнопках */
+.quantity-btn {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* Корректное отображение цены - не переносится на новую строку */
+.price-container {
+  min-width: 0;
+  flex-shrink: 1;
+}
+</style>

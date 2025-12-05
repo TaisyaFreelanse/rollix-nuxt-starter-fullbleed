@@ -34,12 +34,60 @@ export const useAdminAuth = () => {
     })
   }
 
-  // $fetch с текущим токеном из state
+  // $fetch с текущим токеном из state с автоматической обработкой 401
   const $fetchWithAuth = async (url: string, options: any = {}) => {
     if (!token.value) {
-      throw new Error('No auth token')
+      // Пытаемся восстановить токен из localStorage
+      const savedToken = process.client ? localStorage.getItem('admin_token') : null
+      if (savedToken) {
+        try {
+          const isValid = await checkAuth()
+          if (!isValid) {
+            throw new Error('No valid auth token')
+          }
+        } catch {
+          throw new Error('No valid auth token')
+        }
+      } else {
+        throw new Error('No auth token')
+      }
     }
-    return fetchWithToken(url, token.value, options)
+
+    try {
+      return await fetchWithToken(url, token.value, options)
+    } catch (error: any) {
+      // Если получили 401, пытаемся проверить токен и обновить
+      if (error.statusCode === 401 || error.status === 401) {
+        console.log('🔄 Получена 401 ошибка, проверяю токен...')
+        
+        // Пытаемся проверить токен из localStorage
+        const savedToken = process.client ? localStorage.getItem('admin_token') : null
+        if (savedToken) {
+          // Проверяем токен из localStorage (даже если он совпадает с текущим)
+          try {
+            const isValid = await checkAuth()
+            if (isValid && token.value) {
+              // Токен валиден, повторяем запрос с обновленным токеном
+              console.log('✅ Токен проверен и валиден, повторяю запрос...')
+              return await fetchWithToken(url, token.value, options)
+            }
+          } catch (checkError) {
+            // Токен невалиден - продолжаем к очистке
+            console.log('❌ Токен невалиден при проверке')
+          }
+        }
+        
+        // Токен невалиден или истек - очищаем авторизацию
+        clearAuth()
+        const authError: any = new Error('Сессия истекла. Пожалуйста, войдите заново.')
+        authError.statusCode = 401
+        authError.status = 401
+        throw authError
+      }
+      
+      // Другие ошибки пробрасываем дальше
+      throw error
+    }
   }
 
   // Вход в систему

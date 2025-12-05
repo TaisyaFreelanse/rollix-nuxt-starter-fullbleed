@@ -26,6 +26,8 @@ export default defineEventHandler(async (event) => {
     if (body.calories !== undefined) updateData.calories = body.calories
     if (body.isActive !== undefined) updateData.isActive = body.isActive
     if (body.isPopular !== undefined) updateData.isPopular = body.isPopular
+    if (body.isNew !== undefined) updateData.isNew = body.isNew
+    if (body.isHot !== undefined) updateData.isHot = body.isHot
     if (body.sortOrder !== undefined) updateData.sortOrder = body.sortOrder
 
     const product = await prisma.product.update({

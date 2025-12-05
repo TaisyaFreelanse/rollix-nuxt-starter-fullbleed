@@ -41,14 +41,42 @@ const handleLogout = async () => {
   isAuthorized.value = false
 }
 
+// Периодическая проверка токена (каждые 5 минут)
+let authCheckInterval: NodeJS.Timeout | null = null
+
 onMounted(async () => {
   try {
     const valid = await adminAuth.checkAuth()
     isAuthorized.value = valid
+    
+    // Запускаем периодическую проверку токена, если авторизованы
+    if (valid) {
+      authCheckInterval = setInterval(async () => {
+        try {
+          const stillValid = await adminAuth.checkAuth()
+          if (!stillValid) {
+            isAuthorized.value = false
+            if (authCheckInterval) {
+              clearInterval(authCheckInterval)
+              authCheckInterval = null
+            }
+          }
+        } catch {
+          // Игнорируем ошибки при периодической проверке
+        }
+      }, 5 * 60 * 1000) // Проверяем каждые 5 минут
+    }
   } catch {
     isAuthorized.value = false
   } finally {
     isChecking.value = false
+  }
+})
+
+onUnmounted(() => {
+  if (authCheckInterval) {
+    clearInterval(authCheckInterval)
+    authCheckInterval = null
   }
 })
 
@@ -354,8 +382,11 @@ const loadPromotions = async () => {
   } catch (error: any) {
     console.error('Ошибка загрузки акций:', error)
     promotions.value = []
-    // Не сбрасываем авторизацию при ошибке загрузки данных
-    // Авторизация проверяется отдельно при входе в админку
+    // Если токен истек, $fetchWithAuth уже очистил авторизацию
+    if (error.statusCode === 401 || error.status === 401) {
+      // Токен истек - перенаправляем на страницу входа
+      isAuthorized.value = false
+    }
   } finally {
     promotionsLoading.value = false
   }
@@ -375,7 +406,10 @@ const loadPromocodeWidget = async () => {
   } catch (error: any) {
     console.error('Ошибка загрузки виджета промокода:', error)
     promocodeWidget.value = null
-    // Не сбрасываем авторизацию при ошибке загрузки данных
+    // Если токен истек, $fetchWithAuth уже очистил авторизацию
+    if (error.statusCode === 401 || error.status === 401) {
+      isAuthorized.value = false
+    }
   } finally {
     promocodeWidgetLoading.value = false
   }
@@ -521,9 +555,13 @@ const loadZones = async () => {
       ...zone,
       deliveryTime: zone.deliveryTime || zone.estimatedTime
     }))
-  } catch (error) {
+  } catch (error: any) {
     console.error('Ошибка загрузки зон доставки:', error)
     zones.value = []
+    // Если токен истек, $fetchWithAuth уже очистил авторизацию
+    if (error.statusCode === 401 || error.status === 401) {
+      isAuthorized.value = false
+    }
   } finally {
     zonesLoading.value = false
   }
@@ -640,8 +678,9 @@ const loadAdmins = async () => {
     admins.value = await adminAuth.$fetchWithAuth('/api/admin/admins')
   } catch (error: any) {
     console.error('Ошибка загрузки администраторов:', error)
-    if (error.statusCode === 401) {
-      alert('Сессия истекла. Пожалуйста, войдите заново.')
+    // Если токен истек, $fetchWithAuth уже очистил авторизацию
+    if (error.statusCode === 401 || error.status === 401) {
+      isAuthorized.value = false
     }
   } finally {
     adminsLoading.value = false
@@ -736,29 +775,44 @@ const formatDateAdmin = (dateString: string) => {
 
 // Функция загрузки данных для текущей вкладки
 const loadTabData = async (tab: string) => {
-  if (tab === 'dashboard') {
-    await loadDashboardStats()
-  } else if (tab === 'products') {
-    await loadProducts()
-    await loadProductsCategories()
-  } else if (tab === 'categories') {
-    await loadCategories()
-  } else if (tab === 'orders') {
-    await loadOrders()
-  } else if (tab === 'promocodes') {
-    await loadPromocodes()
-  } else if (tab === 'promotions') {
-    await loadPromotions()
-    await loadPromocodeWidget()
-  } else if (tab === 'delivery-zones') {
-    await loadZones()
-  } else if (tab === 'bonuses') {
-    await loadBonusSettings()
-  } else if (tab === 'settings') {
-    await loadSettings()
-    await loadCurrentOrders()
-  } else if (tab === 'admins') {
-    await loadAdmins()
+  // Проверяем авторизацию перед загрузкой данных
+  if (!isAuthorized.value) {
+    return
+  }
+  
+  try {
+    if (tab === 'dashboard') {
+      await loadDashboardStats()
+    } else if (tab === 'products') {
+      await loadProducts()
+      await loadProductsCategories()
+    } else if (tab === 'categories') {
+      await loadCategories()
+    } else if (tab === 'orders') {
+      await loadOrders()
+    } else if (tab === 'promocodes') {
+      await loadPromocodes()
+    } else if (tab === 'promotions') {
+      await loadPromotions()
+      await loadPromocodeWidget()
+    } else if (tab === 'delivery-zones') {
+      await loadZones()
+    } else if (tab === 'bonuses') {
+      await loadBonusSettings()
+    } else if (tab === 'settings') {
+      await loadSettings()
+      await loadCurrentOrders()
+    } else if (tab === 'admins') {
+      await loadAdmins()
+    }
+  } catch (error: any) {
+    // Если получили 401 при загрузке данных, проверяем авторизацию
+    if (error.statusCode === 401 || error.status === 401) {
+      const stillValid = await adminAuth.checkAuth()
+      if (!stillValid) {
+        isAuthorized.value = false
+      }
+    }
   }
 }
 

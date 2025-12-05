@@ -18,72 +18,6 @@ const isValidProduct = computed(() => {
   return props.product && props.product.id && props.product.name
 })
 
-const isFavorite = ref(false)
-const isLoadingFavorite = ref(false)
-const showAuthModal = ref(false)
-
-const auth = useAuth()
-const toast = useToast()
-
-// Проверяем, в избранном ли товар
-const checkFavorite = async () => {
-  if (!props.product?.id || !auth.isAuthenticated.value) return
-  try {
-    const response = await auth.$fetchWithAuth(`/api/profile/favorites/${props.product.id}`)
-    isFavorite.value = response.isFavorite || false
-  } catch (error) {
-    // Товар не в избранном или ошибка
-    isFavorite.value = false
-  }
-}
-
-const toggleFavorite = async (e: Event) => {
-  e.stopPropagation()
-  if (!props.product?.id || isLoadingFavorite.value) return
-
-  // Проверяем авторизацию
-  if (!auth.isAuthenticated.value) {
-    showAuthModal.value = true
-    return
-  }
-
-  isLoadingFavorite.value = true
-  try {
-    if (isFavorite.value) {
-      await auth.$fetchWithAuth(`/api/profile/favorites/${props.product.id}`, {
-        method: 'DELETE'
-      })
-      isFavorite.value = false
-      toast.success('Товар удален из избранного')
-    } else {
-      await auth.$fetchWithAuth(`/api/profile/favorites/${props.product.id}`, {
-        method: 'POST'
-      })
-      isFavorite.value = true
-      toast.success('Товар добавлен в избранное')
-    }
-  } catch (error) {
-    console.error('Ошибка изменения избранного', error)
-    toast.error('Ошибка при изменении избранного')
-  } finally {
-    isLoadingFavorite.value = false
-  }
-}
-
-// Проверяем избранное при монтировании и при изменении авторизации
-watch(() => auth.isAuthenticated.value, (isAuth) => {
-  if (isAuth) {
-    checkFavorite()
-  } else {
-    isFavorite.value = false
-  }
-}, { immediate: true })
-
-onMounted(() => {
-  if (auth.isAuthenticated.value) {
-    checkFavorite()
-  }
-})
 
 const imageUrl = computed(() => props.product?.image || '/product.svg')
 const hasDiscount = computed(() => props.product?.oldPrice && props.product.oldPrice > props.product.price)
@@ -111,16 +45,31 @@ const handleClick = () => {
         :alt="product?.name || ''"
         loading="lazy"
         class="w-full h-44 sm:h-48 object-cover opacity-95 transition-transform duration-300 group-hover:scale-110" />
+      <!-- Теги New и Hot - верхний левый угол -->
+      <div v-if="product?.isNew || product?.isHot" class="absolute top-2 left-2 flex flex-col gap-1.5 z-10">
+        <!-- Тег New (оранжевый) -->
+        <div
+          v-if="product?.isNew"
+          class="px-2 py-1 rounded text-[10px] sm:text-xs font-semibold text-white bg-orange-500 border border-orange-400 shadow-lg">
+          NEW
+        </div>
+        <!-- Тег Hot (розовый) -->
+        <div
+          v-if="product?.isHot"
+          class="px-2 py-1 rounded text-[10px] sm:text-xs font-semibold text-white bg-pink-500 border border-pink-400 shadow-lg">
+          HOT
+        </div>
+      </div>
       <!-- Бейдж акции -->
       <div
         v-if="hasDiscount"
-        class="absolute top-3 left-3 badge border-accent text-accent bg-accent/20 backdrop-blur-sm">
+        class="absolute top-3 right-3 badge border-accent text-accent bg-accent/20 backdrop-blur-sm">
         -{{ discountPercent }}%
       </div>
       <!-- Бейдж популярного -->
       <div
         v-if="product?.isPopular"
-        class="absolute top-3 right-3 badge border-yellow-500 text-yellow-300 bg-yellow-500/20 backdrop-blur-sm">
+        class="absolute bottom-3 left-3 badge border-yellow-500 text-yellow-300 bg-yellow-500/20 backdrop-blur-sm">
         ⭐ Популярное
       </div>
       <!-- Overlay при hover -->
@@ -130,18 +79,6 @@ const handleClick = () => {
           Подробнее
         </span>
       </div>
-      <!-- Кнопка избранного (поверх overlay) -->
-      <button
-        type="button"
-        :class="[
-          'absolute bottom-3 right-3 z-10 p-2 rounded-full backdrop-blur-sm transition-all',
-          isFavorite
-            ? 'bg-red-500/20 border border-red-500/50 text-red-500 hover:bg-red-500/30'
-            : 'bg-white/10 border border-white/20 text-gray-400 hover:text-white hover:bg-white/20'
-        ]"
-        @click.stop="toggleFavorite">
-        {{ isFavorite ? '♥️' : '🤍' }}
-      </button>
     </div>
     <!-- Контент карточки - растягивается для выравнивания -->
     <div class="p-4 flex flex-col flex-grow">
@@ -171,12 +108,6 @@ const handleClick = () => {
       </div>
     </div>
 
-    <!-- Модальное окно авторизации -->
-    <Modal :open="showAuthModal" title="Войдите, чтобы добавить в избранное" @close="showAuthModal = false">
-      <SmsAuth 
-        @success="(phone: string) => { showAuthModal.value = false; checkFavorite(); }" 
-        @cancel="showAuthModal.value = false" />
-    </Modal>
   </article>
 </template>
 

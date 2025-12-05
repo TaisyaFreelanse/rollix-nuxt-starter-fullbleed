@@ -1,7 +1,6 @@
 
 <script setup lang="ts">
 const route = useRoute()
-const mobileOpen = useState('mobileOpen', () => false)
 const cartOpen = useState('cartOpen', () => false)
 
 // Проверяем, используется ли админ-лейаут
@@ -13,8 +12,8 @@ const isAdminPage = computed(() => route.path.startsWith('/admin'))
     <!-- Основной контент сайта - скрыт на админ-страницах -->
     <template v-if="!isAdminPage">
       <HeaderBar />
-      <MobileSidebar v-model="mobileOpen" />
       <CartSidebar v-model="cartOpen" />
+      <HorizontalCategoryMenu />
 
       <!-- Full-width site grid -->
       <div class="flex-1 w-full pb-20 lg:pb-0">

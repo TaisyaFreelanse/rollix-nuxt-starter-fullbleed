@@ -5,7 +5,7 @@ definePageMeta({
 
 const auth = useAuth()
 const router = useRouter()
-const activeTab = ref<'orders' | 'addresses' | 'favorites' | 'bonuses'>('orders')
+const activeTab = ref<'orders' | 'addresses' | 'bonuses'>('orders')
 
 // Дополнительная проверка на клиенте
 onMounted(() => {
@@ -44,16 +44,6 @@ onMounted(() => {
       <button
         :class="[
           'px-4 py-2 text-sm font-medium transition border-b-2',
-          activeTab === 'favorites'
-            ? 'border-accent text-white'
-            : 'border-transparent text-gray-400 hover:text-white'
-        ]"
-        @click="activeTab = 'favorites'">
-        Избранное
-      </button>
-      <button
-        :class="[
-          'px-4 py-2 text-sm font-medium transition border-b-2',
           activeTab === 'bonuses'
             ? 'border-accent text-white'
             : 'border-transparent text-gray-400 hover:text-white'
@@ -67,7 +57,6 @@ onMounted(() => {
     <div>
       <ProfileOrders v-if="activeTab === 'orders'" />
       <ProfileAddresses v-if="activeTab === 'addresses'" />
-      <ProfileFavorites v-if="activeTab === 'favorites'" />
       <ProfileBonuses v-if="activeTab === 'bonuses'" />
     </div>
   </main>

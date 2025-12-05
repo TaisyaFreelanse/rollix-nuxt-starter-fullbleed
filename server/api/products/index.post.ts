@@ -19,6 +19,8 @@ export default defineEventHandler(async (event) => {
         calories: body.calories,
         isActive: body.isActive !== undefined ? body.isActive : true,
         isPopular: body.isPopular || false,
+        isNew: body.isNew || false,
+        isHot: body.isHot || false,
         sortOrder: body.sortOrder || 0
       },
       include: {

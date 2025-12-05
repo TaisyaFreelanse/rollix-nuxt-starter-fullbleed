@@ -41,6 +41,8 @@ export interface Product {
   calories: number | null
   isActive: boolean
   isPopular: boolean
+  isNew: boolean
+  isHot: boolean
   category: {
     id: string
     name: string
