@@ -113,24 +113,45 @@ export const useAdminAuth = () => {
 
   // Вход в систему
   const login = async (loginValue: string, password: string) => {
+    console.log('[Client] Попытка входа админа:', loginValue)
     try {
       const response = await $fetch('/api/admin/auth/login', {
         method: 'POST',
         body: { login: loginValue, password }
       })
       
+      console.log('[Client] Ответ сервера:', { success: response.success, hasToken: !!response.token })
+      
       if (response.success && response.token) {
-        // Сервер уже проверил токен, просто сохраняем его
+        console.log('[Client] Сохраняю токен админа')
         setAuth(response.token, response.admin)
         return { success: true, admin: response.admin }
       }
       
+      console.error('[Client] Неожиданный ответ сервера:', response)
       throw new Error('Не удалось войти в систему')
     } catch (error: any) {
-      console.error('Ошибка входа:', error)
+      console.error('[Client] Ошибка входа:', error)
+      console.error('[Client] Детали ошибки:', {
+        statusCode: error.statusCode,
+        status: error.status,
+        data: error.data,
+        message: error.message
+      })
+      
+      // Более детальное сообщение об ошибке
+      let errorMessage = 'Ошибка входа в систему'
+      if (error.statusCode === 401 || error.status === 401) {
+        errorMessage = error.data?.message || 'Неверный логин или пароль'
+      } else if (error.data?.message) {
+        errorMessage = error.data.message
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+      
       return { 
         success: false, 
-        error: error.data?.message || error.message || 'Ошибка входа в систему' 
+        error: errorMessage
       }
     }
   }
