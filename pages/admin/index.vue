@@ -25,6 +25,17 @@ const handleLogin = async () => {
   try {
     const result = await adminAuth.login(loginForm.login, loginForm.password)
     if (result.success) {
+      // Даем время токену установиться в state
+      await nextTick()
+      // Проверяем, что токен точно установлен
+      if (process.client) {
+        const savedToken = localStorage.getItem('admin_token')
+        if (!savedToken) {
+          console.error('⚠️ Токен не сохранился после логина!')
+          loginError.value = 'Ошибка сохранения токена. Попробуйте еще раз.'
+          return
+        }
+      }
       isAuthorized.value = true
     } else {
       loginError.value = result.error || 'Неверный логин или пароль'
