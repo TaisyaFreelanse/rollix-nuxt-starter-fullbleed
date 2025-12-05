@@ -1,10 +1,21 @@
 import { verifyToken } from '~/server/utils/jwt'
 
 export default defineEventHandler(async (event) => {
-  const path = event.node.req.url || ''
+  const path = event.node.req.url?.split('?')[0] || '' // Убираем query параметры
 
   // Пропускаем все не-API маршруты (страницы, статические файлы и т.д.)
   if (!path.startsWith('/api')) {
+    return
+  }
+
+  // ВАЖНО: Админские auth маршруты должны быть публичными (не требуют авторизации)
+  if (path === '/api/admin/auth/login' || path === '/api/admin/auth/logout') {
+    return
+  }
+
+  // ВАЖНО: Все остальные админские маршруты имеют свою систему авторизации через requireAdminAuth
+  // Этот middleware проверяет только токены пользователей, поэтому пропускаем все /api/admin/* маршруты
+  if (path.startsWith('/api/admin/')) {
     return
   }
 
@@ -15,7 +26,6 @@ export default defineEventHandler(async (event) => {
     '/api/auth',
     '/api/delivery-zones',
     '/api/promo-codes',
-    '/api/admin/settings', // Публичный для проверки режима техработ
     '/api/orders' // Разрешаем гостевые заказы
   ]
 
@@ -38,10 +48,10 @@ export default defineEventHandler(async (event) => {
   // Проверяем токен для защищенных маршрутов
   const authHeader = event.node.req.headers.authorization
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        throw createError({
-          statusCode: 401,
-          message: 'Требуется авторизация'
-        })
+    throw createError({
+      statusCode: 401,
+      message: 'Требуется авторизация'
+    })
   }
 
   const token = authHeader.substring(7)
@@ -49,10 +59,9 @@ export default defineEventHandler(async (event) => {
     const payload = await verifyToken(token)
     event.context.auth = { userId: payload.userId }
   } catch (error) {
-          throw createError({
-            statusCode: 401,
-            message: 'Недействительный токен'
-          })
+    throw createError({
+      statusCode: 401,
+      message: 'Недействительный токен'
+    })
   }
 })
-
