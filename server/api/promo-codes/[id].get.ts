@@ -4,6 +4,24 @@ export default defineEventHandler(async (event) => {
   try {
     const id = getRouterParam(event, 'id')
 
+    if (!id) {
+      throw createError({
+        statusCode: 404,
+        message: 'Промокод не найден'
+      })
+    }
+
+    // Если это похоже на код промокода (короткая строка в верхнем регистре), 
+    // а не на ID, возвращаем 404 - такие запросы должны обрабатываться через [code].get.ts
+    // ID обычно длиннее (20+ символов) и имеет формат Prisma ID
+    // Коды промокодов обычно короткие (до 20 символов) и в верхнем регистре
+    if (id.length <= 20 && id === id.toUpperCase() && /^[A-Z0-9]+$/.test(id)) {
+      throw createError({
+        statusCode: 404,
+        message: 'Промокод не найден'
+      })
+    }
+
     const promoCode = await prisma.promoCode.findUnique({
       where: { id }
     })

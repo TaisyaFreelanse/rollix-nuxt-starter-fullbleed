@@ -28,7 +28,15 @@ const loadPromocode = async () => {
 
   isLoading.value = true
   try {
-    const promo = await $fetch(`/api/promo-codes/${promocodeId}`)
+    const promo = await $fetch(`/api/promo-codes/${promocodeId}`, {
+      // Не логируем 404 ошибки в консоль - это нормальная ситуация
+      onResponseError({ response }) {
+        if (response.status === 404) {
+          // 404 - это нормально, промокод просто не найден
+          return
+        }
+      }
+    })
     form.value = {
       code: promo.code || '',
       description: promo.description || '',
@@ -41,8 +49,11 @@ const loadPromocode = async () => {
       validUntil: promo.validUntil ? new Date(promo.validUntil).toISOString().split('T')[0] : '',
       isActive: promo.isActive ?? true
     }
-  } catch (error) {
-    console.error('Ошибка загрузки промокода:', error)
+  } catch (error: any) {
+    // Не логируем 404 ошибки - это нормальная ситуация
+    if (error?.statusCode !== 404 && error?.status !== 404) {
+      console.error('Ошибка загрузки промокода:', error)
+    }
     alert('Промокод не найден')
     router.push('/admin/promocodes')
   } finally {

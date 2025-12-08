@@ -149,13 +149,26 @@ export const useCartStore = defineStore('cart', {
 
     async applyPromoCode(code: string) {
       try {
-        const promoCode = await $fetch<PromoCode>(`/api/promo-codes/${code}`)
+        // Используем endpoint для получения по коду, а не по ID
+        const promoCode = await $fetch<PromoCode>(`/api/promo-codes/${code}`, {
+          // Не логируем 404 ошибки в консоль - это нормальная ситуация
+          onResponseError({ response }) {
+            if (response.status === 404) {
+              // 404 - это нормально, промокод просто не найден
+              return
+            }
+          }
+        })
         this.promoCode = promoCode
         this.promoCodeInput = code
         return { success: true, promoCode }
       } catch (error: any) {
         this.promoCode = null
         this.promoCodeInput = ''
+        // Не логируем 404 ошибки - это нормальная ситуация
+        if (error?.statusCode !== 404 && error?.status !== 404) {
+          console.error('Ошибка применения промокода:', error)
+        }
         return {
           success: false,
           error: error?.data?.message || 'Промокод не найден или недействителен'
