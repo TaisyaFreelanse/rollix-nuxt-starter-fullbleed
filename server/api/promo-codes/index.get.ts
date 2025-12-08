@@ -25,6 +25,11 @@ export default defineEventHandler(async (event) => {
       }
     })
 
+    console.log('[PromoCode List] Найдено промокодов:', promoCodes.length)
+    promoCodes.forEach((code) => {
+      console.log('[PromoCode List] Промокод:', { id: code.id, code: code.code })
+    })
+
     return promoCodes.map((code) => ({
       ...code,
       discountValue: Number(code.discountValue),

@@ -2,9 +2,24 @@ import { prisma } from '~/server/utils/prisma'
 
 export default defineEventHandler(async (event) => {
   try {
-    const id = getRouterParam(event, 'id')
+    // Пробуем получить ID разными способами
+    let id = getRouterParam(event, 'id')
+    const url = event.node.req.url || ''
+    const method = event.node.req.method
+
+    // Если не получили через getRouterParam, пробуем извлечь из URL
+    if (!id && url) {
+      const match = url.match(/\/api\/promo-codes\/([^/?]+)/)
+      if (match && match[1]) {
+        id = match[1]
+        console.log('[PromoCode Delete] ID извлечен из URL:', id)
+      }
+    }
+
+    console.log('[PromoCode Delete] Запрос:', { method, url, id, routerParams: event.context.params })
 
     if (!id) {
+      console.error('[PromoCode Delete] ID не получен из параметров маршрута или URL')
       throw createError({
         statusCode: 400,
         message: 'ID промокода не указан'
@@ -51,6 +66,13 @@ export default defineEventHandler(async (event) => {
 
     return { success: true }
   } catch (error: any) {
+    console.error('[PromoCode Delete] Ошибка:', {
+      message: error.message,
+      statusCode: error.statusCode,
+      code: error.code,
+      stack: error.stack
+    })
+
     // Если это уже ошибка с statusCode, пробрасываем её
     if (error.statusCode) {
       throw error
@@ -64,7 +86,7 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    console.error('[PromoCode Delete] Ошибка удаления промокода:', error)
+    console.error('[PromoCode Delete] Неизвестная ошибка удаления промокода:', error)
     throw createError({
       statusCode: 500,
       message: error.message || 'Ошибка при удалении промокода'
