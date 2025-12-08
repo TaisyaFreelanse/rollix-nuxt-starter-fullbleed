@@ -6,9 +6,12 @@ const loading = ref(true)
 
 const loadPromocodeWidget = async () => {
   try {
-    promocodeWidget.value = await $fetch('/api/promocode-widget')
-  } catch (error) {
+    const widget = await $fetch('/api/promocode-widget')
+    console.log('[Promo] Загружен виджет промокода:', widget)
+    promocodeWidget.value = widget
+  } catch (error: any) {
     console.error('Ошибка загрузки виджета промокода:', error)
+    promocodeWidget.value = null
   }
 }
 

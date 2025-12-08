@@ -1,10 +1,44 @@
 import { prisma } from '~/server/utils/prisma'
+import { getUserIdFromToken } from '~/server/utils/auth'
 
 export default defineEventHandler(async (event) => {
   try {
+    const userId = await getUserIdFromToken(event)
+    if (!userId) {
+      throw createError({
+        statusCode: 401,
+        message: 'Требуется авторизация'
+      })
+    }
+
     const id = getRouterParam(event, 'id')
+    if (!id) {
+      throw createError({
+        statusCode: 400,
+        message: 'ID адреса не указан'
+      })
+    }
+
+    // Проверяем, что адрес принадлежит пользователю
+    const existingAddress = await prisma.address.findUnique({
+      where: { id }
+    })
+
+    if (!existingAddress) {
+      throw createError({
+        statusCode: 404,
+        message: 'Адрес не найден'
+      })
+    }
+
+    if (existingAddress.userId !== userId) {
+      throw createError({
+        statusCode: 403,
+        message: 'Нет доступа к этому адресу'
+      })
+    }
+
     const body = await readBody(event)
-    const userId = 'user_123' // TODO: Получить из сессии/токена
 
     // Если это адрес по умолчанию, снимаем флаг с других адресов
     if (body.isDefault) {
@@ -35,10 +69,14 @@ export default defineEventHandler(async (event) => {
     })
 
     return address
-  } catch (error) {
+  } catch (error: any) {
+    if (error.statusCode) {
+      throw error
+    }
+    console.error('Ошибка при обновлении адреса:', error)
     throw createError({
       statusCode: 500,
-      message: 'Ошибка при обновлении адреса'
+      message: error.message || 'Ошибка при обновлении адреса'
     })
   }
 })

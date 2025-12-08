@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const auth = useAuth()
 const addresses = ref<any[]>([])
 const loading = ref(false)
 const showAddForm = ref(false)
@@ -18,31 +19,40 @@ const form = ref({
 const fetchAddresses = async () => {
   loading.value = true
   try {
-    addresses.value = await $fetch('/api/profile/addresses')
-  } catch (error) {
+    addresses.value = await auth.$fetchWithAuth('/api/profile/addresses')
+  } catch (error: any) {
     console.error('Ошибка загрузки адресов', error)
+    if (error?.statusCode === 401) {
+      alert('Требуется авторизация')
+    }
   } finally {
     loading.value = false
   }
 }
 
 const saveAddress = async () => {
+  if (!form.value.street || !form.value.house) {
+    alert('Заполните обязательные поля (улица и дом)')
+    return
+  }
+
   try {
     if (editingAddress.value) {
-      await $fetch(`/api/profile/addresses/${editingAddress.value.id}`, {
+      await auth.$fetchWithAuth(`/api/profile/addresses/${editingAddress.value.id}`, {
         method: 'PUT',
         body: form.value
       })
     } else {
-      await $fetch('/api/profile/addresses', {
+      await auth.$fetchWithAuth('/api/profile/addresses', {
         method: 'POST',
         body: form.value
       })
     }
     await fetchAddresses()
     resetForm()
-  } catch (error) {
+  } catch (error: any) {
     console.error('Ошибка сохранения адреса', error)
+    alert(error?.data?.message || error?.message || 'Ошибка сохранения адреса')
   }
 }
 
@@ -50,12 +60,13 @@ const deleteAddress = async (id: string) => {
   if (!confirm('Удалить этот адрес?')) return
 
   try {
-    await $fetch(`/api/profile/addresses/${id}`, {
+    await auth.$fetchWithAuth(`/api/profile/addresses/${id}`, {
       method: 'DELETE'
     })
     await fetchAddresses()
-  } catch (error) {
+  } catch (error: any) {
     console.error('Ошибка удаления адреса', error)
+    alert(error?.data?.message || error?.message || 'Ошибка удаления адреса')
   }
 }
 

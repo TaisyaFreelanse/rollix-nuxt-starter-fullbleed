@@ -45,18 +45,18 @@ const handleClick = () => {
         :alt="product?.name || ''"
         loading="lazy"
         class="w-full h-44 sm:h-48 object-cover opacity-95 transition-transform duration-300 group-hover:scale-110" />
-      <!-- Теги New и Hot - верхний левый угол -->
-      <div v-if="product?.isNew || product?.isHot" class="absolute top-2 left-2 flex flex-col gap-1.5 z-10">
+      <!-- Теги New и Hot - верхний правый угол -->
+      <div v-if="product?.isNew || product?.isHot" class="absolute top-2 right-2 flex gap-1 z-10">
         <!-- Тег New (оранжевый) -->
         <div
           v-if="product?.isNew"
-          class="px-2 py-1 rounded text-[10px] sm:text-xs font-semibold text-white bg-orange-500 border border-orange-400 shadow-lg">
+          class="px-1.5 py-0.5 rounded text-[8px] font-semibold text-white bg-orange-500 border border-orange-400 shadow-lg">
           NEW
         </div>
         <!-- Тег Hot (розовый) -->
         <div
           v-if="product?.isHot"
-          class="px-2 py-1 rounded text-[10px] sm:text-xs font-semibold text-white bg-pink-500 border border-pink-400 shadow-lg">
+          class="px-1.5 py-0.5 rounded text-[8px] font-semibold text-white bg-pink-500 border border-pink-400 shadow-lg">
           HOT
         </div>
       </div>

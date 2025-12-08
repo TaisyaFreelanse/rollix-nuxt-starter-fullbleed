@@ -54,6 +54,9 @@ onMounted(async () => {
     <!-- Баннеры карусель -->
     <BannerCarousel />
 
+    <!-- Меню категорий - под баннером в мобильной версии -->
+    <HorizontalCategoryMenu />
+
     <!-- Все категории с товарами -->
     <div class="py-6 md:py-10">
       <div v-if="loading" class="flex items-center justify-center py-20">

@@ -15,35 +15,44 @@ const isActive = (path: string) => {
   if (path === '/') {
     return route.path === '/' || route.path === '/catalog' || route.path.startsWith('/catalog')
   }
+  if (path === '/more') {
+    return route.path === '/more' || route.path.startsWith('/more')
+  }
   return route.path === path || route.path.startsWith(path + '/')
 }
 
 // Навигационные пункты
 const navItems = [
   {
-    name: 'Меню',
+    name: 'Каталог',
     path: '/',
-    icon: '📋',
+    icon: '🍜',
     hasBadge: false
   },
   {
     name: 'Акции',
     path: '/promo',
-    icon: '🎁',
+    icon: '%',
     hasBadge: false
   },
   {
     name: 'Заказы',
     path: '/profile',
-    icon: '📦',
+    icon: '🕐',
     hasBadge: false,
     requiresAuth: true
   },
   {
     name: 'Корзина',
     path: '/cart',
-    icon: '🛒',
+    icon: '🛍️',
     hasBadge: true
+  },
+  {
+    name: 'Ещё',
+    path: '/more',
+    icon: '⋯',
+    hasBadge: false
   }
 ]
 
@@ -80,6 +89,12 @@ const handleNavClick = (item: typeof navItems[0]) => {
     return
   }
   
+  // Для "Ещё" переходим на страницу
+  if (item.path === '/more') {
+    router.push('/more')
+    return
+  }
+  
   router.push(item.path)
 }
 </script>
@@ -87,16 +102,17 @@ const handleNavClick = (item: typeof navItems[0]) => {
 <template>
   <nav
     class="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-[#121315] border-t border-white/10 backdrop-blur-md">
-    <div class="flex items-center justify-around h-16 px-2 safe-area-bottom">
+    <div class="flex items-center justify-center h-16 px-2 safe-area-bottom max-w-md mx-auto">
       <button
         v-for="(item, index) in navItems"
         :key="`nav-${index}-${item.name}`"
         :class="[
-          'flex flex-col items-center justify-center gap-1 flex-1 h-full relative transition-colors',
+          'flex flex-col items-center justify-center gap-1 h-full relative transition-colors',
           isActive(item.path)
             ? 'text-accent'
             : 'text-gray-400 hover:text-gray-300'
         ]"
+        :style="{ width: `${100 / navItems.length}%` }"
         @click="handleNavClick(item)">
         <span class="text-2xl relative">
           {{ item.icon }}

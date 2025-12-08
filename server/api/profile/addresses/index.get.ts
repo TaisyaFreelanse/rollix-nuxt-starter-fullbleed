@@ -1,9 +1,15 @@
 import { prisma } from '~/server/utils/prisma'
+import { getUserIdFromToken } from '~/server/utils/auth'
 
 export default defineEventHandler(async (event) => {
   try {
-    // TODO: Получить userId из сессии/токена
-    const userId = 'user_123' // Заглушка
+    const userId = await getUserIdFromToken(event)
+    if (!userId) {
+      throw createError({
+        statusCode: 401,
+        message: 'Требуется авторизация'
+      })
+    }
 
     const addresses = await prisma.address.findMany({
       where: {
@@ -16,10 +22,14 @@ export default defineEventHandler(async (event) => {
     })
 
     return addresses
-  } catch (error) {
+  } catch (error: any) {
+    if (error.statusCode) {
+      throw error
+    }
+    console.error('Ошибка при получении адресов:', error)
     throw createError({
       statusCode: 500,
-      message: 'Ошибка при получении адресов'
+      message: error.message || 'Ошибка при получении адресов'
     })
   }
 })

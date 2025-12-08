@@ -13,7 +13,8 @@ const isAdminPage = computed(() => route.path.startsWith('/admin'))
     <template v-if="!isAdminPage">
       <HeaderBar />
       <CartSidebar v-model="cartOpen" />
-      <HorizontalCategoryMenu />
+      <!-- Меню категорий - скрыто на главной странице в мобильной версии (там оно под баннером) -->
+      <HorizontalCategoryMenu v-if="route.path !== '/'" />
 
       <!-- Full-width site grid -->
       <div class="flex-1 w-full pb-20 lg:pb-0">

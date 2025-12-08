@@ -13,7 +13,11 @@ export default defineEventHandler(async (event) => {
     })
 
     return widget || null
-  } catch (error) {
+  } catch (error: any) {
+    console.error('[Promocode Widget] Ошибка получения виджета:', error)
+    if (error.statusCode) {
+      throw error
+    }
     throw createError({
       statusCode: 500,
       message: 'Ошибка получения виджета промокода'
