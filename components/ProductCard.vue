@@ -45,8 +45,8 @@ const handleClick = () => {
         :alt="product?.name || ''"
         loading="lazy"
         class="w-full h-44 sm:h-48 object-cover opacity-95 transition-transform duration-300 group-hover:scale-110" />
-      <!-- Теги New и Hot - верхний правый угол -->
-      <div v-if="product?.isNew || product?.isHot" class="absolute top-2 right-2 flex gap-1 z-10">
+      <!-- Теги New и Hot - левый нижний угол -->
+      <div v-if="product?.isNew || product?.isHot" class="absolute bottom-2 left-2 flex gap-1 z-10">
         <!-- Тег New (оранжевый) -->
         <div
           v-if="product?.isNew"
