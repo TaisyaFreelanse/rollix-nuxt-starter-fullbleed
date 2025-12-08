@@ -28,14 +28,14 @@ export default defineEventHandler(async (event) => {
     }
 
     // Проверяем лимит использований
-    if (promoCode.maxUses !== null) {
+    if (promoCode.usageLimit !== null) {
       const usageCount = await prisma.order.count({
         where: {
           promoCodeId: promoCode.id
         }
       })
 
-      if (usageCount >= promoCode.maxUses) {
+      if (usageCount >= promoCode.usageLimit) {
         throw createError({
           statusCode: 400,
           message: 'Промокод исчерпал лимит использований'

@@ -22,17 +22,28 @@ export default defineEventHandler(async (event) => {
       })
     }
 
+    console.log('[PromoCode Delete] Поиск промокода по ID для удаления:', id)
     // Проверяем, существует ли промокод перед удалением
     const promoCode = await prisma.promoCode.findUnique({
       where: { id }
     })
 
     if (!promoCode) {
+      console.log('[PromoCode Delete] Промокод не найден в БД для ID:', id)
+      // Проверяем, может быть это код, а не ID
+      const promoByCode = await prisma.promoCode.findFirst({
+        where: { code: id }
+      })
+      if (promoByCode) {
+        console.log('[PromoCode Delete] Найден промокод по коду, но запрос был по ID. Используйте endpoint [code]')
+      }
       throw createError({
         statusCode: 404,
         message: 'Промокод не найден'
       })
     }
+
+    console.log('[PromoCode Delete] Промокод найден, удаляем:', promoCode.id, promoCode.code)
 
     await prisma.promoCode.delete({
       where: { id }

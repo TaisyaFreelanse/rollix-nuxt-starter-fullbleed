@@ -22,16 +22,27 @@ export default defineEventHandler(async (event) => {
       })
     }
 
+    console.log('[PromoCode Get] Поиск промокода по ID:', id)
     const promoCode = await prisma.promoCode.findUnique({
       where: { id }
     })
 
     if (!promoCode) {
+      console.log('[PromoCode Get] Промокод не найден в БД для ID:', id)
+      // Проверяем, может быть это код, а не ID
+      const promoByCode = await prisma.promoCode.findFirst({
+        where: { code: id }
+      })
+      if (promoByCode) {
+        console.log('[PromoCode Get] Найден промокод по коду, но запрос был по ID. Используйте endpoint [code]')
+      }
       throw createError({
         statusCode: 404,
         message: 'Промокод не найден'
       })
     }
+
+    console.log('[PromoCode Get] Промокод найден:', promoCode.id, promoCode.code)
 
     return {
       ...promoCode,

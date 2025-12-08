@@ -15,6 +15,13 @@ export default defineEventHandler(async (event) => {
       where,
       orderBy: {
         createdAt: 'desc'
+      },
+      include: {
+        _count: {
+          select: {
+            orders: true
+          }
+        }
       }
     })
 
@@ -22,7 +29,9 @@ export default defineEventHandler(async (event) => {
       ...code,
       discountValue: Number(code.discountValue),
       minOrderAmount: code.minOrderAmount ? Number(code.minOrderAmount) : null,
-      maxDiscount: code.maxDiscount ? Number(code.maxDiscount) : null
+      maxDiscount: code.maxDiscount ? Number(code.maxDiscount) : null,
+      usedCount: code._count?.orders || 0,
+      usageLimit: code.usageLimit
     }))
   } catch (error) {
     throw createError({
