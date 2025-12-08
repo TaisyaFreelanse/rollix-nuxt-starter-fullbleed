@@ -23,8 +23,15 @@ const deletePromocode = async (id: string) => {
   try {
     await $fetch(`/api/promo-codes/${id}`, { method: 'DELETE' })
     await loadPromocodes()
-  } catch (error) {
-    alert('Ошибка удаления промокода')
+  } catch (error: any) {
+    // Не показываем ошибку для 404 - промокод уже удален или не существует
+    if (error?.statusCode === 404 || error?.status === 404) {
+      // Просто обновляем список
+      await loadPromocodes()
+      return
+    }
+    console.error('Ошибка удаления промокода:', error)
+    alert(error?.data?.message || 'Ошибка удаления промокода')
   }
 }
 
