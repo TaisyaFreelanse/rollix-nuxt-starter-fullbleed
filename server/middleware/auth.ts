@@ -27,7 +27,9 @@ export default defineEventHandler(async (event) => {
     '/api/delivery-zones',
     '/api/promo-codes',
     '/api/banners', // Публичный эндпоинт для баннеров
-    '/api/orders' // Разрешаем гостевые заказы
+    '/api/orders', // Разрешаем гостевые заказы
+    '/api/promotions', // Публичный эндпоинт для акций
+    '/api/promocode-widget' // Публичный эндпоинт для виджета промокода
   ]
 
   if (publicRoutes.some((route) => path.startsWith(route))) {
