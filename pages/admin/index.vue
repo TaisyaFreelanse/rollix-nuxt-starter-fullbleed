@@ -357,12 +357,22 @@ const loadPromocodes = async () => {
 const deletePromocode = async (id: string) => {
   if (!confirm('Вы уверены, что хотите удалить этот промокод?')) return
   try {
-    await $fetch(`/api/promo-codes/${id}`, { method: 'DELETE' })
+    await $fetch(`/api/promo-codes/${id}`, { 
+      method: 'DELETE',
+      // Подавляем логирование 404 ошибок
+      onResponseError({ response }) {
+        if (response.status === 404 || response.status === 400) {
+          // 404/400 - это нормально, промокод уже удален или не существует
+          return
+        }
+      }
+    })
     await loadPromocodes()
   } catch (error: any) {
-    // Не показываем ошибку для 404 - промокод уже удален или не существует
-    if (error?.statusCode === 404 || error?.status === 404) {
-      // Просто обновляем список
+    // Не показываем ошибку для 404/400 - промокод уже удален или не существует
+    if (error?.statusCode === 404 || error?.status === 404 || 
+        error?.statusCode === 400 || error?.status === 400) {
+      // Просто обновляем список без логирования
       await loadPromocodes()
       return
     }
