@@ -11,18 +11,6 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // Если это похоже на ID (длинная строка, не в верхнем регистре), 
-    // это не код промокода - такие запросы должны обрабатываться через [id].get.ts
-    // ID обычно длиннее (20+ символов) и имеет формат Prisma ID (смешанный регистр)
-    // Коды промокодов обычно короткие (до 20 символов) и в верхнем регистре
-    if (code.length > 20 || code !== code.toUpperCase() || !/^[A-Z0-9]+$/.test(code.toUpperCase())) {
-      // Это похоже на ID, а не на код - возвращаем 404, чтобы запрос попал в [id].get.ts
-      throw createError({
-        statusCode: 404,
-        message: 'Промокод не найден'
-      })
-    }
-
     const codeUpper = code.toUpperCase()
 
     const promoCode = await prisma.promoCode.findFirst({

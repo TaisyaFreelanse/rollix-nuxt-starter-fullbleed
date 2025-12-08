@@ -5,6 +5,9 @@ export default defineEventHandler(async (event) => {
     // Пробуем получить ID разными способами
     let id = getRouterParam(event, 'id')
     const url = event.node.req.url || ''
+    const params = event.context.params || {}
+
+    console.log('[PromoCode Get] Запрос:', { url, params, id })
 
     // Если не получили через getRouterParam, пробуем извлечь из URL
     // Также проверяем routerParams - возможно, Nuxt неправильно маршрутизировал запрос
@@ -13,10 +16,13 @@ export default defineEventHandler(async (event) => {
       if (match && match[1]) {
         id = match[1]
         console.log('[PromoCode Get] ID извлечен из URL:', id)
-      } else if (event.context.params?.code) {
+      } else if (params.code) {
         // Nuxt неправильно маршрутизировал запрос как [code] вместо [id]
-        id = event.context.params.code
+        id = params.code
         console.log('[PromoCode Get] ID извлечен из routerParams.code:', id)
+      } else if (params.id) {
+        id = params.id
+        console.log('[PromoCode Get] ID извлечен из routerParams.id:', id)
       }
     }
 

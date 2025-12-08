@@ -150,7 +150,7 @@ export const useCartStore = defineStore('cart', {
     async applyPromoCode(code: string) {
       try {
         // Используем endpoint для получения по коду, а не по ID
-        const promoCode = await $fetch<PromoCode>(`/api/promo-codes/${code}`, {
+        const promoCode = await $fetch<PromoCode>(`/api/promo-codes/by-code/${code}`, {
           // Не логируем 404 ошибки в консоль - это нормальная ситуация
           onResponseError({ response }) {
             if (response.status === 404) {
