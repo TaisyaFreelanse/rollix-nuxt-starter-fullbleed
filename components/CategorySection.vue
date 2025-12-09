@@ -28,9 +28,9 @@ const openCategory = () => {
 </script>
 
 <template>
-  <section :id="`category-${category.id}`" class="mb-10 md:mb-12 scroll-mt-28">
+  <section :id="`category-${category.id}`" class="mb-4 md:mb-12 scroll-mt-28">
     <!-- Заголовок категории -->
-    <div class="flex items-center justify-between mb-4 px-3 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between mb-2 md:mb-4 px-3 sm:px-6 lg:px-8">
       <h2 class="text-xl md:text-2xl font-semibold text-white">{{ category.name }}</h2>
       <button
         @click="openCategory"
@@ -42,7 +42,7 @@ const openCategory = () => {
     <!-- Товары: сетка в мобильной версии, горизонтальный скролл на больших экранах -->
     <div class="relative">
       <!-- Мобильная версия: сетка -->
-      <div class="sm:hidden grid grid-cols-2 gap-2 px-3 pb-4">
+      <div class="sm:hidden grid grid-cols-2 gap-2 px-3 pb-2">
         <div
           v-for="product in products"
           :key="product.id"
