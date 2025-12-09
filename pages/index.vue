@@ -4,6 +4,23 @@ import type { Category, Product } from '~/composables/useCatalog'
 const { categories, fetchCategories, fetchProducts } = useCatalog()
 const categoriesWithProducts = ref<Array<{ category: Category; products: Product[] }>>([])
 const loading = ref(true)
+const route = useRoute()
+
+// Функция прокрутки к категории
+const scrollToCategory = (categoryId: string) => {
+  const element = document.getElementById(`category-${categoryId}`)
+  if (element) {
+    // Высота хедера (64px) + меню категорий (примерно 48px) = 112px
+    const headerOffset = 112
+    const elementPosition = element.getBoundingClientRect().top
+    const offsetPosition = elementPosition + window.pageYOffset - headerOffset
+
+    window.scrollTo({
+      top: offsetPosition,
+      behavior: 'smooth'
+    })
+  }
+}
 
 // Загружаем категории и товары для каждой
 onMounted(async () => {
@@ -41,12 +58,35 @@ onMounted(async () => {
     })
     
     categoriesWithProducts.value = await Promise.all(promises)
+    
+    // После загрузки данных, если есть categoryId в query, прокручиваем к нему
+    const categoryId = route.query.categoryId as string | undefined
+    if (categoryId) {
+      await nextTick()
+      setTimeout(() => {
+        scrollToCategory(categoryId)
+      }, 100)
+    }
   } catch (error) {
     console.error('Ошибка загрузки данных:', error)
   } finally {
     loading.value = false
   }
 })
+
+// Отслеживаем изменения categoryId в query для прокрутки
+watch(
+  () => route.query.categoryId,
+  (categoryId) => {
+    if (categoryId && !loading.value) {
+      nextTick(() => {
+        setTimeout(() => {
+          scrollToCategory(categoryId as string)
+        }, 100)
+      })
+    }
+  }
+)
 </script>
 
 <template>
@@ -54,7 +94,7 @@ onMounted(async () => {
     <!-- Баннеры карусель -->
     <BannerCarousel />
 
-    <!-- Меню категорий - под баннером в мобильной версии -->
+    <!-- Статичное меню категорий (sticky при скролле) -->
     <HorizontalCategoryMenu />
 
     <!-- Все категории с товарами -->

@@ -28,27 +28,49 @@ const openCategory = () => {
 </script>
 
 <template>
-  <section class="mb-10 md:mb-12">
+  <section :id="`category-${category.id}`" class="mb-10 md:mb-12 scroll-mt-28">
     <!-- Заголовок категории -->
     <div class="flex items-center justify-between mb-4 px-3 sm:px-6 lg:px-8">
       <h2 class="text-xl md:text-2xl font-semibold text-white">{{ category.name }}</h2>
       <button
         @click="openCategory"
-        class="text-sm text-gray-400 hover:text-accent transition-colors">
+        class="hidden sm:block text-sm text-gray-400 hover:text-accent transition-colors">
         Открыть категорию →
       </button>
     </div>
 
-    <!-- Горизонтальный скролл товаров -->
+    <!-- Товары: сетка в мобильной версии, горизонтальный скролл на больших экранах -->
     <div class="relative">
+      <!-- Мобильная версия: сетка -->
+      <div class="sm:hidden grid grid-cols-2 gap-2 px-3 pb-4">
+        <div
+          v-for="product in products"
+          :key="product.id"
+          class="h-full">
+          <ProductCard
+            :product="product"
+            @click="handleProductClick" />
+        </div>
+        <!-- Пустое состояние -->
+        <div
+          v-if="products.length === 0"
+          class="col-span-2 flex items-center justify-center py-12 text-gray-400">
+          <div class="text-center">
+            <div class="text-4xl mb-2">🍽️</div>
+            <div>Товары в этой категории пока отсутствуют</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Десктопная версия: горизонтальный скролл -->
       <div
-        class="flex gap-4 overflow-x-auto scrollbar-hide px-3 sm:px-6 lg:px-8 pb-4 items-stretch"
+        class="hidden sm:flex gap-2 sm:gap-4 overflow-x-auto scrollbar-hide px-3 sm:px-6 lg:px-8 pb-4 items-stretch"
         style="scroll-snap-type: x mandatory;">
         <div
           v-for="product in products"
           :key="product.id"
           class="flex-shrink-0 h-full"
-          style="scroll-snap-align: start; width: 260px;">
+          style="scroll-snap-align: start; width: 160px;">
           <ProductCard :product="product" @click="handleProductClick" />
         </div>
         <!-- Пустое состояние -->

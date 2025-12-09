@@ -44,19 +44,19 @@ const handleClick = () => {
         :src="imageUrl"
         :alt="product?.name || ''"
         loading="lazy"
-        class="w-full h-44 sm:h-48 object-cover opacity-95 transition-transform duration-300 group-hover:scale-110" />
+        class="w-full h-32 sm:h-44 md:h-48 object-cover opacity-95 transition-transform duration-300 group-hover:scale-110" />
       <!-- Теги New и Hot - левый нижний угол -->
-      <div v-if="product?.isNew || product?.isHot" class="absolute bottom-2 left-2 flex gap-1 z-10">
+      <div v-if="product?.isNew || product?.isHot" class="absolute bottom-1 sm:bottom-2 left-1 sm:left-2 flex gap-0.5 sm:gap-1 z-10">
         <!-- Тег New (оранжевый) -->
         <div
           v-if="product?.isNew"
-          class="px-1.5 py-0.5 rounded text-[8px] font-semibold text-white bg-orange-500 border border-orange-400 shadow-lg">
+          class="px-1 sm:px-1.5 py-0.5 rounded text-[7px] sm:text-[8px] font-semibold text-white bg-orange-500 border border-orange-400 shadow-lg">
           NEW
         </div>
         <!-- Тег Hot (розовый) -->
         <div
           v-if="product?.isHot"
-          class="px-1.5 py-0.5 rounded text-[8px] font-semibold text-white bg-pink-500 border border-pink-400 shadow-lg">
+          class="px-1 sm:px-1.5 py-0.5 rounded text-[7px] sm:text-[8px] font-semibold text-white bg-pink-500 border border-pink-400 shadow-lg">
           HOT
         </div>
       </div>
@@ -81,26 +81,26 @@ const handleClick = () => {
       </div>
     </div>
     <!-- Контент карточки - растягивается для выравнивания -->
-    <div class="p-4 flex flex-col flex-grow">
+    <div class="p-2 sm:p-4 flex flex-col flex-grow">
       <!-- Название - фиксированная высота с обрезкой -->
-      <h3 class="text-white font-medium group-hover:text-accent transition-colors line-clamp-2 h-12">
+      <h3 class="text-white font-medium group-hover:text-accent transition-colors line-clamp-2 h-8 sm:h-12 text-xs sm:text-sm">
         {{ product?.name || '' }}
       </h3>
       <!-- Описание - фиксированная высота с обрезкой -->
-      <p class="text-sm text-gray-400 line-clamp-2 mt-1 group-hover:text-gray-300 transition-colors h-10">
+      <p class="text-[10px] sm:text-sm text-gray-400 line-clamp-2 mt-0.5 sm:mt-1 group-hover:text-gray-300 transition-colors h-6 sm:h-10">
         {{ product?.description || '' }}
       </p>
       <!-- Цена и вес - всегда внизу -->
-      <div class="flex items-center justify-between mt-auto pt-3">
-        <div class="flex items-center gap-2">
-          <div class="text-white font-semibold text-lg">{{ product?.price || 0 }} ₽</div>
+      <div class="flex items-center justify-between mt-auto pt-1.5 sm:pt-3">
+        <div class="flex items-center gap-1 sm:gap-2">
+          <div class="text-white font-semibold text-sm sm:text-lg">{{ product?.price || 0 }} ₽</div>
           <div
             v-if="hasDiscount"
-            class="text-sm text-gray-500 line-through">
+            class="text-[10px] sm:text-sm text-gray-500 line-through">
             {{ product?.oldPrice || 0 }} ₽
           </div>
         </div>
-        <div class="flex items-center gap-1 text-xs text-gray-500">
+        <div class="flex items-center gap-0.5 sm:gap-1 text-[9px] sm:text-xs text-gray-500">
           <span v-if="product?.weight">{{ product.weight }}г</span>
           <span v-if="product?.weight && product?.calories">•</span>
           <span v-if="product?.calories">{{ product.calories }} ккал</span>

@@ -1,12 +1,13 @@
 <script setup lang="ts">
-const isVisible = ref(true)
+const isVisible = ref(false)
 
 // Проверяем, было ли уже принято согласие
 onMounted(() => {
   if (process.client) {
     const accepted = localStorage.getItem('cookie-consent')
-    if (accepted === 'true') {
-      isVisible.value = false
+    // Показываем баннер только если согласие еще не было дано
+    if (accepted !== 'true') {
+      isVisible.value = true
     }
   }
 })

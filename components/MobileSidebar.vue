@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const model = defineModel<boolean>({ required: true })
 const route = useRoute()
+const router = useRouter()
 const { categories, fetchCategories } = useCatalog()
 const touchGestures = useTouchGestures()
 
@@ -27,6 +28,42 @@ onMounted(async () => {
 const isActive = (categoryId: string) => {
   return selectedCategoryId.value === categoryId
 }
+
+const selectCategory = async (categoryId: string) => {
+  // Закрываем боковое меню
+  model.value = false
+  
+  // Если мы не на главной странице, переходим на неё
+  if (route.path !== '/') {
+    await router.push('/')
+    // Ждём, пока страница загрузится
+    await nextTick()
+    // Небольшая задержка для рендеринга
+    setTimeout(() => {
+      scrollToCategory(categoryId)
+    }, 100)
+  } else {
+    // Если уже на главной странице, просто скроллим
+    scrollToCategory(categoryId)
+  }
+}
+
+const scrollToCategory = (categoryId: string) => {
+  const element = document.getElementById(`category-${categoryId}`)
+  if (element) {
+    const headerOffset = 80 // Высота хедера + меню
+    const elementPosition = element.getBoundingClientRect().top
+    const offsetPosition = elementPosition + window.pageYOffset - headerOffset
+
+    window.scrollTo({
+      top: offsetPosition,
+      behavior: 'smooth'
+    })
+    
+    // Обновляем URL без перезагрузки страницы
+    router.replace({ path: '/', query: { categoryId } })
+  }
+}
 </script>
 
 <template>
@@ -51,17 +88,17 @@ const isActive = (categoryId: string) => {
           </button>
         </div>
         <nav class="space-y-1">
-          <NuxtLink
+          <button
             v-for="category in categories"
             :key="category.id"
-            :to="{ path: '/catalog', query: { categoryId: category.id } }"
+            type="button"
             :class="[
-              'group flex items-center gap-3 px-3 py-2 rounded-lg transition',
+              'group flex items-center gap-3 px-3 py-2 rounded-lg transition w-full text-left',
               isActive(category.id)
                 ? 'bg-accent/20 text-white'
                 : 'hover:bg-white/5 text-gray-300'
             ]"
-            @click="model = false">
+            @click="selectCategory(category.id)">
             <span class="text-lg">{{ category.icon || '🍽️' }}</span>
             <span class="text-sm flex-1">{{ category.name }}</span>
             <span
@@ -69,7 +106,7 @@ const isActive = (categoryId: string) => {
               class="text-xs text-gray-500 group-hover:text-gray-400">
               {{ category._count.products }}
             </span>
-          </NuxtLink>
+          </button>
         </nav>
       </aside>
     </transition>

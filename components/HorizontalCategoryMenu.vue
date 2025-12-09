@@ -24,14 +24,45 @@ const isActive = (categoryId: string) => {
   return selectedCategoryId.value === categoryId
 }
 
-const selectCategory = (categoryId: string) => {
-  router.push({ path: '/catalog', query: { categoryId } })
+const selectCategory = async (categoryId: string) => {
+  // Если мы не на главной странице, переходим на неё
+  if (route.path !== '/') {
+    await router.push('/')
+    // Ждём, пока страница загрузится
+    await nextTick()
+    // Небольшая задержка для рендеринга
+    setTimeout(() => {
+      scrollToCategory(categoryId)
+    }, 100)
+  } else {
+    // Если уже на главной странице, просто скроллим
+    scrollToCategory(categoryId)
+  }
 }
 
-// Прокрутка к активной категории
+const scrollToCategory = (categoryId: string) => {
+  const element = document.getElementById(`category-${categoryId}`)
+  if (element) {
+    // Высота хедера (64px) + меню категорий (примерно 48px) = 112px
+    const headerOffset = 112
+    const elementPosition = element.getBoundingClientRect().top
+    const offsetPosition = elementPosition + window.pageYOffset - headerOffset
+
+    window.scrollTo({
+      top: offsetPosition,
+      behavior: 'smooth'
+    })
+    
+    // Обновляем URL без перезагрузки страницы
+    router.replace({ path: '/', query: { categoryId } })
+  }
+}
+
+// Прокрутка к активной категории в меню
 const categoryMenuRef = ref<HTMLElement | null>(null)
 const activeCategoryRef = ref<HTMLElement | null>(null)
 
+// Прокрутка меню к активной категории
 watch(
   () => selectedCategoryId.value,
   () => {
@@ -55,10 +86,25 @@ watch(
   },
   { immediate: true }
 )
+
+// Прокрутка страницы к секции категории при загрузке
+watch(
+  () => [route.path, selectedCategoryId.value],
+  ([path, categoryId]) => {
+    if (path === '/' && categoryId) {
+      nextTick(() => {
+        setTimeout(() => {
+          scrollToCategory(categoryId)
+        }, 300) // Задержка для загрузки контента
+      })
+    }
+  },
+  { immediate: true }
+)
 </script>
 
 <template>
-  <div class="lg:hidden w-full bg-card border-b border-white/5 sticky top-16 z-40">
+  <div class="lg:hidden w-full bg-card/95 backdrop-blur-sm border-b border-white/5 sticky top-16 z-40">
     <div
       ref="categoryMenuRef"
       class="flex items-center gap-2 overflow-x-auto px-4 py-2.5 smooth-scroll scrollbar-hide"
