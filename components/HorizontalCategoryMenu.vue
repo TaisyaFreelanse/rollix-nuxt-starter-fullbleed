@@ -104,7 +104,9 @@ watch(
 </script>
 
 <template>
-  <div class="lg:hidden w-full bg-card/95 backdrop-blur-sm border-b border-white/5 sticky top-16 z-40">
+  <div 
+    class="lg:hidden w-full bg-card/95 backdrop-blur-sm border-b border-white/5 sticky z-40"
+    style="position: -webkit-sticky; position: sticky; top: 4rem; will-change: transform;">
     <div
       ref="categoryMenuRef"
       class="flex items-center gap-2 overflow-x-auto px-4 py-2.5 smooth-scroll scrollbar-hide"
