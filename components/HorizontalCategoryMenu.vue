@@ -106,7 +106,7 @@ watch(
 <template>
   <div 
     class="lg:hidden w-full bg-card/95 backdrop-blur-sm border-b border-white/5 fixed z-40"
-    style="position: fixed; top: 4rem; left: 0; right: 0; will-change: transform;"
+    style="top: 4rem; left: 0; right: 0; will-change: transform;"
     <div
       ref="categoryMenuRef"
       class="flex items-center gap-2 overflow-x-auto px-4 py-2.5 smooth-scroll scrollbar-hide"
