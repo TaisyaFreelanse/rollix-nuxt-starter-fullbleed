@@ -64,13 +64,13 @@ const openCategory = () => {
 
       <!-- Десктопная версия: горизонтальный скролл -->
       <div
-        class="hidden sm:flex gap-2 sm:gap-4 overflow-x-auto scrollbar-hide px-3 sm:px-6 lg:px-8 pb-4 items-stretch"
+        class="hidden sm:flex gap-4 overflow-x-auto scrollbar-hide px-3 sm:px-6 lg:px-8 pb-4 items-stretch"
         style="scroll-snap-type: x mandatory;">
         <div
           v-for="product in products"
           :key="product.id"
           class="flex-shrink-0 h-full"
-          style="scroll-snap-align: start; width: 160px;">
+          style="scroll-snap-align: start; width: 280px;">
           <ProductCard :product="product" @click="handleProductClick" />
         </div>
         <!-- Пустое состояние -->
