@@ -55,14 +55,40 @@ export default defineEventHandler(async (event) => {
     }
 
     // Создаем или находим пользователя в БД
-    const user = await prisma.user.upsert({
-      where: { phone: phoneNumber },
-      create: {
-        phone: phoneNumber,
-        name: null
-      },
-      update: {}
-    })
+    let user
+    try {
+      // Пытаемся создать с bonusBalance (если миграция применена)
+      user = await prisma.user.upsert({
+        where: { phone: phoneNumber },
+        create: {
+          phone: phoneNumber,
+          name: null,
+          bonusBalance: 0
+        },
+        update: {}
+      })
+    } catch (error: any) {
+      // Если поле bonusBalance не существует, используем другой подход
+      if (error.message?.includes('bonusBalance') || error.message?.includes('column')) {
+        // Ищем пользователя
+        user = await prisma.user.findUnique({
+          where: { phone: phoneNumber }
+        })
+        
+        // Если не найден, создаем через raw SQL
+        if (!user) {
+          const result = await prisma.$queryRawUnsafe<Array<{id: string, phone: string, name: string | null, email: string | null, createdAt: Date, updatedAt: Date}>>(
+            `INSERT INTO users (id, phone, name, email, "createdAt", "updatedAt") 
+             VALUES (gen_random_uuid()::text, $1, NULL, NULL, NOW(), NOW())
+             RETURNING id, phone, name, email, "createdAt", "updatedAt"`,
+            phoneNumber
+          )
+          user = result[0] as any
+        }
+      } else {
+        throw error
+      }
+    }
 
     // Генерируем JWT токен
     const { generateToken } = await import('~/server/utils/jwt')

@@ -17,9 +17,28 @@ CREATE TABLE IF NOT EXISTS "bonus_transactions" (
     CONSTRAINT "bonus_transactions_pkey" PRIMARY KEY ("id")
 );
 
--- 3. Создаем индексы
-CREATE INDEX IF NOT EXISTS "bonus_transactions_userId_idx" ON "bonus_transactions"("userId");
-CREATE INDEX IF NOT EXISTS "bonus_transactions_orderId_idx" ON "bonus_transactions"("orderId");
+-- 3. Создаем индексы (совместимый синтаксис для всех версий PostgreSQL)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_indexes 
+        WHERE tablename = 'bonus_transactions' 
+        AND indexname = 'bonus_transactions_userId_idx'
+    ) THEN
+        CREATE INDEX "bonus_transactions_userId_idx" ON "bonus_transactions"("userId");
+    END IF;
+END $$;
+
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_indexes 
+        WHERE tablename = 'bonus_transactions' 
+        AND indexname = 'bonus_transactions_orderId_idx'
+    ) THEN
+        CREATE INDEX "bonus_transactions_orderId_idx" ON "bonus_transactions"("orderId");
+    END IF;
+END $$;
 
 -- 4. Добавляем внешние ключи
 DO $$ 
