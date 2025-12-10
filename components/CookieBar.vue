@@ -1,22 +1,34 @@
 <script setup lang="ts">
+// Состояние видимости баннера - изначально false, устанавливается при монтировании
 const isVisible = ref(false)
 
-// Проверяем, было ли уже принято согласие
+// Проверяем, было ли уже принято согласие при монтировании компонента
 onMounted(() => {
   if (process.client) {
+    // Читаем значение из localStorage
     const accepted = localStorage.getItem('cookie-consent')
-    // Показываем баннер только если согласие еще не было дано
+    
+    // Показываем баннер ТОЛЬКО если согласие еще не было дано
+    // Если accepted !== 'true', значит согласие не было дано - показываем баннер
+    // Баннер останется видимым до тех пор, пока пользователь не нажмет кнопку "Согласен"
     if (accepted !== 'true') {
       isVisible.value = true
+    } else {
+      // Согласие уже было дано ранее - скрываем баннер
+      isVisible.value = false
     }
   }
 })
 
+// Обработчик нажатия на кнопку "Согласен"
+// Это ЕДИНСТВЕННЫЙ способ скрыть баннер - только через явное нажатие кнопки
 const acceptCookies = () => {
   if (process.client) {
+    // Сохраняем согласие в localStorage
     localStorage.setItem('cookie-consent', 'true')
+    // Скрываем баннер ТОЛЬКО после нажатия кнопки
+    isVisible.value = false
   }
-  isVisible.value = false
 }
 </script>
 
