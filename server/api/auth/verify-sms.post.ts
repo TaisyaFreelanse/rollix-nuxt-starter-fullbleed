@@ -55,7 +55,6 @@ export default defineEventHandler(async (event) => {
     }
 
     // Создаем или находим пользователя в БД
-    // Используем raw SQL чтобы избежать проблем с bonusBalance до применения миграции
     let user: {id: string, phone: string, name: string | null, email: string | null} | null = null
     
     try {
@@ -71,92 +70,93 @@ export default defineEventHandler(async (event) => {
           update: {}
         })
       } catch (prismaError: any) {
-        // Если ошибка связана с bonusBalance, используем raw SQL
+        // Если ошибка связана с bonusBalance, используем другой подход
         if (prismaError.message?.includes('bonusBalance') || 
             prismaError.message?.includes('column') || 
             prismaError.message?.includes('does not exist')) {
           
-          // Проверяем существование пользователя через простой запрос
-          // Используем COALESCE для NULL значений и явное приведение типов
-          const existingUserResult = await prisma.$queryRaw<Array<any>>`
-            SELECT 
-              id::text as id,
-              phone::text as phone,
-              COALESCE("name", NULL)::text as "name",
-              COALESCE(email, NULL)::text as email,
-              "createdAt",
-              "updatedAt"
-            FROM users 
-            WHERE phone = ${phoneNumber}
-          `
+          // Проверяем существование пользователя через простой SELECT без типизации
+          const existingUserRaw = await prisma.$queryRawUnsafe(
+            `SELECT id, phone, name, email, "createdAt", "updatedAt" FROM users WHERE phone = $1`,
+            phoneNumber
+          ) as any[]
           
-          if (existingUserResult && existingUserResult.length > 0) {
-            const rawUser = existingUserResult[0]
+          if (existingUserRaw && existingUserRaw.length > 0) {
+            const raw = existingUserRaw[0]
             user = {
-              id: rawUser.id,
-              phone: rawUser.phone,
-              name: rawUser.name || null,
-              email: rawUser.email || null,
-              createdAt: rawUser.createdAt,
-              updatedAt: rawUser.updatedAt
+              id: String(raw.id),
+              phone: String(raw.phone),
+              name: raw.name ? String(raw.name) : null,
+              email: raw.email ? String(raw.email) : null,
+              createdAt: raw.createdAt,
+              updatedAt: raw.updatedAt
             }
           } else {
+            // Нужно создать пользователя
             // Проверяем, есть ли поле bonusBalance
-            const hasBonusBalance = await prisma.$queryRaw<Array<{column_name: string}>>`
-              SELECT column_name 
-              FROM information_schema.columns 
-              WHERE table_name = 'users' AND column_name = 'bonusBalance'
-            `
+            const hasBonusBalance = await prisma.$queryRawUnsafe(
+              `SELECT column_name FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'bonusBalance'`
+            ) as any[]
+            
+            let newUserId: string
             
             if (hasBonusBalance.length > 0) {
               // Поле есть, создаем с bonusBalance
-              const createdUserResult = await prisma.$queryRaw<Array<any>>`
-                INSERT INTO users (id, phone, name, email, "bonusBalance", "createdAt", "updatedAt") 
-                VALUES (gen_random_uuid()::text, ${phoneNumber}, NULL, NULL, 0, NOW(), NOW())
-                RETURNING 
-                  id::text as id,
-                  phone::text as phone,
-                  COALESCE("name", NULL)::text as "name",
-                  COALESCE(email, NULL)::text as email,
-                  "createdAt",
-                  "updatedAt"
-              `
+              // Используем $executeRaw для INSERT (не возвращает данные)
+              const insertResult = await prisma.$executeRawUnsafe(
+                `INSERT INTO users (id, phone, name, email, "bonusBalance", "createdAt", "updatedAt") 
+                 VALUES (gen_random_uuid()::text, $1, NULL, NULL, 0, NOW(), NOW())
+                 RETURNING id`,
+                phoneNumber
+              )
               
-              if (createdUserResult && createdUserResult.length > 0) {
-                const rawUser = createdUserResult[0]
-                user = {
-                  id: rawUser.id,
-                  phone: rawUser.phone,
-                  name: rawUser.name || null,
-                  email: rawUser.email || null,
-                  createdAt: rawUser.createdAt,
-                  updatedAt: rawUser.updatedAt
-                }
+              // Получаем ID созданного пользователя отдельным запросом
+              const idResult = await prisma.$queryRawUnsafe(
+                `SELECT id FROM users WHERE phone = $1 ORDER BY "createdAt" DESC LIMIT 1`,
+                phoneNumber
+              ) as any[]
+              
+              if (idResult && idResult.length > 0) {
+                newUserId = String(idResult[0].id)
+              } else {
+                throw new Error('Не удалось получить ID созданного пользователя')
               }
             } else {
               // Поле нет, создаем без bonusBalance
-              const createdUserResult = await prisma.$queryRaw<Array<any>>`
-                INSERT INTO users (id, phone, name, email, "createdAt", "updatedAt") 
-                VALUES (gen_random_uuid()::text, ${phoneNumber}, NULL, NULL, NOW(), NOW())
-                RETURNING 
-                  id::text as id,
-                  phone::text as phone,
-                  COALESCE("name", NULL)::text as "name",
-                  COALESCE(email, NULL)::text as email,
-                  "createdAt",
-                  "updatedAt"
-              `
+              await prisma.$executeRawUnsafe(
+                `INSERT INTO users (id, phone, name, email, "createdAt", "updatedAt") 
+                 VALUES (gen_random_uuid()::text, $1, NULL, NULL, NOW(), NOW())`,
+                phoneNumber
+              )
               
-              if (createdUserResult && createdUserResult.length > 0) {
-                const rawUser = createdUserResult[0]
-                user = {
-                  id: rawUser.id,
-                  phone: rawUser.phone,
-                  name: rawUser.name || null,
-                  email: rawUser.email || null,
-                  createdAt: rawUser.createdAt,
-                  updatedAt: rawUser.updatedAt
-                }
+              // Получаем ID созданного пользователя
+              const idResult = await prisma.$queryRawUnsafe(
+                `SELECT id FROM users WHERE phone = $1 ORDER BY "createdAt" DESC LIMIT 1`,
+                phoneNumber
+              ) as any[]
+              
+              if (idResult && idResult.length > 0) {
+                newUserId = String(idResult[0].id)
+              } else {
+                throw new Error('Не удалось получить ID созданного пользователя')
+              }
+            }
+            
+            // Получаем полные данные созданного пользователя
+            const newUserRaw = await prisma.$queryRawUnsafe(
+              `SELECT id, phone, name, email, "createdAt", "updatedAt" FROM users WHERE id = $1`,
+              newUserId
+            ) as any[]
+            
+            if (newUserRaw && newUserRaw.length > 0) {
+              const raw = newUserRaw[0]
+              user = {
+                id: String(raw.id),
+                phone: String(raw.phone),
+                name: raw.name ? String(raw.name) : null,
+                email: raw.email ? String(raw.email) : null,
+                createdAt: raw.createdAt,
+                updatedAt: raw.updatedAt
               }
             }
           }
