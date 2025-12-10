@@ -191,7 +191,7 @@ const handleAuthCancel = () => {
             <div class="flex flex-col items-center gap-1">
               <div class="relative w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-1">
                 <span class="text-lg">
-                  {{ spice.name.includes('Имбирь') ? '🫚' : spice.name.includes('Васаби') ? '🫚' : '🥢' }}
+                  {{ spice.name.includes('Имбирь') ? '🫚' : spice.name.includes('Васаби') ? '🌿' : spice.name.includes('Соевый') ? '🥢' : '🍯' }}
                 </span>
                 <span
                   v-if="getItemQuantity(spice.id) > 0"
@@ -199,9 +199,23 @@ const handleAuthCancel = () => {
                   {{ getItemQuantity(spice.id) }}
                 </span>
               </div>
-              <div class="text-[10px] font-medium text-center mb-1">{{ spice.name }}</div>
+              <div class="text-[10px] font-medium text-center mb-1 leading-tight">{{ spice.name }}</div>
               <div class="text-[10px] text-gray-400 mb-1">+{{ spice.price }} Р</div>
+              <div v-if="getItemQuantity(spice.id) > 0" class="flex items-center gap-1 mb-1">
+                <button
+                  class="w-6 h-6 flex items-center justify-center rounded bg-white/5 hover:bg-white/10 transition text-[10px]"
+                  @click="decrementUtensilOrSpice(spice)">
+                  −
+                </button>
+                <span class="text-[10px] text-gray-400 w-4 text-center">{{ getItemQuantity(spice.id) }}</span>
+                <button
+                  class="w-6 h-6 flex items-center justify-center rounded bg-white/5 hover:bg-white/10 transition text-[10px]"
+                  @click="incrementUtensilOrSpice(spice)">
+                  +
+                </button>
+              </div>
               <button
+                v-else
                 class="w-full h-6 flex items-center justify-center rounded bg-accent/20 hover:bg-accent/30 transition text-xs font-medium"
                 @click="incrementUtensilOrSpice(spice)">
                 +
