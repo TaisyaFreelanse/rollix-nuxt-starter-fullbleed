@@ -24,33 +24,33 @@ onMounted(() => {
 
 <template>
   <div>
-    <h2 class="text-sm sm:text-base font-semibold mb-3 sm:mb-4">Бонусная программа</h2>
+    <h2 class="text-xs sm:text-sm font-semibold mb-2 sm:mb-3">Бонусная программа</h2>
 
     <!-- Баланс бонусов -->
-    <div class="bg-card rounded-lg border border-white/5 p-3 sm:p-4 mb-4 sm:mb-6">
-      <div class="text-xs sm:text-sm text-gray-400 mb-2">Ваш баланс бонусов</div>
-      <div class="text-3xl sm:text-4xl font-bold text-accent mb-3 sm:mb-4">{{ Math.round(bonusBalance) }}</div>
-      <div class="text-xs sm:text-sm text-gray-400">
+    <div class="bg-card rounded-lg border border-white/5 p-2 sm:p-3 mb-3 sm:mb-4">
+      <div class="text-[10px] sm:text-xs text-gray-400 mb-1.5">Ваш баланс бонусов</div>
+      <div class="text-xl sm:text-2xl font-bold text-accent mb-2 sm:mb-3">{{ Math.round(bonusBalance) }}</div>
+      <div class="text-[10px] sm:text-xs text-gray-400">
         Начисляется 1% с каждого оплаченного заказа. 1 бонус = 1 рубль
       </div>
     </div>
 
     <!-- История начислений -->
     <div>
-      <h3 class="text-sm sm:text-base font-semibold mb-3 sm:mb-4">История начислений</h3>
-      <div v-if="loading" class="text-center py-12 text-gray-400 text-sm">Загрузка...</div>
-      <div v-else-if="bonusHistory.length === 0" class="text-center py-12 text-gray-400 text-sm">
-        <div class="text-4xl mb-4">🎁</div>
+      <h3 class="text-xs sm:text-sm font-semibold mb-2 sm:mb-3">История начислений</h3>
+      <div v-if="loading" class="text-center py-8 text-gray-400 text-[10px] sm:text-xs">Загрузка...</div>
+      <div v-else-if="bonusHistory.length === 0" class="text-center py-8 text-gray-400 text-[10px] sm:text-xs">
+        <div class="text-3xl mb-3">🎁</div>
         <div>История начислений пуста</div>
       </div>
-      <div v-else class="space-y-2 sm:space-y-3">
+      <div v-else class="space-y-1.5 sm:space-y-2">
         <div
           v-for="item in bonusHistory"
           :key="item.id"
-          class="bg-card rounded-lg border border-white/5 p-3 sm:p-4 flex items-center justify-between">
+          class="bg-card rounded-lg border border-white/5 p-2 sm:p-3 flex items-center justify-between">
           <div class="flex-1">
-            <div class="text-xs sm:text-sm font-medium mb-1">{{ item.description || 'Начисление бонусов' }}</div>
-            <div class="text-[10px] sm:text-xs text-gray-400">
+            <div class="text-[10px] sm:text-xs font-medium mb-1">{{ item.description || 'Начисление бонусов' }}</div>
+            <div class="text-[9px] sm:text-[10px] text-gray-400">
               {{ new Date(item.createdAt).toLocaleDateString('ru-RU', {
                 day: 'numeric',
                 month: 'long',
@@ -62,7 +62,7 @@ onMounted(() => {
           </div>
           <div
             :class="[
-              'text-sm sm:text-base font-semibold ml-4',
+              'text-xs sm:text-sm font-semibold ml-3',
               item.amount > 0 ? 'text-green-400' : 'text-red-400'
             ]">
             {{ item.amount > 0 ? '+' : '' }}{{ Math.round(item.amount) }}

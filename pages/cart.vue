@@ -2,12 +2,15 @@
 const cartStore = useCartStore()
 const router = useRouter()
 const auth = useAuth()
-const { fetchProducts } = useCatalog()
+// const { fetchProducts } = useCatalog()
 
 const promoCodeInput = ref('')
 const isApplyingPromo = ref(false)
 const promoError = ref<string | null>(null)
 const showAuthModal = ref(false)
+
+// Активная вкладка для приборов/специй
+const activeTab = ref<'utensils' | 'spices'>('utensils')
 
 // Товары для специй и приборов (статические данные)
 const utensils = ref([
@@ -46,13 +49,13 @@ const spices = ref([
 
 // Получить количество товара в корзине
 const getItemQuantity = (productId: string) => {
-  const item = cartStore.items.find(i => i.product.id === productId)
+  const item = cartStore.items.find((i: any) => i.product.id === productId)
   return item?.quantity || 0
 }
 
 // Увеличить количество товара
 const incrementUtensilOrSpice = (product: any) => {
-  const existingItem = cartStore.items.find(i => i.product.id === product.id)
+  const existingItem = cartStore.items.find((i: any) => i.product.id === product.id)
   if (existingItem) {
     cartStore.updateQuantity(existingItem.id, existingItem.quantity + 1)
   } else {
@@ -70,7 +73,7 @@ const incrementUtensilOrSpice = (product: any) => {
 
 // Уменьшить количество товара
 const decrementUtensilOrSpice = (product: any) => {
-  const existingItem = cartStore.items.find(i => i.product.id === product.id)
+  const existingItem = cartStore.items.find((i: any) => i.product.id === product.id)
   if (existingItem) {
     if (existingItem.quantity > 1) {
       cartStore.updateQuantity(existingItem.id, existingItem.quantity - 1)
@@ -115,7 +118,7 @@ const proceedToCheckout = () => {
   router.push('/checkout')
 }
 
-const handleAuthSuccess = async (phone: string) => {
+const handleAuthSuccess = async (_phone: string) => {
   showAuthModal.value = false
   // После успешной авторизации ждем обновления состояния и переходим к оформлению
   await nextTick()
@@ -128,8 +131,8 @@ const handleAuthCancel = () => {
 </script>
 
 <template>
-  <main class="w-full px-3 sm:px-4 lg:px-8 py-3 sm:py-4">
-    <h1 class="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Корзина</h1>
+  <main class="w-full px-3 sm:px-4 lg:px-8 py-2 sm:py-3">
+    <h1 class="text-sm sm:text-base font-semibold mb-2 sm:mb-3">Корзина</h1>
 
     <div v-if="cartStore.isEmpty" class="flex flex-col items-center justify-center py-12 text-gray-400">
       <div class="text-4xl mb-4">🛒</div>
@@ -143,7 +146,7 @@ const handleAuthCancel = () => {
       <!-- Основные товары -->
       <div class="space-y-2">
         <CartItem 
-          v-for="item in cartStore.items.filter(item => {
+          v-for="item in cartStore.items.filter((item: any) => {
             const productId = item.product.id
             const isUtensil = utensils.value.some((u: any) => u.id === productId)
             const isSpice = spices.value.some((s: any) => s.id === productId)
@@ -153,114 +156,138 @@ const handleAuthCancel = () => {
           :item="item" />
       </div>
 
-      <!-- Секция Приборы -->
+      <!-- Вкладки Приборы и Специи -->
       <div class="space-y-2">
-        <h2 class="text-sm font-semibold px-1">Приборы</h2>
-        <div v-if="utensils.length > 0" class="space-y-2">
-          <div
-            v-for="utensil in utensils"
-            :key="utensil.id"
-            class="flex items-center justify-between p-2 bg-card rounded-lg border border-white/5">
-            <div class="flex items-center gap-3 flex-1">
-              <div class="w-8 h-8 flex items-center justify-center bg-white/5 rounded text-xs">🍴</div>
-              <div class="flex-1">
-                <div class="text-xs font-medium">{{ utensil.name }}</div>
-                <div class="text-xs text-gray-400">{{ utensil.price }} Р</div>
+        <div class="flex gap-2 border-b border-white/10">
+          <button
+            :class="[
+              'px-3 py-1.5 text-[11px] font-medium transition-colors border-b-2',
+              activeTab === 'utensils'
+                ? 'text-accent border-accent'
+                : 'text-gray-400 border-transparent hover:text-gray-300'
+            ]"
+            @click="activeTab = 'utensils'">
+            Добавить приборы
+          </button>
+          <button
+            :class="[
+              'px-3 py-1.5 text-[11px] font-medium transition-colors border-b-2',
+              activeTab === 'spices'
+                ? 'text-accent border-accent'
+                : 'text-gray-400 border-transparent hover:text-gray-300'
+            ]"
+            @click="activeTab = 'spices'">
+            Добавьте специи
+          </button>
+        </div>
+
+        <!-- Контент вкладки Приборы -->
+        <div v-show="activeTab === 'utensils'" class="space-y-2 pt-2">
+          <div v-if="utensils.length > 0" class="space-y-2">
+            <div
+              v-for="utensil in utensils"
+              :key="utensil.id"
+              class="flex items-center justify-between p-1.5 bg-card rounded-lg border border-white/5">
+              <div class="flex items-center gap-2 flex-1">
+                <div class="w-6 h-6 flex items-center justify-center bg-white/5 rounded text-[10px]">🍴</div>
+                <div class="flex-1">
+                  <div class="text-[10px] font-medium">{{ utensil.name }}</div>
+                  <div class="text-[9px] text-gray-400">{{ utensil.price }} Р</div>
+                </div>
               </div>
-            </div>
-            <div class="flex items-center gap-2">
-              <button
-                v-if="getItemQuantity(utensil.id) > 0"
-                class="w-7 h-7 flex items-center justify-center rounded bg-white/5 hover:bg-white/10 transition text-xs"
-                @click="decrementUtensilOrSpice(utensil)">
-                −
-              </button>
-              <span v-if="getItemQuantity(utensil.id) > 0" class="text-xs text-gray-400 w-6 text-center">
-                {{ getItemQuantity(utensil.id) }}
-              </span>
-              <button
-                class="w-7 h-7 flex items-center justify-center rounded bg-white/5 hover:bg-white/10 transition text-xs"
-                @click="incrementUtensilOrSpice(utensil)">
-                +
-              </button>
+              <div class="flex items-center gap-1.5">
+                <button
+                  v-if="getItemQuantity(utensil.id) > 0"
+                  class="w-6 h-6 flex items-center justify-center rounded bg-white/5 hover:bg-white/10 transition text-[10px]"
+                  @click="decrementUtensilOrSpice(utensil)">
+                  −
+                </button>
+                <span v-if="getItemQuantity(utensil.id) > 0" class="text-[10px] text-gray-400 w-5 text-center">
+                  {{ getItemQuantity(utensil.id) }}
+                </span>
+                <button
+                  class="w-6 h-6 flex items-center justify-center rounded bg-white/5 hover:bg-white/10 transition text-[10px]"
+                  @click="incrementUtensilOrSpice(utensil)">
+                  +
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Секция Специи -->
-      <div class="space-y-2">
-        <h2 class="text-sm font-semibold px-1">Добавьте специи</h2>
-        <div v-if="spices.length > 0" class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-          <div
-            v-for="spice in spices"
-            :key="spice.id"
-            class="flex-shrink-0 w-24 bg-card rounded-lg border border-white/5 p-2">
-            <div class="flex flex-col items-center gap-1">
-              <div class="relative w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-1">
-                <span class="text-lg">
-                  {{ spice.name.includes('Имбирь') ? '🫚' : spice.name.includes('Васаби') ? '🌿' : spice.name.includes('Соевый') ? '🥢' : '🍯' }}
-                </span>
-                <span
-                  v-if="getItemQuantity(spice.id) > 0"
-                  class="absolute -top-1 -right-1 min-w-[16px] h-[16px] flex items-center justify-center text-[9px] font-bold text-white bg-accent rounded-full px-0.5">
-                  {{ getItemQuantity(spice.id) }}
-                </span>
-              </div>
-              <div class="text-[10px] font-medium text-center mb-1 leading-tight">{{ spice.name }}</div>
-              <div class="text-[10px] text-gray-400 mb-1">+{{ spice.price }} Р</div>
-              <div v-if="getItemQuantity(spice.id) > 0" class="flex items-center gap-1 mb-1">
+        <!-- Контент вкладки Специи -->
+        <div v-show="activeTab === 'spices'" class="space-y-2 pt-2">
+          <div v-if="spices.length > 0" class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            <div
+              v-for="spice in spices"
+              :key="spice.id"
+              class="flex-shrink-0 w-20 bg-card rounded-lg border border-white/5 p-1.5">
+              <div class="flex flex-col items-center gap-0.5">
+                <div class="relative w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mb-0.5">
+                  <span class="text-sm">
+                    {{ spice.name.includes('Имбирь') ? '🫚' : spice.name.includes('Васаби') ? '🌿' : spice.name.includes('Соевый') ? '🥢' : '🍯' }}
+                  </span>
+                  <span
+                    v-if="getItemQuantity(spice.id) > 0"
+                    class="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] flex items-center justify-center text-[8px] font-bold text-white bg-accent rounded-full px-0.5">
+                    {{ getItemQuantity(spice.id) }}
+                  </span>
+                </div>
+                <div class="text-[9px] font-medium text-center leading-tight">{{ spice.name }}</div>
+                <div class="text-[9px] text-gray-400 mb-0.5">+{{ spice.price }} Р</div>
+                <div v-if="getItemQuantity(spice.id) > 0" class="flex items-center gap-1 w-full">
+                  <button
+                    class="flex-1 h-5 flex items-center justify-center rounded bg-white/5 hover:bg-white/10 transition text-[9px]"
+                    @click="decrementUtensilOrSpice(spice)">
+                    −
+                  </button>
+                  <span class="text-[9px] text-gray-400 w-3 text-center">{{ getItemQuantity(spice.id) }}</span>
+                  <button
+                    class="flex-1 h-5 flex items-center justify-center rounded bg-white/5 hover:bg-white/10 transition text-[9px]"
+                    @click="incrementUtensilOrSpice(spice)">
+                    +
+                  </button>
+                </div>
                 <button
-                  class="w-6 h-6 flex items-center justify-center rounded bg-white/5 hover:bg-white/10 transition text-[10px]"
-                  @click="decrementUtensilOrSpice(spice)">
-                  −
-                </button>
-                <span class="text-[10px] text-gray-400 w-4 text-center">{{ getItemQuantity(spice.id) }}</span>
-                <button
-                  class="w-6 h-6 flex items-center justify-center rounded bg-white/5 hover:bg-white/10 transition text-[10px]"
+                  v-else
+                  class="w-full h-5 flex items-center justify-center rounded bg-accent/20 hover:bg-accent/30 transition text-[10px] font-medium"
                   @click="incrementUtensilOrSpice(spice)">
                   +
                 </button>
               </div>
-              <button
-                v-else
-                class="w-full h-6 flex items-center justify-center rounded bg-accent/20 hover:bg-accent/30 transition text-xs font-medium"
-                @click="incrementUtensilOrSpice(spice)">
-                +
-              </button>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Промокод -->
-      <div class="space-y-2">
+      <div class="space-y-1.5">
         <div v-if="!cartStore.promoCode">
-          <div class="flex gap-2">
+          <div class="flex gap-1.5">
             <input
               v-model="promoCodeInput"
               type="text"
               placeholder="Введите промокод"
-              class="flex-1 px-3 py-2 rounded bg-white/5 border border-white/10 focus:border-accent focus:outline-none text-xs"
+              class="flex-1 px-2 py-1.5 rounded bg-white/5 border border-white/10 focus:border-accent focus:outline-none text-[10px]"
               @keyup.enter="applyPromo" />
             <button
               :disabled="isApplyingPromo || !promoCodeInput.trim()"
-              class="px-4 py-2 bg-accent hover:bg-accent-700 rounded transition text-xs disabled:opacity-50 flex items-center justify-center"
+              class="px-3 py-1.5 bg-accent hover:bg-accent-700 rounded transition text-[10px] disabled:opacity-50 flex items-center justify-center"
               @click="applyPromo">
               >
             </button>
           </div>
-          <p v-if="promoError" class="text-[10px] text-red-400 px-1">{{ promoError }}</p>
+          <p v-if="promoError" class="text-[9px] text-red-400 px-1">{{ promoError }}</p>
         </div>
-        <div v-else class="flex items-center justify-between p-2 bg-green-500/20 rounded">
+        <div v-else class="flex items-center justify-between p-1.5 bg-green-500/20 rounded">
           <div>
-            <div class="text-xs text-green-400 font-medium">{{ cartStore.promoCode.code }}</div>
-            <div class="text-[10px] text-gray-400">
+            <div class="text-[10px] text-green-400 font-medium">{{ cartStore.promoCode.code }}</div>
+            <div class="text-[9px] text-gray-400">
               Скидка: {{ cartStore.discount.toFixed(2) }} ₽
             </div>
           </div>
           <button
-            class="text-red-400 hover:text-red-300 transition text-xs"
+            class="text-red-400 hover:text-red-300 transition text-[10px]"
             @click="removePromo">
             ✕
           </button>
@@ -268,20 +295,20 @@ const handleAuthCancel = () => {
       </div>
 
       <!-- Итого -->
-      <div class="space-y-2 pt-2 border-t border-white/10">
-        <div class="flex justify-between text-xs text-gray-400">
+      <div class="space-y-1.5 pt-1.5 border-t border-white/10">
+        <div class="flex justify-between text-[10px] text-gray-400">
           <span>Сумма заказа</span>
           <span>{{ Math.round(cartStore.subtotal).toLocaleString('ru-RU') }} Р</span>
         </div>
-        <div v-if="cartStore.promoCode && cartStore.discount > 0" class="flex justify-between text-xs text-green-400">
+        <div v-if="cartStore.promoCode && cartStore.discount > 0" class="flex justify-between text-[10px] text-green-400">
           <span>Скидка {{ cartStore.promoCode.discountType === 'PERCENT' ? Math.round(cartStore.promoCode.discountValue) + '%' : '' }}</span>
           <span>{{ Math.round(cartStore.discount).toLocaleString('ru-RU') }} Р</span>
         </div>
-        <div class="flex justify-between text-xs text-gray-400">
+        <div class="flex justify-between text-[10px] text-gray-400">
           <span>Сервисный сбор</span>
           <span>0 Р</span>
         </div>
-        <div class="flex justify-between text-sm font-semibold pt-2 border-t border-white/10">
+        <div class="flex justify-between text-xs font-semibold pt-1.5 border-t border-white/10">
           <span>Итого</span>
           <span>{{ Math.round(cartStore.total).toLocaleString('ru-RU') }} Р</span>
         </div>
@@ -289,7 +316,7 @@ const handleAuthCancel = () => {
 
       <!-- Кнопка оформления -->
       <button
-        class="w-full py-3 bg-accent hover:bg-accent-700 rounded-lg text-white font-medium transition text-sm"
+        class="w-full py-2 bg-accent hover:bg-accent-700 rounded-lg text-white font-medium transition text-xs"
         @click="proceedToCheckout">
         Оформить заказ за {{ Math.round(cartStore.total).toLocaleString('ru-RU') }} Р
       </button>

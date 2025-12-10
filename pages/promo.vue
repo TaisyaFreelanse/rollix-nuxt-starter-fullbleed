@@ -41,8 +41,8 @@ onMounted(async () => {
 </script>
 
 <template>
-  <main class="w-full px-3 sm:px-4 lg:px-8">
-    <h1 class="text-base sm:text-lg font-semibold mt-3 sm:mt-4 mb-3 sm:mb-4">Новости и акции</h1>
+  <main class="w-full px-3 sm:px-4 lg:px-8 py-2 sm:py-3">
+    <h1 class="text-sm sm:text-base font-semibold mb-2 sm:mb-3">Новости и акции</h1>
     
     <!-- Промокод карточка -->
     <div v-if="promocodeWidget && promocodeWidget.isActive" class="mb-4 sm:mb-6">

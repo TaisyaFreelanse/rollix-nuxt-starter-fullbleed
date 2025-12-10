@@ -319,8 +319,8 @@ input[type="checkbox"]:checked::after {
 </style>
 
 <template>
-  <main class="w-full px-3 sm:px-4 lg:px-8 py-3 sm:py-4">
-    <h1 class="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Оформление заказа</h1>
+  <main class="w-full px-3 sm:px-4 lg:px-8 py-2 sm:py-3">
+    <h1 class="text-sm sm:text-base font-semibold mb-2 sm:mb-3">Оформление заказа</h1>
 
     <div v-if="cartStore.isEmpty" class="text-center py-12">
       <p class="text-gray-400 mb-4">Корзина пуста</p>
@@ -329,55 +329,55 @@ input[type="checkbox"]:checked::after {
       </NuxtLink>
     </div>
 
-    <div v-else class="grid lg:grid-cols-3 gap-6">
+    <div v-else class="grid lg:grid-cols-3 gap-3 sm:gap-4">
       <!-- Форма оформления -->
-      <div class="lg:col-span-2 space-y-6">
+      <div class="lg:col-span-2 space-y-3 sm:space-y-4">
         <!-- Способ получения -->
-        <div class="bg-card rounded-lg border border-white/5 p-6">
-          <h2 class="text-xl font-semibold mb-4">Способ получения</h2>
-          <div class="flex gap-2 sm:gap-3">
+        <div class="bg-card rounded-lg border border-white/5 p-3 sm:p-4">
+          <h2 class="text-xs sm:text-sm font-semibold mb-2 sm:mb-3">Способ получения</h2>
+          <div class="flex gap-2">
             <button
               :class="[
-                'flex-1 p-2 sm:p-3 rounded-lg border transition',
+                'flex-1 p-1.5 sm:p-2 rounded-lg border transition',
                 deliveryType === 'delivery'
                   ? 'border-accent bg-accent/20'
                   : 'border-white/10 bg-white/5 hover:bg-white/10'
               ]"
               @click="deliveryType = 'delivery'">
-              <div class="text-sm sm:text-base mb-1">🚚 Доставка</div>
-              <div class="text-xs sm:text-sm text-gray-400">Доставим по указанному адресу</div>
+              <div class="text-[10px] sm:text-xs mb-0.5">🚚 Доставка</div>
+              <div class="text-[9px] sm:text-[10px] text-gray-400">Доставим по указанному адресу</div>
             </button>
             <button
               :class="[
-                'flex-1 p-2 sm:p-3 rounded-lg border transition',
+                'flex-1 p-1.5 sm:p-2 rounded-lg border transition',
                 deliveryType === 'pickup'
                   ? 'border-accent bg-accent/20'
                   : 'border-white/10 bg-white/5 hover:bg-white/10'
               ]"
               @click="deliveryType = 'pickup'">
-              <div class="text-sm sm:text-base mb-1">🏪 Самовывоз</div>
-              <div class="text-xs sm:text-sm text-gray-400">Заберите заказ сами</div>
+              <div class="text-[10px] sm:text-xs mb-0.5">🏪 Самовывоз</div>
+              <div class="text-[9px] sm:text-[10px] text-gray-400">Заберите заказ сами</div>
             </button>
           </div>
         </div>
 
         <!-- Адрес доставки -->
-        <div v-if="deliveryType === 'delivery'" class="bg-card rounded-lg border border-white/5 p-6">
-          <h2 class="text-xl font-semibold mb-4">Адрес доставки</h2>
-          <div class="space-y-4">
+        <div v-if="deliveryType === 'delivery'" class="bg-card rounded-lg border border-white/5 p-3 sm:p-4">
+          <h2 class="text-xs sm:text-sm font-semibold mb-2 sm:mb-3">Адрес доставки</h2>
+          <div class="space-y-2 sm:space-y-3">
             <div>
-              <label class="block text-sm text-gray-400 mb-2">Адрес</label>
+              <label class="block text-[10px] sm:text-xs text-gray-400 mb-1">Адрес</label>
               <input
                 v-model="deliveryAddress"
                 type="text"
                 placeholder="Улица, дом, квартира"
-                class="w-full px-4 py-2 rounded bg-white/5 border border-white/10 focus:border-accent focus:outline-none" />
+                class="w-full px-2 sm:px-3 py-1.5 rounded bg-white/5 border border-white/10 focus:border-accent focus:outline-none text-[10px] sm:text-xs" />
             </div>
             <div v-if="!isLoadingZones && deliveryZones.length > 0">
-              <label class="block text-sm text-gray-400 mb-2">Зона доставки</label>
+              <label class="block text-[10px] sm:text-xs text-gray-400 mb-1">Зона доставки</label>
               <select
                 v-model="selectedZone"
-                class="w-full px-4 py-2 rounded bg-white/5 border border-white/10 focus:border-accent focus:outline-none">
+                class="w-full px-2 sm:px-3 py-1.5 rounded bg-white/5 border border-white/10 focus:border-accent focus:outline-none text-[10px] sm:text-xs">
                 <option :value="null">Выберите зону</option>
                 <option
                   v-for="zone in deliveryZones"
@@ -389,7 +389,7 @@ input[type="checkbox"]:checked::after {
                   </span>
                 </option>
               </select>
-              <p v-if="selectedZone" class="text-xs text-gray-400 mt-2">
+              <p v-if="selectedZone" class="text-[9px] sm:text-[10px] text-gray-400 mt-1">
                 Время доставки: ~{{ selectedZone.estimatedTime }} мин
               </p>
             </div>
@@ -397,38 +397,38 @@ input[type="checkbox"]:checked::after {
         </div>
 
         <!-- Контактная информация -->
-        <div class="bg-card rounded-lg border border-white/5 p-6">
-          <h2 class="text-xl font-semibold mb-4">Контактная информация</h2>
-          <div class="space-y-4">
+        <div class="bg-card rounded-lg border border-white/5 p-3 sm:p-4">
+          <h2 class="text-xs sm:text-sm font-semibold mb-2 sm:mb-3">Контактная информация</h2>
+          <div class="space-y-2 sm:space-y-3">
             <div>
-              <label class="block text-sm text-gray-400 mb-2">Телефон *</label>
+              <label class="block text-[10px] sm:text-xs text-gray-400 mb-1">Телефон *</label>
               <input
                 v-model="phone"
                 type="tel"
                 placeholder="+7 (999) 123-45-67"
                 required
-                class="w-full px-4 py-2 rounded bg-white/5 border border-white/10 focus:border-accent focus:outline-none" />
+                class="w-full px-2 sm:px-3 py-1.5 rounded bg-white/5 border border-white/10 focus:border-accent focus:outline-none text-[10px] sm:text-xs" />
             </div>
             <div>
-              <label class="block text-sm text-gray-400 mb-2">Имя</label>
+              <label class="block text-[10px] sm:text-xs text-gray-400 mb-1">Имя</label>
               <input
                 v-model="name"
                 type="text"
                 placeholder="Ваше имя"
-                class="w-full px-4 py-2 rounded bg-white/5 border border-white/10 focus:border-accent focus:outline-none" />
+                class="w-full px-2 sm:px-3 py-1.5 rounded bg-white/5 border border-white/10 focus:border-accent focus:outline-none text-[10px] sm:text-xs" />
             </div>
           </div>
         </div>
 
         <!-- Время доставки -->
-        <div class="bg-card rounded-lg border border-white/5 p-6">
-          <h2 class="text-xl font-semibold mb-4">Время доставки</h2>
-          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-64 overflow-y-auto">
+        <div class="bg-card rounded-lg border border-white/5 p-3 sm:p-4">
+          <h2 class="text-xs sm:text-sm font-semibold mb-2 sm:mb-3">Время доставки</h2>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-48 overflow-y-auto">
             <button
               v-for="slot in timeSlots"
               :key="slot"
               :class="[
-                'p-3 rounded border text-sm transition',
+                'p-2 rounded border text-[10px] sm:text-xs transition',
                 selectedTime === slot
                   ? 'border-accent bg-accent/20'
                   : 'border-white/10 bg-white/5 hover:bg-white/10'
@@ -440,23 +440,23 @@ input[type="checkbox"]:checked::after {
         </div>
 
         <!-- Комментарий -->
-        <div class="bg-card rounded-lg border border-white/5 p-6">
-          <h2 class="text-xl font-semibold mb-4">Комментарий к заказу</h2>
+        <div class="bg-card rounded-lg border border-white/5 p-3 sm:p-4">
+          <h2 class="text-xs sm:text-sm font-semibold mb-2 sm:mb-3">Комментарий к заказу</h2>
           <textarea
             v-model="comment"
             placeholder="Дополнительные пожелания..."
             rows="3"
-            class="w-full px-4 py-2 rounded bg-white/5 border border-white/10 focus:border-accent focus:outline-none"></textarea>
+            class="w-full px-2 sm:px-3 py-1.5 rounded bg-white/5 border border-white/10 focus:border-accent focus:outline-none text-[10px] sm:text-xs"></textarea>
         </div>
 
         <!-- Согласия -->
-        <div class="bg-card rounded-lg border border-white/5 p-4 sm:p-6">
-          <label class="flex items-start gap-3 cursor-pointer group">
+        <div class="bg-card rounded-lg border border-white/5 p-2 sm:p-3">
+          <label class="flex items-start gap-2 cursor-pointer group">
             <input
               v-model="agreeToOffer"
               type="checkbox"
-              class="mt-0.5 w-5 h-5 sm:w-6 sm:h-6 rounded border-2 border-white/20 bg-white/5 text-accent focus:ring-2 focus:ring-accent/50 focus:ring-offset-0 focus:ring-offset-transparent transition-all cursor-pointer accent-accent" />
-            <span class="flex-1 text-sm sm:text-base text-gray-300 group-hover:text-white transition">
+              class="mt-0.5 w-4 h-4 sm:w-5 sm:h-5 rounded border-2 border-white/20 bg-white/5 text-accent focus:ring-2 focus:ring-accent/50 focus:ring-offset-0 focus:ring-offset-transparent transition-all cursor-pointer accent-accent" />
+            <span class="flex-1 text-[10px] sm:text-xs text-gray-300 group-hover:text-white transition">
               С условиями 
               <NuxtLink to="/oferta" class="text-accent hover:text-accent-700 underline" target="_blank">
                 оферты
@@ -469,33 +469,33 @@ input[type="checkbox"]:checked::after {
 
       <!-- Итого -->
       <div class="lg:col-span-1">
-        <div class="bg-card rounded-lg border border-white/5 p-6 sticky top-4">
-          <h2 class="text-xl font-semibold mb-4">Итого</h2>
-          <div class="space-y-3 mb-4">
-            <div class="flex justify-between text-gray-400">
+        <div class="bg-card rounded-lg border border-white/5 p-3 sm:p-4 sticky top-4">
+          <h2 class="text-xs sm:text-sm font-semibold mb-2 sm:mb-3">Итого</h2>
+          <div class="space-y-1.5 sm:space-y-2 mb-2 sm:mb-3">
+            <div class="flex justify-between text-[10px] sm:text-xs text-gray-400">
               <span>Товары:</span>
               <span>{{ cartStore.subtotal.toFixed(2) }} ₽</span>
             </div>
-            <div v-if="cartStore.promoCode" class="flex justify-between text-green-400">
+            <div v-if="cartStore.promoCode" class="flex justify-between text-[10px] sm:text-xs text-green-400">
               <span>Скидка:</span>
               <span>−{{ cartStore.discount.toFixed(2) }} ₽</span>
             </div>
-            <div class="flex justify-between text-gray-400">
+            <div class="flex justify-between text-[10px] sm:text-xs text-gray-400">
               <span>Доставка:</span>
               <span>
                 {{ deliveryPrice === 0 ? 'Бесплатно' : `${deliveryPrice.toFixed(2)} ₽` }}
               </span>
             </div>
           </div>
-          <div class="pt-4 border-t border-white/10 mb-4">
-            <div class="flex justify-between text-xl font-semibold">
+          <div class="pt-2 border-t border-white/10 mb-2 sm:mb-3">
+            <div class="flex justify-between text-xs sm:text-sm font-semibold">
               <span>К оплате:</span>
               <span>{{ finalTotal.toFixed(2) }} ₽</span>
             </div>
           </div>
           <button
             :disabled="isSubmitting || !phone || (deliveryType === 'delivery' && (!deliveryAddress || !selectedZone))"
-            class="w-full py-3 bg-accent hover:bg-accent-700 rounded-lg text-white font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+            class="w-full py-2 bg-accent hover:bg-accent-700 rounded-lg text-white font-medium transition disabled:opacity-50 disabled:cursor-not-allowed text-xs"
             @click="submitOrder">
             {{ isSubmitting ? 'Оформление...' : 'Оформить заказ' }}
           </button>

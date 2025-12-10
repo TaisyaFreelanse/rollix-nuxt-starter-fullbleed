@@ -26,27 +26,27 @@ const cities = ['Москва', 'Санкт-Петербург', 'Казань',
 </script>
 
 <template>
-  <main class="w-full px-4 lg:px-8 pb-8">
-    <h1 class="text-2xl font-semibold mt-6 mb-4">Рестораны</h1>
-    <div class="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
-      <select v-model="selectedCity" class="px-3 py-2 rounded-lg bg-white/5 border border-white/10 max-w-xs text-white">
+  <main class="w-full px-3 sm:px-4 lg:px-8 pb-8 py-2 sm:py-3">
+    <h1 class="text-sm sm:text-base font-semibold mb-2 sm:mb-3">Рестораны</h1>
+    <div class="flex flex-col sm:flex-row sm:items-center gap-2 mb-3 sm:mb-4">
+      <select v-model="selectedCity" class="px-2 sm:px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 max-w-xs text-white text-[10px] sm:text-xs">
         <option v-for="city in cities" :key="city" :value="city">{{ city }}</option>
       </select>
-      <div class="flex flex-wrap gap-2">
-        <button class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition text-sm">Открыты сейчас</button>
-        <button class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition text-sm">Детская комната</button>
-        <button class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition text-sm">Летняя веранда</button>
-        <button class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition text-sm">Парковка</button>
+      <div class="flex flex-wrap gap-1.5">
+        <button class="px-2 sm:px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 transition text-[10px] sm:text-xs">Открыты сейчас</button>
+        <button class="px-2 sm:px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 transition text-[10px] sm:text-xs">Детская комната</button>
+        <button class="px-2 sm:px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 transition text-[10px] sm:text-xs">Летняя веранда</button>
+        <button class="px-2 sm:px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 transition text-[10px] sm:text-xs">Парковка</button>
       </div>
     </div>
-    <div class="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
-      <div v-for="restaurant in restaurants" :key="restaurant.id" class="card p-4 hover:border-white/20 transition">
-        <h3 class="text-white font-semibold mb-1">{{ restaurant.name }}</h3>
-        <p class="text-gray-400 text-sm">{{ restaurant.address }}, Москва</p>
-        <p class="text-gray-500 text-xs mt-1">м. {{ restaurant.metro }}</p>
-        <div class="mt-3 text-sm text-gray-300">Пн-Вс 10:00–23:00</div>
-        <div class="mt-4">
-          <button class="px-3 py-1.5 rounded bg-accent hover:bg-accent-700 text-white text-sm transition">
+    <div class="grid gap-2 sm:gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+      <div v-for="restaurant in restaurants" :key="restaurant.id" class="card p-2 sm:p-3 hover:border-white/20 transition">
+        <h3 class="text-white font-semibold mb-1 text-xs sm:text-sm">{{ restaurant.name }}</h3>
+        <p class="text-gray-400 text-[10px] sm:text-xs">{{ restaurant.address }}, Москва</p>
+        <p class="text-gray-500 text-[9px] sm:text-[10px] mt-0.5">м. {{ restaurant.metro }}</p>
+        <div class="mt-2 text-[10px] sm:text-xs text-gray-300">Пн-Вс 10:00–23:00</div>
+        <div class="mt-2 sm:mt-3">
+          <button class="px-2 sm:px-3 py-1 rounded bg-accent hover:bg-accent-700 text-white text-[10px] sm:text-xs transition">
             На карте
           </button>
         </div>

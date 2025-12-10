@@ -115,46 +115,46 @@ onUnmounted(() => {
 
 <template>
   <div>
-    <div v-if="loading" class="text-center py-12 text-gray-400">Загрузка...</div>
+    <div v-if="loading" class="text-center py-8 text-gray-400 text-[10px] sm:text-xs">Загрузка...</div>
 
-    <div v-else-if="orders.length === 0" class="text-center py-12 text-gray-400">
-      <div class="text-4xl mb-4">📦</div>
-      <div class="text-lg mb-2">У вас пока нет заказов</div>
-      <NuxtLink to="/catalog" class="text-accent hover:text-accent-700">
+    <div v-else-if="orders.length === 0" class="text-center py-8 text-gray-400">
+      <div class="text-3xl mb-3">📦</div>
+      <div class="text-xs sm:text-sm mb-2">У вас пока нет заказов</div>
+      <NuxtLink to="/catalog" class="text-accent hover:text-accent-700 text-[10px] sm:text-xs">
         Перейти в каталог
       </NuxtLink>
     </div>
 
-    <div v-else class="space-y-6">
+    <div v-else class="space-y-3 sm:space-y-4">
       <!-- Активные заказы -->
       <div v-if="activeOrders.length > 0">
-        <h2 class="text-lg font-bold mb-3 px-4">Активные заказы</h2>
-        <div class="space-y-3">
+        <h2 class="text-xs sm:text-sm font-semibold mb-2 px-1">Активные заказы</h2>
+        <div class="space-y-2">
           <div
             v-for="order in activeOrders"
             :key="order.id"
-            class="bg-card rounded-lg border border-white/5 p-4 mx-4"
+            class="bg-card rounded-lg border border-white/5 p-2 sm:p-3"
             @click="selectedOrder = order">
-            <div class="flex items-start justify-between mb-2">
+            <div class="flex items-start justify-between mb-1.5">
               <div class="flex-1">
-                <div class="text-base font-semibold mb-1">Заказ №{{ order.orderNumber }}</div>
-                <div class="text-sm text-gray-400 mb-1">
+                <div class="text-xs sm:text-sm font-semibold mb-0.5">Заказ №{{ order.orderNumber }}</div>
+                <div class="text-[10px] sm:text-xs text-gray-400 mb-0.5">
                   {{ formatOrderDate(order.createdAt) }}
                 </div>
-                <div class="text-sm text-gray-300">
+                <div class="text-[10px] sm:text-xs text-gray-300">
                   {{ getOrderAddressText(order) }}
                 </div>
               </div>
-              <div class="text-base font-semibold ml-4">
+              <div class="text-xs sm:text-sm font-semibold ml-3">
                 {{ Math.round(Number(order.total)).toLocaleString('ru-RU') }} Р
               </div>
             </div>
             <!-- Миниатюры товаров -->
-            <div class="flex gap-2 mt-3">
+            <div class="flex gap-1.5 mt-2">
               <div
                 v-for="(thumb, index) in getProductThumbnails(order)"
                 :key="index"
-                class="w-12 h-12 rounded bg-white/5 border border-white/10 overflow-hidden flex-shrink-0">
+                class="w-10 h-10 rounded bg-white/5 border border-white/10 overflow-hidden flex-shrink-0">
                 <img
                   :src="thumb.image"
                   :alt="thumb.name"
@@ -168,33 +168,33 @@ onUnmounted(() => {
 
       <!-- История заказов -->
       <div v-if="historyOrders.length > 0">
-        <h2 class="text-lg font-bold mb-3 px-4">История заказов</h2>
-        <div class="space-y-3">
+        <h2 class="text-xs sm:text-sm font-semibold mb-2 px-1">История заказов</h2>
+        <div class="space-y-2">
           <div
             v-for="order in historyOrders"
             :key="order.id"
-            class="bg-card rounded-lg border border-white/5 p-4 mx-4"
+            class="bg-card rounded-lg border border-white/5 p-2 sm:p-3"
             @click="selectedOrder = order">
-            <div class="flex items-start justify-between mb-2">
+            <div class="flex items-start justify-between mb-1.5">
               <div class="flex-1">
-                <div class="text-base font-semibold mb-1">Заказ №{{ order.orderNumber }}</div>
-                <div class="text-sm text-gray-400 mb-1">
+                <div class="text-xs sm:text-sm font-semibold mb-0.5">Заказ №{{ order.orderNumber }}</div>
+                <div class="text-[10px] sm:text-xs text-gray-400 mb-0.5">
                   {{ formatOrderDate(order.createdAt) }}
                 </div>
-                <div class="text-sm text-gray-300">
+                <div class="text-[10px] sm:text-xs text-gray-300">
                   {{ getOrderAddressText(order) }}
                 </div>
               </div>
-              <div class="text-base font-semibold ml-4">
+              <div class="text-xs sm:text-sm font-semibold ml-3">
                 {{ Math.round(Number(order.total)).toLocaleString('ru-RU') }} Р
               </div>
             </div>
             <!-- Миниатюры товаров -->
-            <div class="flex gap-2 mt-3">
+            <div class="flex gap-1.5 mt-2">
               <div
                 v-for="(thumb, index) in getProductThumbnails(order)"
                 :key="index"
-                class="w-12 h-12 rounded bg-white/5 border border-white/10 overflow-hidden flex-shrink-0">
+                class="w-10 h-10 rounded bg-white/5 border border-white/10 overflow-hidden flex-shrink-0">
                 <img
                   :src="thumb.image"
                   :alt="thumb.name"
@@ -209,29 +209,29 @@ onUnmounted(() => {
 
     <!-- Модальное окно деталей заказа -->
     <Modal v-if="selectedOrder" :open="!!selectedOrder" title="Детали заказа" @close="selectedOrder = null">
-      <div v-if="selectedOrder" class="space-y-4">
+      <div v-if="selectedOrder" class="space-y-3">
         <div>
-          <div class="text-sm text-gray-400 mb-1">Номер заказа</div>
-          <div class="font-semibold">#{{ selectedOrder.orderNumber }}</div>
+          <div class="text-[10px] sm:text-xs text-gray-400 mb-1">Номер заказа</div>
+          <div class="font-semibold text-xs sm:text-sm">#{{ selectedOrder.orderNumber }}</div>
         </div>
         <div>
-          <div class="text-sm text-gray-400 mb-1">Дата</div>
-          <div class="font-semibold">{{ formatOrderDate(selectedOrder.createdAt) }}</div>
+          <div class="text-[10px] sm:text-xs text-gray-400 mb-1">Дата</div>
+          <div class="font-semibold text-xs sm:text-sm">{{ formatOrderDate(selectedOrder.createdAt) }}</div>
         </div>
         <div>
-          <div class="text-sm text-gray-400 mb-2">Товары</div>
-          <div class="space-y-2">
+          <div class="text-[10px] sm:text-xs text-gray-400 mb-2">Товары</div>
+          <div class="space-y-1.5">
             <div
               v-for="item in selectedOrder.items"
               :key="item.id"
-              class="flex justify-between text-sm">
+              class="flex justify-between text-[10px] sm:text-xs">
               <span>{{ item.product?.name || 'Товар' }} × {{ item.quantity }}</span>
               <span>{{ Number(item.subtotal).toFixed(2) }} ₽</span>
             </div>
           </div>
         </div>
-        <div class="pt-4 border-t border-white/10">
-          <div class="flex justify-between font-semibold">
+        <div class="pt-3 border-t border-white/10">
+          <div class="flex justify-between font-semibold text-xs sm:text-sm">
             <span>Итого:</span>
             <span>{{ Math.round(Number(selectedOrder.total)).toLocaleString('ru-RU') }} Р</span>
           </div>
