@@ -56,46 +56,117 @@ export default defineEventHandler(async (event) => {
 
     // Создаем или находим пользователя в БД
     // Используем raw SQL чтобы избежать проблем с bonusBalance до применения миграции
-    let user
+    let user: {id: string, phone: string, name: string | null, email: string | null} | null = null
+    
     try {
-      // Сначала проверяем, существует ли пользователь
-      const existingUser = await prisma.$queryRawUnsafe<Array<{id: string, phone: string, name: string | null, email: string | null, createdAt: Date, updatedAt: Date}>>(
-        `SELECT id, phone, name, email, "createdAt", "updatedAt" 
-         FROM users 
-         WHERE phone = $1`,
-        phoneNumber
-      )
-      
-      if (existingUser.length > 0) {
-        user = existingUser[0] as any
-      } else {
-        // Создаем нового пользователя
-        // Проверяем, есть ли поле bonusBalance в таблице
-        const hasBonusBalance = await prisma.$queryRawUnsafe<Array<{column_name: string}>>(
-          `SELECT column_name 
-           FROM information_schema.columns 
-           WHERE table_name = 'users' AND column_name = 'bonusBalance'`
-        )
-        
-        if (hasBonusBalance.length > 0) {
-          // Поле есть, создаем с bonusBalance
-          const createResult = await prisma.$queryRawUnsafe<Array<{id: string, phone: string, name: string | null, email: string | null, createdAt: Date, updatedAt: Date}>>(
-            `INSERT INTO users (id, phone, name, email, "bonusBalance", "createdAt", "updatedAt") 
-             VALUES (gen_random_uuid()::text, $1, NULL, NULL, 0, NOW(), NOW())
-             RETURNING id, phone, name, email, "createdAt", "updatedAt"`,
-            phoneNumber
-          )
-          user = createResult[0] as any
+      // Пытаемся использовать обычный Prisma upsert (если миграция применена)
+      try {
+        user = await prisma.user.upsert({
+          where: { phone: phoneNumber },
+          create: {
+            phone: phoneNumber,
+            name: null,
+            bonusBalance: 0
+          },
+          update: {}
+        })
+      } catch (prismaError: any) {
+        // Если ошибка связана с bonusBalance, используем raw SQL
+        if (prismaError.message?.includes('bonusBalance') || 
+            prismaError.message?.includes('column') || 
+            prismaError.message?.includes('does not exist')) {
+          
+          // Проверяем существование пользователя через простой запрос
+          // Используем COALESCE для NULL значений и явное приведение типов
+          const existingUserResult = await prisma.$queryRaw<Array<any>>`
+            SELECT 
+              id::text as id,
+              phone::text as phone,
+              COALESCE("name", NULL)::text as "name",
+              COALESCE(email, NULL)::text as email,
+              "createdAt",
+              "updatedAt"
+            FROM users 
+            WHERE phone = ${phoneNumber}
+          `
+          
+          if (existingUserResult && existingUserResult.length > 0) {
+            const rawUser = existingUserResult[0]
+            user = {
+              id: rawUser.id,
+              phone: rawUser.phone,
+              name: rawUser.name || null,
+              email: rawUser.email || null,
+              createdAt: rawUser.createdAt,
+              updatedAt: rawUser.updatedAt
+            }
+          } else {
+            // Проверяем, есть ли поле bonusBalance
+            const hasBonusBalance = await prisma.$queryRaw<Array<{column_name: string}>>`
+              SELECT column_name 
+              FROM information_schema.columns 
+              WHERE table_name = 'users' AND column_name = 'bonusBalance'
+            `
+            
+            if (hasBonusBalance.length > 0) {
+              // Поле есть, создаем с bonusBalance
+              const createdUserResult = await prisma.$queryRaw<Array<any>>`
+                INSERT INTO users (id, phone, name, email, "bonusBalance", "createdAt", "updatedAt") 
+                VALUES (gen_random_uuid()::text, ${phoneNumber}, NULL, NULL, 0, NOW(), NOW())
+                RETURNING 
+                  id::text as id,
+                  phone::text as phone,
+                  COALESCE("name", NULL)::text as "name",
+                  COALESCE(email, NULL)::text as email,
+                  "createdAt",
+                  "updatedAt"
+              `
+              
+              if (createdUserResult && createdUserResult.length > 0) {
+                const rawUser = createdUserResult[0]
+                user = {
+                  id: rawUser.id,
+                  phone: rawUser.phone,
+                  name: rawUser.name || null,
+                  email: rawUser.email || null,
+                  createdAt: rawUser.createdAt,
+                  updatedAt: rawUser.updatedAt
+                }
+              }
+            } else {
+              // Поле нет, создаем без bonusBalance
+              const createdUserResult = await prisma.$queryRaw<Array<any>>`
+                INSERT INTO users (id, phone, name, email, "createdAt", "updatedAt") 
+                VALUES (gen_random_uuid()::text, ${phoneNumber}, NULL, NULL, NOW(), NOW())
+                RETURNING 
+                  id::text as id,
+                  phone::text as phone,
+                  COALESCE("name", NULL)::text as "name",
+                  COALESCE(email, NULL)::text as email,
+                  "createdAt",
+                  "updatedAt"
+              `
+              
+              if (createdUserResult && createdUserResult.length > 0) {
+                const rawUser = createdUserResult[0]
+                user = {
+                  id: rawUser.id,
+                  phone: rawUser.phone,
+                  name: rawUser.name || null,
+                  email: rawUser.email || null,
+                  createdAt: rawUser.createdAt,
+                  updatedAt: rawUser.updatedAt
+                }
+              }
+            }
+          }
         } else {
-          // Поле нет, создаем без bonusBalance
-          const createResult = await prisma.$queryRawUnsafe<Array<{id: string, phone: string, name: string | null, email: string | null, createdAt: Date, updatedAt: Date}>>(
-            `INSERT INTO users (id, phone, name, email, "createdAt", "updatedAt") 
-             VALUES (gen_random_uuid()::text, $1, NULL, NULL, NOW(), NOW())
-             RETURNING id, phone, name, email, "createdAt", "updatedAt"`,
-            phoneNumber
-          )
-          user = createResult[0] as any
+          throw prismaError
         }
+      }
+      
+      if (!user) {
+        throw new Error('Не удалось создать или найти пользователя')
       }
     } catch (error: any) {
       throw createError({
