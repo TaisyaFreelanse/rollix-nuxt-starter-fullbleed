@@ -75,9 +75,17 @@ export default defineEventHandler(async (event) => {
             prismaError.message?.includes('column') || 
             prismaError.message?.includes('does not exist')) {
           
-          // Проверяем существование пользователя через простой SELECT без типизации
+          // Проверяем существование пользователя через простой SELECT
+          // Используем COALESCE для NULL значений и явный CAST всех полей к тексту
           const existingUserRaw = await prisma.$queryRawUnsafe(
-            `SELECT id, phone, name, email, "createdAt", "updatedAt" FROM users WHERE phone = $1`,
+            `SELECT 
+              id::text as id,
+              phone::text as phone,
+              COALESCE(name::text, '') as name,
+              COALESCE(email::text, '') as email,
+              "createdAt",
+              "updatedAt"
+            FROM users WHERE phone = $1`,
             phoneNumber
           ) as any[]
           
@@ -86,8 +94,8 @@ export default defineEventHandler(async (event) => {
             user = {
               id: String(raw.id),
               phone: String(raw.phone),
-              name: raw.name ? String(raw.name) : null,
-              email: raw.email ? String(raw.email) : null,
+              name: raw.name && String(raw.name).trim() !== '' ? String(raw.name) : null,
+              email: raw.email && String(raw.email).trim() !== '' ? String(raw.email) : null,
               createdAt: raw.createdAt,
               updatedAt: raw.updatedAt
             }
@@ -143,8 +151,16 @@ export default defineEventHandler(async (event) => {
             }
             
             // Получаем полные данные созданного пользователя
+            // Используем COALESCE для NULL значений
             const newUserRaw = await prisma.$queryRawUnsafe(
-              `SELECT id, phone, name, email, "createdAt", "updatedAt" FROM users WHERE id = $1`,
+              `SELECT 
+                id::text as id,
+                phone::text as phone,
+                COALESCE(name::text, '') as name,
+                COALESCE(email::text, '') as email,
+                "createdAt",
+                "updatedAt"
+              FROM users WHERE id = $1`,
               newUserId
             ) as any[]
             
@@ -153,8 +169,8 @@ export default defineEventHandler(async (event) => {
               user = {
                 id: String(raw.id),
                 phone: String(raw.phone),
-                name: raw.name ? String(raw.name) : null,
-                email: raw.email ? String(raw.email) : null,
+                name: raw.name && String(raw.name).trim() !== '' ? String(raw.name) : null,
+                email: raw.email && String(raw.email).trim() !== '' ? String(raw.email) : null,
                 createdAt: raw.createdAt,
                 updatedAt: raw.updatedAt
               }
