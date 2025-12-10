@@ -50,6 +50,16 @@ const getItemQuantity = (productId: string) => {
   return item?.quantity || 0
 }
 
+// Фильтруем основные товары (исключаем приборы и специи)
+const mainItems = computed(() => {
+  return cartStore.items.filter(item => {
+    const productId = item.product.id
+    const isUtensil = utensils.value.some((u: any) => u.id === productId)
+    const isSpice = spices.value.some((s: any) => s.id === productId)
+    return !isUtensil && !isSpice
+  })
+})
+
 // Увеличить количество товара
 const incrementUtensilOrSpice = (product: any) => {
   const existingItem = cartStore.items.find(i => i.product.id === product.id)
@@ -140,9 +150,12 @@ const handleAuthCancel = () => {
     </div>
 
     <div v-else class="space-y-4">
-      <!-- Основные товары -->
+      <!-- Основные товары (исключаем приборы и специи) -->
       <div class="space-y-2">
-        <CartItem v-for="item in cartStore.items" :key="item.id" :item="item" />
+        <CartItem 
+          v-for="item in mainItems" 
+          :key="item.id" 
+          :item="item" />
       </div>
 
       <!-- Секция Приборы -->
