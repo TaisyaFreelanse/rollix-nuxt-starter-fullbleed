@@ -55,39 +55,53 @@ export default defineEventHandler(async (event) => {
     }
 
     // Создаем или находим пользователя в БД
+    // Используем raw SQL чтобы избежать проблем с bonusBalance до применения миграции
     let user
     try {
-      // Пытаемся создать с bonusBalance (если миграция применена)
-      user = await prisma.user.upsert({
-        where: { phone: phoneNumber },
-        create: {
-          phone: phoneNumber,
-          name: null,
-          bonusBalance: 0
-        },
-        update: {}
-      })
-    } catch (error: any) {
-      // Если поле bonusBalance не существует, используем другой подход
-      if (error.message?.includes('bonusBalance') || error.message?.includes('column')) {
-        // Ищем пользователя
-        user = await prisma.user.findUnique({
-          where: { phone: phoneNumber }
-        })
+      // Сначала проверяем, существует ли пользователь
+      const existingUser = await prisma.$queryRawUnsafe<Array<{id: string, phone: string, name: string | null, email: string | null, createdAt: Date, updatedAt: Date}>>(
+        `SELECT id, phone, name, email, "createdAt", "updatedAt" 
+         FROM users 
+         WHERE phone = $1`,
+        phoneNumber
+      )
+      
+      if (existingUser.length > 0) {
+        user = existingUser[0] as any
+      } else {
+        // Создаем нового пользователя
+        // Проверяем, есть ли поле bonusBalance в таблице
+        const hasBonusBalance = await prisma.$queryRawUnsafe<Array<{column_name: string}>>(
+          `SELECT column_name 
+           FROM information_schema.columns 
+           WHERE table_name = 'users' AND column_name = 'bonusBalance'`
+        )
         
-        // Если не найден, создаем через raw SQL
-        if (!user) {
-          const result = await prisma.$queryRawUnsafe<Array<{id: string, phone: string, name: string | null, email: string | null, createdAt: Date, updatedAt: Date}>>(
+        if (hasBonusBalance.length > 0) {
+          // Поле есть, создаем с bonusBalance
+          const createResult = await prisma.$queryRawUnsafe<Array<{id: string, phone: string, name: string | null, email: string | null, createdAt: Date, updatedAt: Date}>>(
+            `INSERT INTO users (id, phone, name, email, "bonusBalance", "createdAt", "updatedAt") 
+             VALUES (gen_random_uuid()::text, $1, NULL, NULL, 0, NOW(), NOW())
+             RETURNING id, phone, name, email, "createdAt", "updatedAt"`,
+            phoneNumber
+          )
+          user = createResult[0] as any
+        } else {
+          // Поле нет, создаем без bonusBalance
+          const createResult = await prisma.$queryRawUnsafe<Array<{id: string, phone: string, name: string | null, email: string | null, createdAt: Date, updatedAt: Date}>>(
             `INSERT INTO users (id, phone, name, email, "createdAt", "updatedAt") 
              VALUES (gen_random_uuid()::text, $1, NULL, NULL, NOW(), NOW())
              RETURNING id, phone, name, email, "createdAt", "updatedAt"`,
             phoneNumber
           )
-          user = result[0] as any
+          user = createResult[0] as any
         }
-      } else {
-        throw error
       }
+    } catch (error: any) {
+      throw createError({
+        statusCode: 500,
+        message: `Ошибка создания пользователя: ${error.message}`
+      })
     }
 
     // Генерируем JWT токен
