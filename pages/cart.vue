@@ -50,16 +50,6 @@ const getItemQuantity = (productId: string) => {
   return item?.quantity || 0
 }
 
-// Фильтруем основные товары (исключаем приборы и специи)
-const mainItems = computed(() => {
-  return cartStore.items.filter(item => {
-    const productId = item.product.id
-    const isUtensil = utensils.value.some((u: any) => u.id === productId)
-    const isSpice = spices.value.some((s: any) => s.id === productId)
-    return !isUtensil && !isSpice
-  })
-})
-
 // Увеличить количество товара
 const incrementUtensilOrSpice = (product: any) => {
   const existingItem = cartStore.items.find(i => i.product.id === product.id)
@@ -150,10 +140,15 @@ const handleAuthCancel = () => {
     </div>
 
     <div v-else class="space-y-4">
-      <!-- Основные товары (исключаем приборы и специи) -->
+      <!-- Основные товары -->
       <div class="space-y-2">
         <CartItem 
-          v-for="item in mainItems" 
+          v-for="item in cartStore.items.filter(item => {
+            const productId = item.product.id
+            const isUtensil = utensils.value.some((u: any) => u.id === productId)
+            const isSpice = spices.value.some((s: any) => s.id === productId)
+            return !isUtensil && !isSpice
+          })" 
           :key="item.id" 
           :item="item" />
       </div>
