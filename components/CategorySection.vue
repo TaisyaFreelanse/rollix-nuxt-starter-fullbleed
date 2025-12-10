@@ -69,7 +69,7 @@ const openCategory = () => {
         <div
           v-for="product in products"
           :key="product.id"
-          class="flex-shrink-0 h-full"
+          class="flex-shrink-0 flex"
           style="scroll-snap-align: start; width: 280px;">
           <ProductCard :product="product" @click="handleProductClick" />
         </div>

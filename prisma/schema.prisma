@@ -12,17 +12,19 @@ datasource db {
 
 // Пользователи
 model User {
-  id        String    @id @default(cuid())
-  phone     String    @unique
-  email     String?
-  name      String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id           String    @id @default(cuid())
+  phone        String    @unique
+  email        String?
+  name         String?
+  bonusBalance Decimal   @default(0) @db.Decimal(10, 2)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   // Связи
-  addresses Address[]
-  orders    Order[]
-  favorites ProductFavorite[]
+  addresses    Address[]
+  orders       Order[]
+  favorites    ProductFavorite[]
+  bonusTransactions BonusTransaction[]
 
   @@map("users")
 }
@@ -216,6 +218,7 @@ model Order {
   deliveryZone    DeliveryZone? @relation(fields: [deliveryZoneId], references: [id], onDelete: SetNull)
   promoCode       PromoCode?  @relation(fields: [promoCodeId], references: [id], onDelete: SetNull)
   items           OrderItem[]
+  bonusTransactions BonusTransaction[]
 
   @@map("orders")
 }
@@ -297,6 +300,24 @@ model ProductFavorite {
 
   @@unique([userId, productId])
   @@map("product_favorites")
+}
+
+// Транзакции бонусов
+model BonusTransaction {
+  id          String   @id @default(cuid())
+  userId      String
+  orderId     String?  // ID заказа, за который начислены бонусы
+  amount      Decimal  @db.Decimal(10, 2) // Сумма бонусов (положительная для начисления, отрицательная для списания)
+  description String?  // Описание транзакции
+  createdAt   DateTime @default(now())
+
+  // Связи
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order       Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([orderId])
+  @@map("bonus_transactions")
 }
 
 // Администраторы

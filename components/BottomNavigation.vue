@@ -107,27 +107,27 @@ const handleNavClick = (item: typeof navItems[0]) => {
         v-for="(item, index) in navItems"
         :key="`nav-${index}-${item.name}`"
         :class="[
-          'flex flex-col items-center justify-center gap-1 h-full relative transition-colors',
+          'flex flex-col items-center justify-center gap-0.5 h-full relative transition-colors',
           isActive(item.path)
             ? 'text-accent'
             : 'text-gray-400 hover:text-gray-300'
         ]"
         :style="{ width: `${100 / navItems.length}%` }"
         @click="handleNavClick(item)">
-        <span class="text-2xl relative">
+        <span class="text-xl relative">
           {{ item.icon }}
           <!-- Бейдж для корзины -->
           <Transition name="badge">
             <span
               v-if="item.hasBadge && cartItemsCount > 0"
-              class="absolute -top-2 -right-2 min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-bold text-white bg-accent rounded-full px-1">
+              class="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] flex items-center justify-center text-[9px] font-bold text-white bg-accent rounded-full px-0.5">
               {{ cartItemsCount > 99 ? '99+' : cartItemsCount }}
             </span>
           </Transition>
         </span>
         <span
           :class="[
-            'text-[10px] font-medium transition-colors',
+            'text-[9px] font-medium transition-colors',
             isActive(item.path) ? 'text-accent' : 'text-gray-400'
           ]">
           {{ item.name }}
@@ -135,7 +135,7 @@ const handleNavClick = (item: typeof navItems[0]) => {
         <!-- Индикатор активной страницы -->
         <div
           v-if="isActive(item.path)"
-          class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-accent rounded-t-full" />
+          class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-6 h-0.5 bg-accent rounded-t-full" />
       </button>
     </div>
 

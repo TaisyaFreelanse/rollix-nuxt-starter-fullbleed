@@ -9,17 +9,6 @@ if (cartStore.isEmpty) {
   router.push('/cart')
 }
 
-const handleAuthSuccess = async (phone: string) => {
-  showAuthModal.value = false
-  await nextTick()
-}
-
-const handleAuthCancel = () => {
-  // Если пользователь отменил авторизацию, возвращаем в корзину
-  router.push('/cart')
-  showAuthModal.value = false
-}
-
 const deliveryType = ref<'delivery' | 'pickup'>('delivery')
 const deliveryZones = ref<any[]>([])
 const selectedZone = ref<any>(null)
@@ -29,6 +18,45 @@ const name = ref('')
 const comment = ref('')
 const selectedTime = ref<string | null>(null)
 const isLoadingZones = ref(false)
+const agreeToOffer = ref(true)
+
+// Функция для форматирования телефона
+const formatPhoneForInput = (phoneNumber: string) => {
+  // Убираем все нецифровые символы
+  const cleaned = phoneNumber.replace(/\D/g, '')
+  
+  // Форматируем в +7 (999) 123-45-67
+  if (cleaned.startsWith('7') && cleaned.length === 11) {
+    return `+7 (${cleaned.slice(1, 4)}) ${cleaned.slice(4, 7)}-${cleaned.slice(7, 9)}-${cleaned.slice(9, 11)}`
+  }
+  if (cleaned.startsWith('8') && cleaned.length === 11) {
+    return `+7 (${cleaned.slice(1, 4)}) ${cleaned.slice(4, 7)}-${cleaned.slice(7, 9)}-${cleaned.slice(9, 11)}`
+  }
+  if (cleaned.length === 10) {
+    return `+7 (${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6, 8)}-${cleaned.slice(8, 10)}`
+  }
+  return phoneNumber
+}
+
+const handleAuthSuccess = async (authPhone: string) => {
+  showAuthModal.value = false
+  await nextTick()
+  
+  // После успешной авторизации автоматически заполняем телефон
+  if (auth.user.value?.phone && !phone.value) {
+    phone.value = formatPhoneForInput(auth.user.value.phone)
+  }
+  // Также заполняем имя, если оно есть
+  if (auth.user.value?.name && !name.value) {
+    name.value = auth.user.value.name
+  }
+}
+
+const handleAuthCancel = () => {
+  // Если пользователь отменил авторизацию, возвращаем в корзину
+  router.push('/cart')
+  showAuthModal.value = false
+}
 
 // Загрузка зон доставки
 const loadDeliveryZones = async () => {
@@ -50,12 +78,41 @@ onMounted(() => {
   // Проверяем авторизацию при загрузке страницы
   if (!auth.isAuthenticated.value) {
     showAuthModal.value = true
+  } else {
+    // Если пользователь авторизован, автоматически заполняем телефон
+    if (auth.user.value?.phone && !phone.value) {
+      phone.value = formatPhoneForInput(auth.user.value.phone)
+    }
+    // Также заполняем имя, если оно есть
+    if (auth.user.value?.name && !name.value) {
+      name.value = auth.user.value.name
+    }
   }
   
   if (deliveryType.value === 'delivery') {
     loadDeliveryZones()
   }
 })
+
+// Следим за изменениями авторизации и обновляем данные
+watch(() => auth.isAuthenticated.value, (isAuth) => {
+  if (isAuth && auth.user.value?.phone && !phone.value) {
+    phone.value = formatPhoneForInput(auth.user.value.phone)
+  }
+  if (isAuth && auth.user.value?.name && !name.value) {
+    name.value = auth.user.value.name
+  }
+})
+
+// Следим за изменениями user объекта
+watch(() => auth.user.value, (user) => {
+  if (user?.phone && !phone.value) {
+    phone.value = formatPhoneForInput(user.phone)
+  }
+  if (user?.name && !name.value) {
+    name.value = user.name
+  }
+}, { deep: true })
 
 watch(deliveryType, (newType) => {
   if (newType === 'delivery') {
@@ -233,9 +290,37 @@ const processPayment = async (paymentMethod: 'card' | 'cash') => {
 }
 </script>
 
+<style scoped>
+/* Кастомная стилизация чекбоксов */
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  position: relative;
+  cursor: pointer;
+}
+
+input[type="checkbox"]:checked {
+  background-color: hsl(142, 76%, 36%);
+  border-color: hsl(142, 76%, 36%);
+}
+
+input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -60%) rotate(45deg);
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+}
+</style>
+
 <template>
-  <main class="w-full px-4 sm:px-6 lg:px-8 py-6">
-    <h1 class="text-2xl font-semibold mb-6">Оформление заказа</h1>
+  <main class="w-full px-3 sm:px-4 lg:px-8 py-3 sm:py-4">
+    <h1 class="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Оформление заказа</h1>
 
     <div v-if="cartStore.isEmpty" class="text-center py-12">
       <p class="text-gray-400 mb-4">Корзина пуста</p>
@@ -250,28 +335,28 @@ const processPayment = async (paymentMethod: 'card' | 'cash') => {
         <!-- Способ получения -->
         <div class="bg-card rounded-lg border border-white/5 p-6">
           <h2 class="text-xl font-semibold mb-4">Способ получения</h2>
-          <div class="flex gap-4">
+          <div class="flex gap-2 sm:gap-3">
             <button
               :class="[
-                'flex-1 p-4 rounded-lg border transition',
+                'flex-1 p-2 sm:p-3 rounded-lg border transition',
                 deliveryType === 'delivery'
                   ? 'border-accent bg-accent/20'
                   : 'border-white/10 bg-white/5 hover:bg-white/10'
               ]"
               @click="deliveryType = 'delivery'">
-              <div class="text-lg mb-1">🚚 Доставка</div>
-              <div class="text-sm text-gray-400">Доставим по указанному адресу</div>
+              <div class="text-sm sm:text-base mb-1">🚚 Доставка</div>
+              <div class="text-xs sm:text-sm text-gray-400">Доставим по указанному адресу</div>
             </button>
             <button
               :class="[
-                'flex-1 p-4 rounded-lg border transition',
+                'flex-1 p-2 sm:p-3 rounded-lg border transition',
                 deliveryType === 'pickup'
                   ? 'border-accent bg-accent/20'
                   : 'border-white/10 bg-white/5 hover:bg-white/10'
               ]"
               @click="deliveryType = 'pickup'">
-              <div class="text-lg mb-1">🏪 Самовывоз</div>
-              <div class="text-sm text-gray-400">Заберите заказ сами</div>
+              <div class="text-sm sm:text-base mb-1">🏪 Самовывоз</div>
+              <div class="text-xs sm:text-sm text-gray-400">Заберите заказ сами</div>
             </button>
           </div>
         </div>
@@ -362,6 +447,23 @@ const processPayment = async (paymentMethod: 'card' | 'cash') => {
             placeholder="Дополнительные пожелания..."
             rows="3"
             class="w-full px-4 py-2 rounded bg-white/5 border border-white/10 focus:border-accent focus:outline-none"></textarea>
+        </div>
+
+        <!-- Согласия -->
+        <div class="bg-card rounded-lg border border-white/5 p-4 sm:p-6">
+          <label class="flex items-start gap-3 cursor-pointer group">
+            <input
+              v-model="agreeToOffer"
+              type="checkbox"
+              class="mt-0.5 w-5 h-5 sm:w-6 sm:h-6 rounded border-2 border-white/20 bg-white/5 text-accent focus:ring-2 focus:ring-accent/50 focus:ring-offset-0 focus:ring-offset-transparent transition-all cursor-pointer accent-accent" />
+            <span class="flex-1 text-sm sm:text-base text-gray-300 group-hover:text-white transition">
+              С условиями 
+              <NuxtLink to="/oferta" class="text-accent hover:text-accent-700 underline" target="_blank">
+                оферты
+              </NuxtLink>
+              согласен.
+            </span>
+          </label>
         </div>
       </div>
 

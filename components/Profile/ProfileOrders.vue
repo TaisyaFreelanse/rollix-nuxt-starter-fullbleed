@@ -1,18 +1,28 @@
 <script setup lang="ts">
+const auth = useAuth()
 const orders = ref<any[]>([])
 const loading = ref(false)
 const selectedOrder = ref<any>(null)
 
+// Разделение заказов на активные и историю
+const activeOrders = computed(() => {
+  return orders.value.filter(
+    (o) => !['DELIVERED', 'CANCELLED'].includes(o.status)
+  )
+})
+
+const historyOrders = computed(() => {
+  return orders.value.filter(
+    (o) => ['DELIVERED', 'CANCELLED'].includes(o.status)
+  )
+})
+
 // Обновление статусов заказов в реальном времени
 const updateOrderStatuses = async () => {
   // Обновляем только активные заказы
-  const activeOrders = orders.value.filter(
-    (o) => !['DELIVERED', 'CANCELLED'].includes(o.status)
-  )
-
-  for (const order of activeOrders) {
+  for (const order of activeOrders.value) {
     try {
-      const updated = await $fetch(`/api/orders/${order.id}`)
+      const updated = await auth.$fetchWithAuth(`/api/orders/${order.id}`)
       const index = orders.value.findIndex((o) => o.id === order.id)
       if (index > -1) {
         orders.value[index].status = updated.status
@@ -26,7 +36,7 @@ const updateOrderStatuses = async () => {
 const fetchOrders = async () => {
   loading.value = true
   try {
-    orders.value = await $fetch('/api/profile/orders')
+    orders.value = await auth.$fetchWithAuth('/api/profile/orders')
   } catch (error) {
     console.error('Ошибка загрузки заказов', error)
   } finally {
@@ -34,35 +44,55 @@ const fetchOrders = async () => {
   }
 }
 
-const repeatOrder = async (order: any) => {
-  // TODO: Реализовать повтор заказа через корзину
-  console.log('Повтор заказа:', order)
+// Форматирование даты как на скриншоте
+const formatOrderDate = (date: string) => {
+  const d = new Date(date)
+  const day = d.getDate()
+  const month = d.toLocaleDateString('ru-RU', { month: 'long' })
+  const year = d.getFullYear()
+  const hours = String(d.getHours()).padStart(2, '0')
+  const minutes = String(d.getMinutes()).padStart(2, '0')
+  return `${day} ${month} ${year} ${hours}:${minutes}`
 }
 
-const getStatusColor = (status: string) => {
-  const colors: Record<string, string> = {
-    PENDING: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50',
-    CONFIRMED: 'bg-blue-500/20 text-blue-300 border-blue-500/50',
-    PREPARING: 'bg-purple-500/20 text-purple-300 border-purple-500/50',
-    READY: 'bg-green-500/20 text-green-300 border-green-500/50',
-    DELIVERING: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50',
-    DELIVERED: 'bg-gray-500/20 text-gray-300 border-gray-500/50',
-    CANCELLED: 'bg-red-500/20 text-red-300 border-red-500/50'
+// Форматирование адреса/статуса для карточки
+const getOrderAddressText = (order: any) => {
+  // Формируем полный адрес
+  const getFullAddress = () => {
+    if (order.addressText) {
+      return order.addressText
+    }
+    if (order.address) {
+      const parts = [
+        order.address.street,
+        order.address.house,
+        order.address.apartment ? `кв. ${order.address.apartment}` : null
+      ].filter(Boolean)
+      return parts.join(', ')
+    }
+    if (order.deliveryZone?.name) {
+      return order.deliveryZone.name
+    }
+    return null
   }
-  return colors[status] || colors.PENDING
+
+  const address = getFullAddress()
+
+  if (order.status === 'DELIVERED') {
+    return `Получен: ${address || 'Адрес не указан'}`
+  }
+  if (order.deliveryType === 'PICKUP') {
+    return `Самовывоз: ${address || 'Адрес не указан'}`
+  }
+  return address || 'Адрес не указан'
 }
 
-const getStatusText = (status: string) => {
-  const texts: Record<string, string> = {
-    PENDING: 'Ожидает подтверждения',
-    CONFIRMED: 'Подтвержден',
-    PREPARING: 'Готовится',
-    READY: 'Готов',
-    DELIVERING: 'В доставке',
-    DELIVERED: 'Доставлен',
-    CANCELLED: 'Отменен'
-  }
-  return texts[status] || status
+// Получение миниатюр товаров (максимум 5)
+const getProductThumbnails = (order: any) => {
+  return order.items?.slice(0, 5).map((item: any) => ({
+    image: item.product?.image || '/placeholder-product.png',
+    name: item.product?.name || 'Товар'
+  })) || []
 }
 
 let statusInterval: NodeJS.Timeout | null = null
@@ -95,58 +125,84 @@ onUnmounted(() => {
       </NuxtLink>
     </div>
 
-    <div v-else class="space-y-4">
-      <div
-        v-for="order in orders"
-        :key="order.id"
-        class="bg-card rounded-lg border border-white/5 p-6">
-        <div class="flex items-start justify-between mb-4">
-          <div>
-            <div class="text-lg font-semibold mb-1">Заказ #{{ order.orderNumber }}</div>
-            <div class="text-sm text-gray-400">
-              {{ new Date(order.createdAt).toLocaleDateString('ru-RU', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              }) }}
+    <div v-else class="space-y-6">
+      <!-- Активные заказы -->
+      <div v-if="activeOrders.length > 0">
+        <h2 class="text-lg font-bold mb-3 px-4">Активные заказы</h2>
+        <div class="space-y-3">
+          <div
+            v-for="order in activeOrders"
+            :key="order.id"
+            class="bg-card rounded-lg border border-white/5 p-4 mx-4"
+            @click="selectedOrder = order">
+            <div class="flex items-start justify-between mb-2">
+              <div class="flex-1">
+                <div class="text-base font-semibold mb-1">Заказ №{{ order.orderNumber }}</div>
+                <div class="text-sm text-gray-400 mb-1">
+                  {{ formatOrderDate(order.createdAt) }}
+                </div>
+                <div class="text-sm text-gray-300">
+                  {{ getOrderAddressText(order) }}
+                </div>
+              </div>
+              <div class="text-base font-semibold ml-4">
+                {{ Math.round(Number(order.total)).toLocaleString('ru-RU') }} Р
+              </div>
+            </div>
+            <!-- Миниатюры товаров -->
+            <div class="flex gap-2 mt-3">
+              <div
+                v-for="(thumb, index) in getProductThumbnails(order)"
+                :key="index"
+                class="w-12 h-12 rounded bg-white/5 border border-white/10 overflow-hidden flex-shrink-0">
+                <img
+                  :src="thumb.image"
+                  :alt="thumb.name"
+                  class="w-full h-full object-cover"
+                  @error="(e: any) => e.target.src = '/placeholder-product.png'" />
+              </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- История заказов -->
+      <div v-if="historyOrders.length > 0">
+        <h2 class="text-lg font-bold mb-3 px-4">История заказов</h2>
+        <div class="space-y-3">
           <div
-            :class="[
-              'px-3 py-1 rounded-full border text-xs font-medium',
-              getStatusColor(order.status)
-            ]">
-            {{ getStatusText(order.status) }}
-          </div>
-        </div>
-
-        <div class="space-y-2 mb-4">
-          <div class="flex justify-between text-sm">
-            <span class="text-gray-400">Товаров:</span>
-            <span class="text-white">{{ order.items?.length || 0 }}</span>
-          </div>
-          <div class="flex justify-between text-sm">
-            <span class="text-gray-400">Сумма:</span>
-            <span class="text-white font-semibold">{{ Number(order.total).toFixed(2) }} ₽</span>
-          </div>
-          <div v-if="order.addressText" class="text-sm text-gray-400">
-            📍 {{ order.addressText }}
-          </div>
-        </div>
-
-        <div class="flex gap-2">
-          <button
-            class="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm transition"
+            v-for="order in historyOrders"
+            :key="order.id"
+            class="bg-card rounded-lg border border-white/5 p-4 mx-4"
             @click="selectedOrder = order">
-            Подробнее
-          </button>
-          <button
-            class="px-4 py-2 bg-accent/20 hover:bg-accent/30 rounded-lg text-sm transition"
-            @click="repeatOrder(order)">
-            Повторить заказ
-          </button>
+            <div class="flex items-start justify-between mb-2">
+              <div class="flex-1">
+                <div class="text-base font-semibold mb-1">Заказ №{{ order.orderNumber }}</div>
+                <div class="text-sm text-gray-400 mb-1">
+                  {{ formatOrderDate(order.createdAt) }}
+                </div>
+                <div class="text-sm text-gray-300">
+                  {{ getOrderAddressText(order) }}
+                </div>
+              </div>
+              <div class="text-base font-semibold ml-4">
+                {{ Math.round(Number(order.total)).toLocaleString('ru-RU') }} Р
+              </div>
+            </div>
+            <!-- Миниатюры товаров -->
+            <div class="flex gap-2 mt-3">
+              <div
+                v-for="(thumb, index) in getProductThumbnails(order)"
+                :key="index"
+                class="w-12 h-12 rounded bg-white/5 border border-white/10 overflow-hidden flex-shrink-0">
+                <img
+                  :src="thumb.image"
+                  :alt="thumb.name"
+                  class="w-full h-full object-cover"
+                  @error="(e: any) => e.target.src = '/placeholder-product.png'" />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -159,14 +215,8 @@ onUnmounted(() => {
           <div class="font-semibold">#{{ selectedOrder.orderNumber }}</div>
         </div>
         <div>
-          <div class="text-sm text-gray-400 mb-1">Статус</div>
-          <div
-            :class="[
-              'inline-block px-3 py-1 rounded-full border text-xs font-medium',
-              getStatusColor(selectedOrder.status)
-            ]">
-            {{ getStatusText(selectedOrder.status) }}
-          </div>
+          <div class="text-sm text-gray-400 mb-1">Дата</div>
+          <div class="font-semibold">{{ formatOrderDate(selectedOrder.createdAt) }}</div>
         </div>
         <div>
           <div class="text-sm text-gray-400 mb-2">Товары</div>
@@ -175,7 +225,7 @@ onUnmounted(() => {
               v-for="item in selectedOrder.items"
               :key="item.id"
               class="flex justify-between text-sm">
-              <span>{{ item.product.name }} × {{ item.quantity }}</span>
+              <span>{{ item.product?.name || 'Товар' }} × {{ item.quantity }}</span>
               <span>{{ Number(item.subtotal).toFixed(2) }} ₽</span>
             </div>
           </div>
@@ -183,7 +233,7 @@ onUnmounted(() => {
         <div class="pt-4 border-t border-white/10">
           <div class="flex justify-between font-semibold">
             <span>Итого:</span>
-            <span>{{ Number(selectedOrder.total).toFixed(2) }} ₽</span>
+            <span>{{ Math.round(Number(selectedOrder.total)).toLocaleString('ru-RU') }} Р</span>
           </div>
         </div>
       </div>

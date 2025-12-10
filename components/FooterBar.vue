@@ -40,8 +40,7 @@
       <div>
         <h4 class="text-white font-semibold mb-3">Юридическая информация</h4>
         <ul class="space-y-2 text-gray-400">
-          <li><a href="#" class="hover:text-white">Политика конфиденциальности</a></li>
-          <li><a href="#" class="hover:text-white">Пользовательское соглашение</a></li>
+          <li><NuxtLink to="/oferta" class="hover:text-white">Публичная оферта</NuxtLink></li>
         </ul>
       </div>
     </div>

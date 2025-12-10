@@ -27,6 +27,11 @@ export default defineEventHandler(async (event) => {
       where: { id },
       data: updateData,
       include: {
+        user: {
+          select: {
+            id: true
+          }
+        },
         items: {
           include: {
             product: {
@@ -40,6 +45,47 @@ export default defineEventHandler(async (event) => {
         }
       }
     })
+
+    // Начисляем бонусы при оплате заказа (1% от итоговой суммы)
+    if (updateData.paymentStatus === 'PAID' && order.userId && order.user) {
+      try {
+        // Проверяем, не начислялись ли уже бонусы за этот заказ
+        const existingBonus = await prisma.bonusTransaction.findFirst({
+          where: {
+            orderId: order.id,
+            userId: order.userId
+          }
+        })
+
+        if (!existingBonus) {
+          // Начисляем 1% от итоговой суммы заказа
+          const bonusAmount = Number(order.total) * 0.01
+          
+          // Обновляем баланс пользователя
+          await prisma.user.update({
+            where: { id: order.userId },
+            data: {
+              bonusBalance: {
+                increment: bonusAmount
+              }
+            }
+          })
+
+          // Создаем запись о начислении бонусов
+          await prisma.bonusTransaction.create({
+            data: {
+              userId: order.userId,
+              orderId: order.id,
+              amount: bonusAmount,
+              description: `Начисление бонусов за заказ №${order.orderNumber}`
+            }
+          })
+        }
+      } catch (error) {
+        // Логируем ошибку, но не прерываем обновление заказа
+        console.error('Ошибка начисления бонусов:', error)
+      }
+    }
 
     // Отправляем обновление через WebSocket (если настроен)
     if (updateData.status) {

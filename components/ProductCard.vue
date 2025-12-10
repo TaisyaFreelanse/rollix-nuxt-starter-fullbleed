@@ -83,11 +83,11 @@ const handleClick = () => {
     <!-- Контент карточки - растягивается для выравнивания -->
     <div class="p-2 sm:p-4 md:p-5 flex flex-col flex-grow">
       <!-- Название - фиксированная высота с обрезкой -->
-      <h3 class="text-white font-medium group-hover:text-accent transition-colors line-clamp-2 h-8 sm:h-12 md:h-auto text-xs sm:text-base md:text-lg">
+      <h3 class="text-white font-medium group-hover:text-accent transition-colors line-clamp-2 h-8 sm:h-12 md:h-14 lg:h-14 text-xs sm:text-base md:text-lg">
         {{ product?.name || '' }}
       </h3>
       <!-- Описание - фиксированная высота с обрезкой -->
-      <p class="text-[10px] sm:text-sm md:text-base text-gray-400 line-clamp-2 mt-0.5 sm:mt-2 md:mt-3 group-hover:text-gray-300 transition-colors h-6 sm:h-10 md:h-auto">
+      <p class="text-[10px] sm:text-sm md:text-base text-gray-400 line-clamp-2 mt-0.5 sm:mt-2 md:mt-3 group-hover:text-gray-300 transition-colors h-6 sm:h-10 md:h-12 lg:h-12">
         {{ product?.description || '' }}
       </p>
       <!-- Цена и вес - всегда внизу -->

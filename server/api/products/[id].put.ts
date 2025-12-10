@@ -21,9 +21,27 @@ export default defineEventHandler(async (event) => {
     if (body.image !== undefined) updateData.image = body.image
     if (body.images !== undefined) updateData.images = body.images
     if (body.price !== undefined) updateData.price = body.price
-    if (body.oldPrice !== undefined) updateData.oldPrice = body.oldPrice
-    if (body.weight !== undefined) updateData.weight = body.weight
-    if (body.calories !== undefined) updateData.calories = body.calories
+    // Обработка oldPrice: если пустое, null, 0 или невалидное значение - устанавливаем null
+    if (body.oldPrice !== undefined) {
+      const oldPriceValue = body.oldPrice === '' || body.oldPrice === null || body.oldPrice === undefined || isNaN(Number(body.oldPrice)) || Number(body.oldPrice) <= 0
+        ? null
+        : Number(body.oldPrice)
+      updateData.oldPrice = oldPriceValue
+    }
+    // Обработка weight: если пустое, null, 0 или невалидное значение - устанавливаем null
+    if (body.weight !== undefined) {
+      const weightValue = body.weight === '' || body.weight === null || body.weight === undefined || isNaN(Number(body.weight)) || Number(body.weight) <= 0
+        ? null
+        : Number(body.weight)
+      updateData.weight = weightValue
+    }
+    // Обработка calories: если пустое, null, 0 или невалидное значение - устанавливаем null
+    if (body.calories !== undefined) {
+      const caloriesValue = body.calories === '' || body.calories === null || body.calories === undefined || isNaN(Number(body.calories)) || Number(body.calories) <= 0
+        ? null
+        : Number(body.calories)
+      updateData.calories = caloriesValue
+    }
     if (body.isActive !== undefined) updateData.isActive = body.isActive
     if (body.isPopular !== undefined) updateData.isPopular = body.isPopular
     if (body.isNew !== undefined) updateData.isNew = body.isNew

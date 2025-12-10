@@ -68,15 +68,29 @@ const loadProduct = async () => {
 const saveProduct = async () => {
   isLoading.value = true
   try {
+    // Подготавливаем данные: преобразуем пустые значения в null
+    const dataToSend = {
+      ...form.value,
+      oldPrice: form.value.oldPrice === null || form.value.oldPrice === undefined || form.value.oldPrice === '' || isNaN(Number(form.value.oldPrice)) || Number(form.value.oldPrice) <= 0 
+        ? null 
+        : Number(form.value.oldPrice),
+      weight: form.value.weight === null || form.value.weight === undefined || form.value.weight === '' || isNaN(Number(form.value.weight)) || Number(form.value.weight) <= 0 
+        ? null 
+        : Number(form.value.weight),
+      calories: form.value.calories === null || form.value.calories === undefined || form.value.calories === '' || isNaN(Number(form.value.calories)) || Number(form.value.calories) <= 0 
+        ? null 
+        : Number(form.value.calories)
+    }
+    
     if (isNew) {
       await $fetch('/api/products', {
         method: 'POST',
-        body: form.value
+        body: dataToSend
       })
     } else {
       await $fetch(`/api/products/${productId}`, {
         method: 'PUT',
-        body: form.value
+        body: dataToSend
       })
     }
     router.push('/admin/products')
