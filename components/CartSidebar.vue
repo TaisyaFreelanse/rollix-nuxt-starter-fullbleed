@@ -47,13 +47,15 @@ const spices = ref([
 
 // Получить количество товара в корзине
 const getItemQuantity = (productId: string) => {
-  const item = cartStore.items.find((i: any) => i.product.id === productId)
+  if (!cartStore.items || !Array.isArray(cartStore.items)) return 0
+  const item = cartStore.items.find((i: any) => i && i.product && i.product.id === productId)
   return item?.quantity || 0
 }
 
 // Увеличить количество товара
 const incrementUtensilOrSpice = (product: any) => {
-  const existingItem = cartStore.items.find((i: any) => i.product.id === product.id)
+  if (!cartStore.items || !Array.isArray(cartStore.items)) return
+  const existingItem = cartStore.items.find((i: any) => i && i.product && i.product.id === product.id)
   if (existingItem) {
     cartStore.updateQuantity(existingItem.id, existingItem.quantity + 1)
   } else {
@@ -71,7 +73,8 @@ const incrementUtensilOrSpice = (product: any) => {
 
 // Уменьшить количество товара
 const decrementUtensilOrSpice = (product: any) => {
-  const existingItem = cartStore.items.find((i: any) => i.product.id === product.id)
+  if (!cartStore.items || !Array.isArray(cartStore.items)) return
+  const existingItem = cartStore.items.find((i: any) => i && i.product && i.product.id === product.id)
   if (existingItem) {
     if (existingItem.quantity > 1) {
       cartStore.updateQuantity(existingItem.id, existingItem.quantity - 1)
@@ -80,6 +83,19 @@ const decrementUtensilOrSpice = (product: any) => {
     }
   }
 }
+
+// Вычисляемое свойство для основных товаров (без приборов и специй)
+const mainCartItems = computed(() => {
+  if (!cartStore.items || !Array.isArray(cartStore.items)) return []
+  
+  return cartStore.items.filter((item: any) => {
+    if (!item || !item.product) return false
+    const productId = item.product.id
+    const isUtensil = utensils.value?.some((u: any) => u?.id === productId) || false
+    const isSpice = spices.value?.some((s: any) => s?.id === productId) || false
+    return !isUtensil && !isSpice
+  })
+})
 
 const applyPromo = async () => {
   if (!promoCodeInput.value.trim()) return
@@ -103,7 +119,7 @@ const removePromo = () => {
 }
 
 const proceedToCheckout = () => {
-  if (cartStore.isEmpty) return
+  if (!cartStore.items || !Array.isArray(cartStore.items) || cartStore.items.length === 0) return
   model.value = false
   router.push('/checkout')
 }
@@ -153,7 +169,7 @@ onUnmounted(() => {
 
         <!-- Cart Content -->
         <div class="flex-1 overflow-y-auto p-2 sm:p-3 space-y-3">
-          <div v-if="cartStore.isEmpty" class="flex flex-col items-center justify-center py-8 text-gray-400">
+          <div v-if="!cartStore.items || !Array.isArray(cartStore.items) || cartStore.items.length === 0" class="flex flex-col items-center justify-center py-8 text-gray-400">
             <div class="text-3xl mb-3">🛒</div>
             <div class="text-sm mb-2">Корзина пуста</div>
             <button
@@ -165,15 +181,12 @@ onUnmounted(() => {
 
           <div v-else class="space-y-4">
             <!-- Основные товары (исключаем приборы и специи) -->
-            <CartItem 
-              v-for="item in cartStore.items.filter((item: any) => {
-                const productId = item.product.id
-                const isUtensil = utensils.value.some((u: any) => u.id === productId)
-                const isSpice = spices.value.some((s: any) => s.id === productId)
-                return !isUtensil && !isSpice
-              })" 
-              :key="item.id" 
-              :item="item" />
+            <template v-if="cartStore.items && Array.isArray(cartStore.items) && cartStore.items.length > 0">
+              <CartItem 
+                v-for="item in mainCartItems" 
+                :key="item.id" 
+                :item="item" />
+            </template>
             
             <!-- Вкладки Приборы и Специи -->
             <div class="space-y-2 pt-2 border-t border-white/10">
@@ -282,7 +295,7 @@ onUnmounted(() => {
         </div>
 
         <!-- Footer with Summary -->
-        <div v-if="!cartStore.isEmpty" class="border-t border-white/10 p-2 sm:p-3 space-y-2 sm:space-y-3 bg-card">
+        <div v-if="cartStore.items && Array.isArray(cartStore.items) && cartStore.items.length > 0" class="border-t border-white/10 p-2 sm:p-3 space-y-2 sm:space-y-3 bg-card">
           <!-- Промокод -->
           <div class="space-y-1.5">
             <div v-if="!cartStore.promoCode" class="space-y-1.5">
