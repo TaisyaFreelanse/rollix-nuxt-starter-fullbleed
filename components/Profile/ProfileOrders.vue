@@ -27,8 +27,19 @@ const updateOrderStatuses = async () => {
       if (index > -1) {
         orders.value[index].status = updated.status
       }
-    } catch (error) {
-      console.error('Ошибка обновления статуса заказа', error)
+    } catch (error: any) {
+      // Игнорируем 404 ошибки (заказ был удален или не найден)
+      if (error.statusCode !== 404 && error.data?.statusCode !== 404) {
+        console.error('Ошибка обновления статуса заказа', error)
+      }
+      // Если заказ не найден, можно удалить его из списка активных
+      if (error.statusCode === 404 || error.data?.statusCode === 404) {
+        const index = orders.value.findIndex((o) => o.id === order.id)
+        if (index > -1 && !['DELIVERED', 'CANCELLED'].includes(orders.value[index].status)) {
+          // Помечаем как отмененный, если не был доставлен
+          orders.value[index].status = 'CANCELLED'
+        }
+      }
     }
   }
 }
