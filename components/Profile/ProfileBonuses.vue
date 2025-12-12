@@ -8,10 +8,17 @@ const fetchBonuses = async () => {
   loading.value = true
   try {
     const data = await auth.$fetchWithAuth('/api/profile/bonuses')
-    bonusBalance.value = data.balance || 0
-    bonusHistory.value = data.history || []
-  } catch (error) {
+    console.log('Получены данные бонусов:', data)
+    bonusBalance.value = Number(data.balance || 0)
+    bonusHistory.value = Array.isArray(data.history) ? data.history : []
+    console.log('Баланс бонусов:', bonusBalance.value)
+    console.log('История бонусов:', bonusHistory.value.length, 'записей')
+  } catch (error: any) {
     console.error('Ошибка загрузки бонусов', error)
+    console.error('Детали ошибки:', error.data || error.message)
+    // Устанавливаем значения по умолчанию при ошибке
+    bonusBalance.value = 0
+    bonusHistory.value = []
   } finally {
     loading.value = false
   }
