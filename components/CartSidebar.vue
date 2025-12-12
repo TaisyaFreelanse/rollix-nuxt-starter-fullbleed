@@ -249,11 +249,11 @@ onUnmounted(() => {
 
               <!-- Контент вкладки Специи -->
               <div v-show="activeTab === 'spices'" class="space-y-2 pt-2">
-                <div v-if="spices.length > 0" class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                <div v-if="spices.length > 0" class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide pr-2">
                   <div
                     v-for="spice in spices"
                     :key="spice.id"
-                    class="flex-shrink-0 w-24 bg-card rounded-lg border border-white/5 p-2">
+                    class="flex-shrink-0 w-28 bg-card rounded-lg border border-white/5 p-2">
                     <div class="flex flex-col items-center gap-1">
                       <div class="relative w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-1">
                         <span class="text-base">

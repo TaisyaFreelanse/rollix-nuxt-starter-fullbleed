@@ -71,6 +71,18 @@ watch(
     class="hidden lg:block w-64 shrink-0 border-r border-white/5 bg-card sticky top-16 h-[calc(100dvh-4rem)] overflow-y-auto smooth-scroll">
     <div class="p-3 pb-24">
       <nav class="space-y-1">
+        <!-- Кнопка Акции -->
+        <NuxtLink
+          to="/promo"
+          :class="[
+            'group flex items-center gap-3 px-3 py-2 rounded-lg transition w-full text-left',
+            route.path === '/promo'
+              ? 'bg-accent/20 text-white'
+              : 'hover:bg-white/5 text-gray-300'
+          ]">
+          <span class="text-lg">🎁</span>
+          <span class="text-sm flex-1">Акции</span>
+        </NuxtLink>
         <button
           v-for="category in categories"
           :key="category.id"

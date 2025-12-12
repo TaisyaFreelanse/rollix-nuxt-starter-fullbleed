@@ -53,6 +53,17 @@ const handleAbout = () => {
           <span class="text-gray-400 group-hover:text-white transition-colors">→</span>
         </button>
 
+        <!-- О доставке -->
+        <NuxtLink
+          to="/delivery"
+          class="w-full px-6 py-4 bg-card border border-white/10 rounded-lg hover:bg-white/5 transition-colors flex items-center justify-between group">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">🚚</span>
+            <span class="text-white font-medium">О доставке</span>
+          </div>
+          <span class="text-gray-400 group-hover:text-white transition-colors">→</span>
+        </NuxtLink>
+
         <!-- Связаться с нами -->
         <button
           @click="handleContact"

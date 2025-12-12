@@ -217,11 +217,11 @@ const handleAuthCancel = () => {
 
         <!-- Контент вкладки Специи -->
         <div v-show="activeTab === 'spices'" class="space-y-2 pt-2">
-          <div v-if="spices.length > 0" class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          <div v-if="spices.length > 0" class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide pr-2">
             <div
               v-for="spice in spices"
               :key="spice.id"
-              class="flex-shrink-0 w-20 bg-card rounded-lg border border-white/5 p-1.5">
+              class="flex-shrink-0 w-24 bg-card rounded-lg border border-white/5 p-1.5">
               <div class="flex flex-col items-center gap-0.5">
                 <div class="relative w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mb-0.5">
                   <span class="text-sm">
