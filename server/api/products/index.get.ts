@@ -12,7 +12,19 @@ export default defineEventHandler(async (event) => {
     const offset = query.offset ? parseInt(query.offset as string) : undefined
 
     const where: any = {
-      isActive: true
+      isActive: true,
+      // Фильтруем тестовые/заглушечные товары
+      NOT: {
+        OR: [
+          { name: { contains: 'tes1', mode: 'insensitive' } },
+          { name: { contains: 'test', mode: 'insensitive' } },
+          { name: { contains: 'тест', mode: 'insensitive' } },
+          { name: { contains: 'dummy', mode: 'insensitive' } },
+          { name: { contains: 'example', mode: 'insensitive' } },
+          { name: { contains: 'заглушка', mode: 'insensitive' } },
+          { name: { contains: 'sample', mode: 'insensitive' } }
+        ]
+      }
     }
 
     if (categoryId) {

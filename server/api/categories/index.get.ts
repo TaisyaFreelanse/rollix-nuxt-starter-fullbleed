@@ -4,7 +4,19 @@ export default defineEventHandler(async (event) => {
   try {
     const categories = await prisma.category.findMany({
       where: {
-        isActive: true
+        isActive: true,
+        // Фильтруем тестовые категории
+        NOT: {
+          OR: [
+            { name: { contains: 'test', mode: 'insensitive' } },
+            { name: { contains: 'тест', mode: 'insensitive' } },
+            { name: { contains: 'dummy', mode: 'insensitive' } },
+            { name: { contains: 'example', mode: 'insensitive' } },
+            { name: { contains: 'заглушка', mode: 'insensitive' } },
+            { slug: { contains: 'test', mode: 'insensitive' } },
+            { slug: { contains: 'tes1', mode: 'insensitive' } }
+          ]
+        }
       },
       include: {
         _count: {
