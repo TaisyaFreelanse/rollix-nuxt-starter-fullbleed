@@ -1,120 +1,237 @@
 /**
- * Клиент для работы с API АЙКО
- * Заглушка для будущей интеграции
+ * Обёртка для работы с iikoCloud API (обратная совместимость)
+ * Использует новый iiko-client.ts под капотом
  */
 
-const AIKO_API_URL = process.env.AIKO_API_URL
-const AIKO_API_KEY = process.env.AIKO_API_KEY
+import { getIikoClient } from './iiko-client'
 
 export class AikoClient {
-  private baseUrl: string
-  private apiKey: string
+  private iikoClient: ReturnType<typeof getIikoClient> | null = null
 
   constructor() {
-    if (!AIKO_API_URL || !AIKO_API_KEY) {
-      console.warn('[АЙКО] API не настроен. Используется режим заглушки.')
+    try {
+      this.iikoClient = getIikoClient()
+    } catch (error: any) {
+      console.warn('[АЙКО/iikoCloud] API не настроен:', error.message)
+      this.iikoClient = null
     }
-    this.baseUrl = AIKO_API_URL || ''
-    this.apiKey = AIKO_API_KEY || ''
   }
 
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    if (!this.baseUrl || !this.apiKey) {
-      throw new Error('АЙКО API не настроен. Проверьте AIKO_API_URL и AIKO_API_KEY')
-    }
-
-    const url = `${this.baseUrl}${endpoint}`
-    const headers = {
-      'Authorization': `Bearer ${this.apiKey}`,
-      'Content-Type': 'application/json',
-      ...options.headers
+  /**
+   * Получение меню из iikoCloud
+   */
+  async getMenu(): Promise<{
+    categories: any[]
+    products: any[]
+    lastSync: string
+  }> {
+    if (!this.iikoClient) {
+      throw new Error('iikoCloud API не настроен. Проверьте переменные окружения.')
     }
 
     try {
-      const response = await fetch(url, {
-        ...options,
-        headers
-      })
+      const menu = await this.iikoClient.getMenu()
+      
+      // Преобразуем формат iikoCloud в наш формат
+      // Согласно документации API, структура ответа:
+      // - groups: массив групп товаров (категорий)
+      //   - каждая группа содержит items: массив товаров
+      // - productCategories: категории товаров
+      // - items: все товары (опционально)
+      // - modifiers: модификаторы (опционально)
+      
+      const categories: any[] = []
+      const products: any[] = []
+      
+      // Обрабатываем группы товаров (это категории)
+      const groups = menu.groups || []
+      
+      groups.forEach((group: any) => {
+        // Группа товаров = категория
+        const categorySlug = (group.name || group.id || '')
+          .toLowerCase()
+          .replace(/\s+/g, '-')
+          .replace(/[^a-z0-9-а-яё]/g, '')
+        
+        categories.push({
+          id: group.id,
+          name: group.name,
+          slug: categorySlug || group.id
+        })
 
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`АЙКО API ошибка (${response.status}): ${errorText}`)
+        // Обрабатываем товары внутри группы
+        if (group.items && Array.isArray(group.items)) {
+          group.items.forEach((item: any) => {
+            // Получаем изображение (может быть в разных полях)
+            const imageUrl = item.image || 
+                           (item.images && item.images.length > 0 ? item.images[0] : null) ||
+                           (item.imageLinks && item.imageLinks.length > 0 ? item.imageLinks[0] : null)
+            
+            // Получаем цену (может быть в разных полях или размерах)
+            let price = 0
+            if (item.price !== undefined) {
+              price = item.price
+            } else if (item.prices && item.prices.length > 0) {
+              price = item.prices[0].price || 0
+            } else if (item.sizePrices && item.sizePrices.length > 0) {
+              price = item.sizePrices[0].price || 0
+            }
+            
+            products.push({
+              id: item.id,
+              name: item.name,
+              description: item.description || item.additionalInfo,
+              price: price,
+              categoryId: group.id,
+              image: imageUrl,
+              // Модификаторы могут быть в группе или отдельно
+              modifiers: item.groupModifiers || item.modifiers || []
+            })
+          })
+        }
+      })
+      
+      // Если есть отдельный массив items (все товары), добавляем их тоже
+      if (menu.items && Array.isArray(menu.items)) {
+        menu.items.forEach((item: any) => {
+          // Проверяем, не добавлен ли уже этот товар
+          const existingProduct = products.find(p => p.id === item.id)
+          if (!existingProduct) {
+            const imageUrl = item.image || 
+                           (item.images && item.images.length > 0 ? item.images[0] : null) ||
+                           (item.imageLinks && item.imageLinks.length > 0 ? item.imageLinks[0] : null)
+            
+            let price = 0
+            if (item.price !== undefined) {
+              price = item.price
+            } else if (item.prices && item.prices.length > 0) {
+              price = item.prices[0].price || 0
+            }
+            
+            products.push({
+              id: item.id,
+              name: item.name,
+              description: item.description || item.additionalInfo,
+              price: price,
+              categoryId: item.productCategoryId || categories[0]?.id || 'default',
+              image: imageUrl,
+              modifiers: item.groupModifiers || item.modifiers || []
+            })
+          }
+        })
       }
 
-      return await response.json()
+      return {
+        categories,
+        products,
+        lastSync: new Date().toISOString()
+      }
     } catch (error: any) {
-      console.error('[АЙКО] Ошибка запроса:', error)
-      throw new Error(`Ошибка подключения к АЙКО API: ${error.message}`)
+      console.error('[АЙКО] Ошибка получения меню:', error)
+      throw error
     }
   }
 
   /**
-   * Получение меню из АЙКО
+   * Отправка заказа в iikoCloud
    */
-  async getMenu(): Promise<any> {
-    // Заглушка
-    console.log('[АЙКО] getMenu() - заглушка')
-    return {
-      categories: [],
-      products: [],
-      lastSync: new Date().toISOString()
+  async createOrder(orderData: {
+    orderNumber?: string
+    phone?: string
+    name?: string
+    address?: string
+    deliveryType?: string
+    deliveryTime?: Date | string
+    comment?: string
+    items: Array<{
+      productId: string
+      productName: string
+      quantity: number
+      price: number
+      modifiers?: Array<{
+        name: string
+        price: number
+      }>
+    }>
+    total?: number
+    subtotal?: number
+    deliveryPrice?: number
+  }): Promise<{ aikoOrderId: string }> {
+    if (!this.iikoClient) {
+      throw new Error('iikoCloud API не настроен. Проверьте переменные окружения.')
     }
 
-    // Реальная реализация:
-    // return this.request('/api/menu')
+    try {
+      const result = await this.iikoClient.createOrder({
+        phone: orderData.phone,
+        customerName: orderData.name,
+        comment: orderData.comment,
+        items: orderData.items,
+        address: orderData.address,
+        deliveryType: orderData.deliveryType as 'DELIVERY' | 'PICKUP',
+        deliveryTime: orderData.deliveryTime
+      })
+
+      return {
+        aikoOrderId: result.iikoOrderId
+      }
+    } catch (error: any) {
+      console.error('[АЙКО] Ошибка создания заказа:', error)
+      throw error
+    }
   }
 
   /**
-   * Отправка заказа в АЙКО
+   * Получение статуса заказа из iikoCloud
    */
-  async createOrder(orderData: any): Promise<{ aikoOrderId: string }> {
-    // Заглушка
-    console.log('[АЙКО] createOrder() - заглушка', orderData)
-    return {
-      aikoOrderId: `AIKO-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  async getOrderStatus(aikoOrderId: string): Promise<{
+    orderId: string
+    status: string
+    estimatedTime?: number
+    message?: string
+    updatedAt: string
+  }> {
+    if (!this.iikoClient) {
+      throw new Error('iikoCloud API не настроен. Проверьте переменные окружения.')
     }
 
-    // Реальная реализация:
-    // return this.request('/api/orders', {
-    //   method: 'POST',
-    //   body: JSON.stringify(orderData)
-    // })
+    try {
+      const status = await this.iikoClient.getOrderStatus(aikoOrderId)
+      
+      // Преобразуем статус iikoCloud в наш формат
+      const statusMap: Record<string, string> = {
+        'New': 'PENDING',
+        'Bill': 'CONFIRMED',
+        'Close': 'DELIVERED',
+        'Deleted': 'CANCELLED'
+      }
+
+      return {
+        orderId: status.orderId,
+        status: statusMap[status.status] || status.status,
+        message: status.statusInfo,
+        updatedAt: status.creationDate || new Date().toISOString()
+      }
+    } catch (error: any) {
+      console.error('[АЙКО] Ошибка получения статуса заказа:', error)
+      throw error
+    }
   }
 
   /**
-   * Получение статуса заказа из АЙКО
-   */
-  async getOrderStatus(aikoOrderId: string): Promise<any> {
-    // Заглушка
-    console.log('[АЙКО] getOrderStatus() - заглушка', aikoOrderId)
-    return {
-      orderId: aikoOrderId,
-      status: 'PREPARING',
-      estimatedTime: 30,
-      message: 'Заказ готовится (заглушка)',
-      updatedAt: new Date().toISOString()
-    }
-
-    // Реальная реализация:
-    // return this.request(`/api/orders/${aikoOrderId}/status`)
-  }
-
-  /**
-   * Отмена заказа в АЙКО
+   * Отмена заказа в iikoCloud
    */
   async cancelOrder(aikoOrderId: string, reason?: string): Promise<boolean> {
-    // Заглушка
-    console.log('[АЙКО] cancelOrder() - заглушка', aikoOrderId, reason)
-    return true
+    if (!this.iikoClient) {
+      throw new Error('iikoCloud API не настроен. Проверьте переменные окружения.')
+    }
 
-    // Реальная реализация:
-    // return this.request(`/api/orders/${aikoOrderId}/cancel`, {
-    //   method: 'POST',
-    //   body: JSON.stringify({ reason })
-    // })
+    try {
+      return await this.iikoClient.cancelOrder(aikoOrderId, reason)
+    } catch (error: any) {
+      console.error('[АЙКО] Ошибка отмены заказа:', error)
+      throw error
+    }
   }
 }
 

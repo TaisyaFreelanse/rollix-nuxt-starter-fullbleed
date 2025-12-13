@@ -1,31 +1,52 @@
 /**
- * Проверка состояния интеграции с АЙКО
+ * Проверка состояния интеграции с iikoCloud
  */
 export default defineEventHandler(async (event) => {
   try {
-    const AIKO_API_URL = process.env.AIKO_API_URL
-    const AIKO_API_KEY = process.env.AIKO_API_KEY
+    const apiKey = process.env.IIKO_API_KEY
+    const organizationId = process.env.IIKO_ORGANIZATION_ID
+    const terminalGroupId = process.env.IIKO_TERMINAL_GROUP_ID
+    const baseUrl = process.env.IIKO_API_URL
 
-    const isConfigured = !!(AIKO_API_URL && AIKO_API_KEY)
+    const isConfigured = !!(apiKey && organizationId && terminalGroupId)
 
-    // Заглушка проверки подключения
-    // В реальной реализации здесь был бы запрос к health endpoint АЙКО
-    const isConnected = isConfigured
+    if (!isConfigured) {
+      return {
+        configured: false,
+        connected: false,
+        note: 'iikoCloud API не настроен. Установите IIKO_API_KEY, IIKO_ORGANIZATION_ID и IIKO_TERMINAL_GROUP_ID'
+      }
+    }
 
-    return {
-      configured: isConfigured,
-      connected: isConnected,
-      apiUrl: AIKO_API_URL ? '***configured***' : null,
-      note: isConfigured
-        ? 'АЙКО API настроен (заглушка - реальная проверка будет реализована позже)'
-        : 'АЙКО API не настроен. Установите AIKO_API_URL и AIKO_API_KEY'
+    // Проверяем реальное подключение
+    try {
+      const { getIikoClient } = await import('~/server/utils/iiko-client')
+      const client = getIikoClient()
+      const health = await client.healthCheck()
+
+      return {
+        configured: true,
+        connected: health.connected,
+        organizationId: health.organizationId,
+        baseUrl: baseUrl || 'https://api-ru.iiko.services',
+        note: health.connected
+          ? 'iikoCloud API настроен и доступен'
+          : 'iikoCloud API настроен, но не удалось подключиться'
+      }
+    } catch (error: any) {
+      return {
+        configured: true,
+        connected: false,
+        error: error.message,
+        note: 'Ошибка проверки подключения к iikoCloud API'
+      }
     }
   } catch (error: any) {
     return {
       configured: false,
       connected: false,
       error: error.message,
-      note: 'Ошибка проверки состояния АЙКО API'
+      note: 'Ошибка проверки состояния iikoCloud API'
     }
   }
 })

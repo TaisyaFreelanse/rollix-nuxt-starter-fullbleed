@@ -81,8 +81,7 @@ export default defineEventHandler(async (event) => {
       orderId: order.id,
       orderNumber: order.orderNumber,
       aikoOrderId: aikoResponse.aikoOrderId,
-      message: 'Заказ отправлен в АЙКО (заглушка)',
-      note: 'Это заглушка. Реальная интеграция будет реализована позже.'
+      message: 'Заказ отправлен в iikoCloud'
     }
   } catch (error: any) {
     console.error('[АЙКО] Ошибка отправки заказа:', error)
@@ -93,10 +92,10 @@ export default defineEventHandler(async (event) => {
     
     throw createError({
       statusCode: 500,
-      message: 'Ошибка при отправке заказа в АЙКО',
+      message: 'Ошибка при отправке заказа в iikoCloud',
       data: {
         error: error.message,
-        note: 'Проверьте настройки AIKO_API_URL и AIKO_API_KEY'
+        note: 'Проверьте настройки IIKO_API_KEY, IIKO_ORGANIZATION_ID и IIKO_TERMINAL_GROUP_ID'
       }
     })
   }

@@ -54,17 +54,16 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    return {
+      return {
       success: true,
       aikoOrderId,
       status: aikoStatus.status,
       estimatedTime: aikoStatus.estimatedTime,
       message: aikoStatus.message,
-      updatedAt: aikoStatus.updatedAt,
-      note: 'Это заглушка. Реальная интеграция будет реализована позже.'
+      updatedAt: aikoStatus.updatedAt
     }
   } catch (error: any) {
-    console.error('[АЙКО] Ошибка получения статуса:', error)
+    console.error('[iikoCloud] Ошибка получения статуса:', error)
     
     if (error.statusCode) {
       throw error
@@ -72,10 +71,10 @@ export default defineEventHandler(async (event) => {
     
     throw createError({
       statusCode: 500,
-      message: 'Ошибка при получении статуса заказа из АЙКО',
+      message: 'Ошибка при получении статуса заказа из iikoCloud',
       data: {
         error: error.message,
-        note: 'Проверьте настройки AIKO_API_URL и AIKO_API_KEY'
+        note: 'Проверьте настройки IIKO_API_KEY, IIKO_ORGANIZATION_ID и IIKO_TERMINAL_GROUP_ID'
       }
     })
   }
