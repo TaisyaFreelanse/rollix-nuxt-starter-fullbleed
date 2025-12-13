@@ -1,5 +1,8 @@
+import { prisma } from '~/server/utils/prisma'
+
 /**
  * Проверка состояния интеграции с iikoCloud
+ * Включает статус подключения и статистику синхронизации меню
  */
 export default defineEventHandler(async (event) => {
   try {
@@ -19,27 +22,63 @@ export default defineEventHandler(async (event) => {
     }
 
     // Проверяем реальное подключение
+    let apiConnected = false
+    let apiError = null
+    
     try {
       const { getIikoClient } = await import('~/server/utils/iiko-client')
       const client = getIikoClient()
       const health = await client.healthCheck()
+      apiConnected = health.connected
+    } catch (error: any) {
+      apiError = error.message
+      apiConnected = false
+    }
 
-      return {
-        configured: true,
-        connected: health.connected,
-        organizationId: health.organizationId,
-        baseUrl: baseUrl || 'https://api-ru.iiko.services',
-        note: health.connected
-          ? 'iikoCloud API настроен и доступен'
-          : 'iikoCloud API настроен, но не удалось подключиться'
+    // Получаем статистику синхронизации меню
+    let menuStats = null
+    try {
+      const categoriesCount = await prisma.category.count({
+        where: { isActive: true }
+      })
+      
+      const productsCount = await prisma.product.count({
+        where: { isActive: true }
+      })
+
+      const lastUpdatedProduct = await prisma.product.findFirst({
+        orderBy: { updatedAt: 'desc' },
+        select: { updatedAt: true }
+      })
+
+      const lastSyncTime = lastUpdatedProduct?.updatedAt || null
+
+      menuStats = {
+        categoriesCount,
+        productsCount,
+        lastSyncTime: lastSyncTime ? lastSyncTime.toISOString() : null,
+        isSynced: categoriesCount > 0 || productsCount > 0
       }
     } catch (error: any) {
-      return {
-        configured: true,
-        connected: false,
-        error: error.message,
-        note: 'Ошибка проверки подключения к iikoCloud API'
+      console.error('[iikoCloud] Ошибка получения статистики меню:', error)
+      menuStats = {
+        error: 'Не удалось получить статистику меню'
       }
+    }
+
+    return {
+      configured: true,
+      connected: apiConnected,
+      organizationId,
+      terminalGroupId,
+      baseUrl: baseUrl || 'https://api-ru.iiko.services',
+      apiError: apiError || undefined,
+      menu: menuStats,
+      note: apiConnected
+        ? (menuStats?.isSynced 
+          ? 'iikoCloud API настроен и доступен. Меню синхронизировано.'
+          : 'iikoCloud API настроен и доступен. Меню не синхронизировано - запустите POST /api/aiko/sync')
+        : 'iikoCloud API настроен, но не удалось подключиться'
     }
   } catch (error: any) {
     return {
