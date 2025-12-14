@@ -9,6 +9,119 @@ export default defineNitroPlugin(async (nitroApp) => {
       console.error('❌ Error initializing database tables:', error.message)
       // Не прерываем запуск приложения
     }
+
+    // Автоматическая синхронизация меню из iikoCloud при старте (только если настроено)
+    try {
+      const config = useRuntimeConfig()
+      if (config.iikoApiKey && config.iikoOrganizationId && config.iikoTerminalGroupId) {
+        console.log('🔄 Запуск автоматической синхронизации меню из iikoCloud...')
+        
+        // Запускаем синхронизацию в фоне, не блокируя старт приложения
+        setTimeout(async () => {
+          try {
+            const { aikoClient } = await import('~/server/utils/aiko-client')
+            const iikoMenu = await aikoClient.getMenu()
+            
+            const { prisma } = await import('~/server/utils/prisma')
+            let syncedCategories = 0
+            let syncedProducts = 0
+
+            // Синхронизация категорий
+            for (const category of iikoMenu.categories) {
+              try {
+                await prisma.category.upsert({
+                  where: { slug: category.slug },
+                  create: {
+                    id: category.id,
+                    name: category.name,
+                    slug: category.slug,
+                    isActive: true
+                  },
+                  update: {
+                    name: category.name,
+                    isActive: true
+                  }
+                })
+                syncedCategories++
+              } catch (error: any) {
+                console.error(`[iikoCloud] Ошибка категории ${category.name}:`, error.message)
+              }
+            }
+
+            // Синхронизация товаров
+            for (const product of iikoMenu.products) {
+              try {
+                let categoryId = product.categoryId
+                if (categoryId) {
+                  const category = await prisma.category.findUnique({
+                    where: { id: categoryId }
+                  })
+                  if (!category) {
+                    const firstCategory = await prisma.category.findFirst({
+                      where: { isActive: true }
+                    })
+                    if (firstCategory) {
+                      categoryId = firstCategory.id
+                    }
+                  }
+                }
+
+                if (!categoryId) {
+                  continue
+                }
+
+                const slug = (product.name || product.id)
+                  .toLowerCase()
+                  .replace(/\s+/g, '-')
+                  .replace(/[^a-z0-9-а-яё]/g, '')
+                  .substring(0, 100)
+
+                const existing = await prisma.product.findUnique({
+                  where: { slug }
+                })
+
+                const productData = {
+                  name: product.name,
+                  description: product.description || null,
+                  price: product.price || 0,
+                  categoryId,
+                  image: product.image || null,
+                  isActive: true
+                }
+
+                if (existing) {
+                  await prisma.product.update({
+                    where: { id: existing.id },
+                    data: productData
+                  })
+                } else {
+                  await prisma.product.create({
+                    data: {
+                      id: product.id,
+                      slug,
+                      ...productData
+                    }
+                  })
+                  syncedProducts++
+                }
+              } catch (error: any) {
+                console.error(`[iikoCloud] Ошибка товара ${product.name}:`, error.message)
+              }
+            }
+
+            console.log(`✅ Автоматическая синхронизация завершена: ${syncedCategories} категорий, ${syncedProducts} товаров`)
+          } catch (error: any) {
+            console.error('❌ Ошибка автоматической синхронизации меню:', error.message)
+            // Не прерываем работу приложения
+          }
+        }, 5000) // Запускаем через 5 секунд после старта
+      } else {
+        console.log('ℹ️  iikoCloud API не настроен, пропускаем автоматическую синхронизацию')
+      }
+    } catch (error: any) {
+      console.error('❌ Ошибка при проверке настроек iikoCloud:', error.message)
+      // Не прерываем запуск приложения
+    }
   })
 })
 

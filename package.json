@@ -20,6 +20,7 @@
     "admin:create": "tsx scripts/create-admin.ts",
     "bonus:migrate": "tsx scripts/apply-bonus-migration.ts",
     "clean:test": "tsx scripts/clean-test-products.ts",
+    "iiko:sync": "tsx scripts/sync-iiko-menu.ts",
     "render:build": "npm install --production=false && npx prisma generate --schema=prisma/schema.prisma && npx tsx scripts/create-sms-table.ts && npx tsx scripts/add-product-tags.ts && npx tsx scripts/create-banners-table.ts && npm run build",
     "render:setup": "npx tsx scripts/setup-db.ts",
     "render:migrate": "npx tsx scripts/run-migration.ts"

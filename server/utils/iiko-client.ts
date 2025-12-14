@@ -325,13 +325,24 @@ export class IikoClient {
         }
       )
 
+      // Логируем структуру ответа для отладки
+      console.log('[iikoCloud] Ответ от API:')
+      console.log('  - groups:', response.groups?.length || 0)
+      console.log('  - items:', response.items?.length || 0)
+      console.log('  - productCategories:', response.productCategories?.length || 0)
+      console.log('  - Ключи ответа:', Object.keys(response))
+      
+      if (response.groups && response.groups.length > 0) {
+        console.log('  - Первая группа (первые 200 символов):', JSON.stringify(response.groups[0]).substring(0, 200))
+      }
+
       // API возвращает структуру с группами товаров (категориями)
       // и товарами внутри групп, а также модификаторы отдельно
       // Преобразуем в наш формат для обратной совместимости
       const menuResponse: IikoMenuResponse = {
         groups: response.groups || [],
         items: response.items || [],
-        categories: response.categories || []
+        categories: response.productCategories || response.categories || []
       }
 
       return menuResponse
