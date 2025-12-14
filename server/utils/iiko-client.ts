@@ -127,6 +127,28 @@ export class IikoClient {
 
       if (!response.ok) {
         const errorText = await response.text()
+        
+        // Обработка rate limiting (429) - делаем задержку и повторную попытку
+        if (response.status === 429) {
+          console.warn(`[iikoCloud] ⚠️  Rate limit (429). Ожидание 5 секунд перед повторной попыткой...`)
+          await new Promise(resolve => setTimeout(resolve, 5000)) // Ждем 5 секунд
+          
+          // Повторная попытка запроса
+          console.log(`[iikoCloud] Повторная попытка запроса после rate limit...`)
+          const retryResponse = await fetch(url, {
+            ...options,
+            headers
+          })
+          
+          if (retryResponse.ok) {
+            return await retryResponse.json()
+          } else {
+            const retryErrorText = await retryResponse.text()
+            console.error(`[iikoCloud] Повторная попытка также не удалась (${retryResponse.status})`)
+            throw new Error(`iikoCloud API ошибка (${retryResponse.status}): ${retryErrorText.substring(0, 200)}`)
+          }
+        }
+        
         console.error(`[iikoCloud] Ошибка API (${response.status}) при запросе ${url}:`, errorText.substring(0, 500))
         
         // Логируем детали запроса для отладки
@@ -346,29 +368,16 @@ export class IikoClient {
         return this.formatNomenclatureResponse(nomenclatureResponse)
       }
 
-      // Если номенклатура пустая, пробуем использовать terminalGroupId
-      // Возможно, товары привязаны к терминальной группе
+      // Если номенклатура пустая, выводим предупреждение
+      // terminalGroupId не поддерживается в /api/1/nomenclature согласно документации
       if (!nomenclatureResponse.products || nomenclatureResponse.products.length === 0) {
-        console.log('[iikoCloud] Номенклатура пустая, пробуем с terminalGroupId...')
-        try {
-          const nomenclatureWithTerminal = await this.request<any>(
-            '/api/1/nomenclature',
-            {
-              method: 'POST',
-              body: JSON.stringify({
-                organizationId: this.organizationId,
-                terminalGroupId: this.terminalGroupId
-              })
-            }
-          )
-          
-          if (nomenclatureWithTerminal.products && nomenclatureWithTerminal.products.length > 0) {
-            console.log(`[iikoCloud] ✅ Номенклатура получена с terminalGroupId: ${nomenclatureWithTerminal.products.length} товаров`)
-            return this.formatNomenclatureResponse(nomenclatureWithTerminal)
-          }
-        } catch (error: any) {
-          console.log('[iikoCloud] Запрос с terminalGroupId не сработал:', error.message?.substring(0, 100))
-        }
+        console.warn('[iikoCloud] ⚠️  Номенклатура пустая!')
+        console.warn('[iikoCloud] Возможные причины:')
+        console.warn('  1. В организации нет товаров в номенклатуре')
+        console.warn('  2. Товары не включены в меню (isIncludedInMenu: false)')
+        console.warn('  3. Товары находятся в стоп-листе')
+        console.warn('  4. OrganizationId указан неправильно')
+        console.warn('  5. Нужно настроить меню в админке iiko')
       }
 
       // Если номенклатура все еще пустая, пробуем внешнее меню
