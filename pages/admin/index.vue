@@ -661,6 +661,64 @@ const settings = ref({
 
 const settingsLoading = ref(false)
 
+// ========== СИНХРОНИЗАЦИЯ IIKO ==========
+const syncLoading = ref(false)
+const syncStatus = ref<{
+  success: boolean
+  message?: string
+  stats?: {
+    syncedCategories: number
+    syncedProducts: number
+    updatedPrices: number
+    errorsCount: number
+    timestamp: string
+  }
+  errors?: string[]
+} | null>(null)
+
+const syncMenu = async () => {
+  syncLoading.value = true
+  syncStatus.value = null
+  try {
+    const result = await $fetch('/api/aiko/sync', {
+      method: 'POST'
+    }) as any
+    syncStatus.value = result
+    if (result.success) {
+      // Обновляем список товаров и категорий после синхронизации
+      await loadProducts()
+      await loadCategories()
+    }
+  } catch (error: any) {
+    syncStatus.value = {
+      success: false,
+      message: error.data?.message || error.message || 'Ошибка синхронизации'
+    }
+  } finally {
+    syncLoading.value = false
+  }
+}
+
+const loadSyncStatus = async () => {
+  try {
+    const status = await $fetch('/api/aiko/sync-status') as any
+    if (status.success && status.stats?.lastSyncTime) {
+      syncStatus.value = {
+        success: true,
+        stats: {
+          syncedCategories: status.stats.categoriesCount || 0,
+          syncedProducts: status.stats.productsCount || 0,
+          updatedPrices: 0,
+          errorsCount: 0,
+          timestamp: status.stats.lastSyncTime
+        }
+      }
+    }
+  } catch (error) {
+    // Игнорируем ошибки загрузки статуса
+  }
+}
+
 const loadSettings = async () => {
   try {
     const saved = localStorage.getItem('admin-settings')
@@ -836,6 +894,7 @@ const loadTabData = async (tab: string) => {
     } else if (tab === 'settings') {
       await loadSettings()
       await loadCurrentOrders()
+      await loadSyncStatus()
     } else if (tab === 'admins') {
       await loadAdmins()
     } else if (tab === 'banners') {
@@ -2141,6 +2200,62 @@ watch(isAuthorized, async (val) => {
                   ⚠️ Достигнут лимит заказов. Время готовности будет увеличено на {{ settings.estimatedReadyTime }} минут.
                 </p>
               </div>
+            </div>
+          </div>
+
+          <!-- Синхронизация с iikoCloud -->
+          <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <h2 class="text-xl font-semibold text-white mb-4">Синхронизация меню с iikoCloud</h2>
+            
+            <div class="space-y-4">
+              <p class="text-sm text-gray-400">
+                Синхронизирует товары и категории из системы iikoCloud. Товары будут автоматически обновлены или добавлены в базу данных.
+              </p>
+
+              <!-- Статус последней синхронизации -->
+              <div v-if="syncStatus && syncStatus.stats" class="bg-gray-700/50 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-sm font-medium text-gray-300">Последняя синхронизация:</span>
+                  <span class="text-xs text-gray-400">
+                    {{ new Date(syncStatus.stats.timestamp).toLocaleString('ru-RU') }}
+                  </span>
+                </div>
+                <div class="grid grid-cols-3 gap-4 mt-3 text-sm">
+                  <div>
+                    <span class="text-gray-400">Категорий:</span>
+                    <span class="text-white font-medium ml-2">{{ syncStatus.stats.syncedCategories }}</span>
+                  </div>
+                  <div>
+                    <span class="text-gray-400">Товаров:</span>
+                    <span class="text-white font-medium ml-2">{{ syncStatus.stats.syncedProducts }}</span>
+                  </div>
+                  <div>
+                    <span class="text-gray-400">Цен обновлено:</span>
+                    <span class="text-white font-medium ml-2">{{ syncStatus.stats.updatedPrices }}</span>
+                  </div>
+                </div>
+                <div v-if="syncStatus.errors && syncStatus.errors.length > 0" class="mt-3 p-2 bg-red-500/20 border border-red-500/50 rounded text-xs text-red-400">
+                  Ошибок: {{ syncStatus.errors.length }}
+                </div>
+              </div>
+
+              <!-- Сообщение об ошибке -->
+              <div v-if="syncStatus && !syncStatus.success" class="bg-red-500/20 border border-red-500/50 rounded-lg p-4">
+                <p class="text-red-400 text-sm">{{ syncStatus.message || 'Ошибка синхронизации' }}</p>
+              </div>
+
+              <!-- Кнопка синхронизации -->
+              <button
+                @click="syncMenu"
+                :disabled="syncLoading"
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                <span v-if="syncLoading">Синхронизация...</span>
+                <span v-else>🔄 Синхронизировать меню из iikoCloud</span>
+              </button>
+
+              <p class="text-xs text-gray-500 text-center">
+                ⓘ Синхронизация также запускается автоматически при старте сервера
+              </p>
             </div>
           </div>
 
