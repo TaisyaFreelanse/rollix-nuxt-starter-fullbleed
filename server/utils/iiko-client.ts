@@ -381,35 +381,70 @@ export class IikoClient {
       console.log(`[iikoCloud] Используем внешнее меню: ${firstMenu.name} (ID: ${firstMenu.id}, тип: ${typeof firstMenu.id})`)
 
       // Получаем конкретное меню
-      // Пробуем сначала с версией 2, если не работает - попробуем без версии
-      let menuRequest = {
-        externalMenuId: firstMenu.id,
-        organizationIds: [this.organizationId],
-        version: 2 // Используем версию 2 (более стабильная)
-      }
-
-      console.log('[iikoCloud] Запрос меню:', JSON.stringify(menuRequest, null, 2))
-
+      // Пробуем разные варианты запроса
       let menuResponse
+      
+      // Вариант 1: С версией 2
       try {
+        const menuRequest1 = {
+          externalMenuId: firstMenu.id,
+          organizationIds: [this.organizationId],
+          version: 2
+        }
+        console.log('[iikoCloud] Попытка 1: Запрос меню с версией 2')
         menuResponse = await this.request<any>(
           '/api/2/menu/by_id',
           {
             method: 'POST',
-            body: JSON.stringify(menuRequest)
+            body: JSON.stringify(menuRequest1)
           }
         )
+        console.log('[iikoCloud] ✅ Меню получено с версией 2')
       } catch (error: any) {
-        // Если версия 2 не работает, пробуем версию 3
-        console.log('[iikoCloud] Версия 2 не сработала, пробуем версию 3...')
-        menuRequest.version = 3
-        menuResponse = await this.request<any>(
-          '/api/2/menu/by_id',
-          {
-            method: 'POST',
-            body: JSON.stringify(menuRequest)
+        console.log('[iikoCloud] ❌ Версия 2 не сработала:', error.message?.substring(0, 100))
+        
+        // Вариант 2: С версией 3
+        try {
+          const menuRequest2 = {
+            externalMenuId: firstMenu.id,
+            organizationIds: [this.organizationId],
+            version: 3
           }
-        )
+          console.log('[iikoCloud] Попытка 2: Запрос меню с версией 3')
+          menuResponse = await this.request<any>(
+            '/api/2/menu/by_id',
+            {
+              method: 'POST',
+              body: JSON.stringify(menuRequest2)
+            }
+          )
+          console.log('[iikoCloud] ✅ Меню получено с версией 3')
+        } catch (error2: any) {
+          console.log('[iikoCloud] ❌ Версия 3 не сработала:', error2.message?.substring(0, 100))
+          
+          // Вариант 3: Без версии
+          try {
+            const menuRequest3 = {
+              externalMenuId: firstMenu.id,
+              organizationIds: [this.organizationId]
+            }
+            console.log('[iikoCloud] Попытка 3: Запрос меню без версии')
+            menuResponse = await this.request<any>(
+              '/api/2/menu/by_id',
+              {
+                method: 'POST',
+                body: JSON.stringify(menuRequest3)
+              }
+            )
+            console.log('[iikoCloud] ✅ Меню получено без версии')
+          } catch (error3: any) {
+            console.error('[iikoCloud] ❌ Все попытки получения внешнего меню не удались')
+            console.error('[iikoCloud] Последняя ошибка:', error3.message?.substring(0, 200))
+            
+            // Если все попытки не удались, выбрасываем ошибку
+            throw new Error(`Не удалось получить внешнее меню. Возможно, проблема на стороне API iikoCloud или неправильный externalMenuId. Последняя ошибка: ${error3.message?.substring(0, 200)}`)
+          }
+        }
       }
 
       console.log('[iikoCloud] Внешнее меню получено:', {
