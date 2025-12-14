@@ -346,7 +346,32 @@ export class IikoClient {
         return this.formatNomenclatureResponse(nomenclatureResponse)
       }
 
-      // Если номенклатура пустая, пробуем внешнее меню
+      // Если номенклатура пустая, пробуем использовать terminalGroupId
+      // Возможно, товары привязаны к терминальной группе
+      if (!nomenclatureResponse.products || nomenclatureResponse.products.length === 0) {
+        console.log('[iikoCloud] Номенклатура пустая, пробуем с terminalGroupId...')
+        try {
+          const nomenclatureWithTerminal = await this.request<any>(
+            '/api/1/nomenclature',
+            {
+              method: 'POST',
+              body: JSON.stringify({
+                organizationId: this.organizationId,
+                terminalGroupId: this.terminalGroupId
+              })
+            }
+          )
+          
+          if (nomenclatureWithTerminal.products && nomenclatureWithTerminal.products.length > 0) {
+            console.log(`[iikoCloud] ✅ Номенклатура получена с terminalGroupId: ${nomenclatureWithTerminal.products.length} товаров`)
+            return this.formatNomenclatureResponse(nomenclatureWithTerminal)
+          }
+        } catch (error: any) {
+          console.log('[iikoCloud] Запрос с terminalGroupId не сработал:', error.message?.substring(0, 100))
+        }
+      }
+
+      // Если номенклатура все еще пустая, пробуем внешнее меню
       console.log('[iikoCloud] Номенклатура пустая, пробуем внешнее меню через /api/2/menu')
       
       // Получаем список внешних меню
@@ -441,8 +466,16 @@ export class IikoClient {
             console.error('[iikoCloud] ❌ Все попытки получения внешнего меню не удались')
             console.error('[iikoCloud] Последняя ошибка:', error3.message?.substring(0, 200))
             
-            // Если все попытки не удались, выбрасываем ошибку
-            throw new Error(`Не удалось получить внешнее меню. Возможно, проблема на стороне API iikoCloud или неправильный externalMenuId. Последняя ошибка: ${error3.message?.substring(0, 200)}`)
+            // Если все попытки не удались, выбрасываем ошибку с рекомендациями
+            console.error('[iikoCloud] ⚠️  ВСЕ ПОПЫТКИ ПОЛУЧЕНИЯ ВНЕШНЕГО МЕНЮ НЕ УДАЛИСЬ')
+            console.error('[iikoCloud] Рекомендации:')
+            console.error('  1. Проверьте в админке iiko, что меню "Меню обнова" (ID: 67105) настроено и активно')
+            console.error('  2. Убедитесь, что товары включены в это меню')
+            console.error('  3. Проверьте, что externalMenuId правильный (текущий: 67105)')
+            console.error('  4. Возможно, нужно использовать номенклатуру вместо внешнего меню')
+            console.error('  5. Проверьте настройки API ключа и прав доступа в iikoCloud')
+            
+            throw new Error(`Не удалось получить внешнее меню (externalMenuId: ${firstMenu.id}). API iikoCloud возвращает ошибку 500. Проверьте настройки меню в админке iiko.`)
           }
         }
       }
