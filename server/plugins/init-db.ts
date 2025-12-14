@@ -17,8 +17,13 @@ export default defineNitroPlugin(async (nitroApp) => {
       const iikoOrganizationId = process.env.IIKO_ORGANIZATION_ID
       const iikoTerminalGroupId = process.env.IIKO_TERMINAL_GROUP_ID
       
+      console.log('[iikoCloud Auto-sync] Проверка переменных окружения...')
+      console.log(`  - IIKO_API_KEY: ${iikoApiKey ? 'установлен (' + iikoApiKey.substring(0, 8) + '...)' : 'не установлен'}`)
+      console.log(`  - IIKO_ORGANIZATION_ID: ${iikoOrganizationId ? 'установлен' : 'не установлен'}`)
+      console.log(`  - IIKO_TERMINAL_GROUP_ID: ${iikoTerminalGroupId ? 'установлен' : 'не установлен'}`)
+      
       if (iikoApiKey && iikoOrganizationId && iikoTerminalGroupId) {
-        console.log('🔄 Запуск автоматической синхронизации меню из iikoCloud...')
+        console.log('🔄 Запуск автоматической синхронизации меню из iikoCloud через 10 секунд...')
         
         // Запускаем синхронизацию в фоне, не блокируя старт приложения
         setTimeout(async () => {
@@ -123,8 +128,10 @@ export default defineNitroPlugin(async (nitroApp) => {
             // Не прерываем работу приложения
           }
         }, 10000) // Запускаем через 10 секунд после старта (больше времени на инициализацию)
+        console.log('[iikoCloud Auto-sync] Таймер установлен, синхронизация запустится через 10 секунд')
       } else {
-        console.log('ℹ️  iikoCloud API не настроен (проверьте IIKO_API_KEY, IIKO_ORGANIZATION_ID, IIKO_TERMINAL_GROUP_ID)')
+        console.log('ℹ️  iikoCloud API не настроен - автоматическая синхронизация отключена')
+        console.log('   Проверьте переменные окружения: IIKO_API_KEY, IIKO_ORGANIZATION_ID, IIKO_TERMINAL_GROUP_ID')
       }
     } catch (error: any) {
       console.error('❌ Ошибка при проверке настроек iikoCloud:', error.message)

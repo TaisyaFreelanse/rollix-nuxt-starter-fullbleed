@@ -29,7 +29,8 @@ export default defineEventHandler(async (event) => {
     '/api/banners', // Публичный эндпоинт для баннеров
     '/api/orders', // Разрешаем гостевые заказы
     '/api/promotions', // Публичный эндпоинт для акций
-    '/api/promocode-widget' // Публичный эндпоинт для виджета промокода
+    '/api/promocode-widget', // Публичный эндпоинт для виджета промокода
+    '/api/aiko' // Публичные эндпоинты для синхронизации с iikoCloud
   ]
 
   if (publicRoutes.some((route) => path.startsWith(route))) {
