@@ -12,8 +12,12 @@ export default defineNitroPlugin(async (nitroApp) => {
 
     // Автоматическая синхронизация меню из iikoCloud при старте (только если настроено)
     try {
-      const config = useRuntimeConfig()
-      if (config.iikoApiKey && config.iikoOrganizationId && config.iikoTerminalGroupId) {
+      // Проверяем переменные окружения напрямую
+      const iikoApiKey = process.env.IIKO_API_KEY
+      const iikoOrganizationId = process.env.IIKO_ORGANIZATION_ID
+      const iikoTerminalGroupId = process.env.IIKO_TERMINAL_GROUP_ID
+      
+      if (iikoApiKey && iikoOrganizationId && iikoTerminalGroupId) {
         console.log('🔄 Запуск автоматической синхронизации меню из iikoCloud...')
         
         // Запускаем синхронизацию в фоне, не блокируя старт приложения
@@ -21,6 +25,8 @@ export default defineNitroPlugin(async (nitroApp) => {
           try {
             const { aikoClient } = await import('~/server/utils/aiko-client')
             const iikoMenu = await aikoClient.getMenu()
+            
+            console.log(`📦 Получено из iiko: ${iikoMenu.categories.length} категорий, ${iikoMenu.products.length} товаров`)
             
             const { prisma } = await import('~/server/utils/prisma')
             let syncedCategories = 0
@@ -67,6 +73,7 @@ export default defineNitroPlugin(async (nitroApp) => {
                 }
 
                 if (!categoryId) {
+                  console.warn(`⚠️  Пропущен товар ${product.name}: нет категории`)
                   continue
                 }
 
@@ -112,11 +119,12 @@ export default defineNitroPlugin(async (nitroApp) => {
             console.log(`✅ Автоматическая синхронизация завершена: ${syncedCategories} категорий, ${syncedProducts} товаров`)
           } catch (error: any) {
             console.error('❌ Ошибка автоматической синхронизации меню:', error.message)
+            console.error('Stack:', error.stack)
             // Не прерываем работу приложения
           }
-        }, 5000) // Запускаем через 5 секунд после старта
+        }, 10000) // Запускаем через 10 секунд после старта (больше времени на инициализацию)
       } else {
-        console.log('ℹ️  iikoCloud API не настроен, пропускаем автоматическую синхронизацию')
+        console.log('ℹ️  iikoCloud API не настроен (проверьте IIKO_API_KEY, IIKO_ORGANIZATION_ID, IIKO_TERMINAL_GROUP_ID)')
       }
     } catch (error: any) {
       console.error('❌ Ошибка при проверке настроек iikoCloud:', error.message)
