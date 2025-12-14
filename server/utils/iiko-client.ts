@@ -313,14 +313,19 @@ export class IikoClient {
    */
   async getMenu(): Promise<IikoMenuResponse> {
     try {
+      // Пробуем первый вариант: без startRevision (или null)
+      // Согласно документации, если startRevision не указан или null, 
+      // API должен вернуть все данные
       const requestBody = {
-        organizationId: this.organizationId,
-        startRevision: 0 // Начинаем с первой версии меню (0 = получить все)
+        organizationId: this.organizationId
+        // Убираем startRevision, чтобы получить все товары
+        // Если это не поможет, попробуем использовать externalMenuId
       }
       
       console.log('[iikoCloud] Запрос меню:', {
         organizationId: this.organizationId,
-        endpoint: '/api/1/nomenclature'
+        endpoint: '/api/1/nomenclature',
+        requestBody
       })
       
       const response = await this.request<any>(
@@ -347,15 +352,20 @@ export class IikoClient {
           (!response.products || response.products.length === 0)) {
         console.warn('[iikoCloud] ⚠️  Получены пустые массивы категорий и товаров!')
         console.warn('  Возможные причины:')
-        console.warn('  1. В организации нет товаров в меню')
-        console.warn('  2. Все товары имеют isIncludedInMenu: false')
-        console.warn('  3. OrganizationId указан неправильно')
-        console.warn('  4. Нет прав доступа к меню организации')
-        console.warn('  5. Меню не настроено в iiko для этой организации')
+        console.warn('  1. В организации нет товаров в номенклатуре')
+        console.warn('  2. OrganizationId указан неправильно')
+        console.warn('  3. Нет прав доступа к номенклатуре организации')
+        console.warn('  4. Товары не добавлены в номенклатуру iiko')
+        console.warn('  5. Нужно использовать внешнее меню (/api/2/menu) вместо номенклатуры')
         console.warn('  Проверьте:')
         console.warn('  - organizationId:', this.organizationId)
         console.warn('  - revision:', response.revision)
         console.warn('  - correlationId:', response.correlationId)
+        console.warn('')
+        console.warn('  💡 РЕШЕНИЕ: Попробуйте использовать внешнее меню:')
+        console.warn('    1. Получите список внешних меню через /api/2/menu')
+        console.warn('    2. Используйте externalMenuId для получения конкретного меню')
+        console.warn('    3. Или проверьте в админке iiko, что товары добавлены в номенклатуру')
         
         // Логируем первые 500 символов полного ответа для диагностики
         try {
