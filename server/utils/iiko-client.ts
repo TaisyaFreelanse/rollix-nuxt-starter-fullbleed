@@ -313,24 +313,58 @@ export class IikoClient {
    */
   async getMenu(): Promise<IikoMenuResponse> {
     try {
+      const requestBody = {
+        organizationId: this.organizationId,
+        startRevision: 0 // Начинаем с первой версии меню (0 = получить все)
+      }
+      
+      console.log('[iikoCloud] Запрос меню:', {
+        organizationId: this.organizationId,
+        endpoint: '/api/1/nomenclature'
+      })
+      
       const response = await this.request<any>(
         '/api/1/nomenclature',
         {
           method: 'POST',
-          body: JSON.stringify({
-            organizationId: this.organizationId,
-            // startRevision - опционально, для инкрементальной синхронизации
-            // Можно добавить позже для оптимизации
-          })
+          body: JSON.stringify(requestBody)
         }
       )
 
       // Логируем структуру ответа для отладки
       console.log('[iikoCloud] Ответ от API:')
+      console.log('  - revision:', response.revision)
+      console.log('  - correlationId:', response.correlationId)
       console.log('  - productCategories:', response.productCategories?.length || 0)
       console.log('  - products:', response.products?.length || 0)
       console.log('  - groups:', response.groups?.length || 0, '(стоп-листы, не используются)')
+      console.log('  - sizes:', response.sizes?.length || 0)
       console.log('  - Ключи ответа:', Object.keys(response))
+      
+      // Если массивы пустые, но revision есть - возможно, это означает, что меню не изменилось
+      // Но если revision = null или 0, значит проблема
+      if ((!response.productCategories || response.productCategories.length === 0) && 
+          (!response.products || response.products.length === 0)) {
+        console.warn('[iikoCloud] ⚠️  Получены пустые массивы категорий и товаров!')
+        console.warn('  Возможные причины:')
+        console.warn('  1. В организации нет товаров в меню')
+        console.warn('  2. Все товары имеют isIncludedInMenu: false')
+        console.warn('  3. OrganizationId указан неправильно')
+        console.warn('  4. Нет прав доступа к меню организации')
+        console.warn('  5. Меню не настроено в iiko для этой организации')
+        console.warn('  Проверьте:')
+        console.warn('  - organizationId:', this.organizationId)
+        console.warn('  - revision:', response.revision)
+        console.warn('  - correlationId:', response.correlationId)
+        
+        // Логируем первые 500 символов полного ответа для диагностики
+        try {
+          const responseStr = JSON.stringify(response).substring(0, 500)
+          console.warn('  - Полный ответ (первые 500 символов):', responseStr)
+        } catch (e) {
+          console.warn('  - Не удалось сериализовать ответ')
+        }
+      }
       
       if (response.products && response.products.length > 0) {
         const firstProduct = response.products[0]
@@ -340,7 +374,9 @@ export class IikoClient {
           productCategoryId: firstProduct.productCategoryId,
           type: firstProduct.type,
           sizePricesCount: firstProduct.sizePrices?.length || 0,
-          hasImageLinks: !!(firstProduct.imageLinks && firstProduct.imageLinks.length > 0)
+          hasImageLinks: !!(firstProduct.imageLinks && firstProduct.imageLinks.length > 0),
+          // Проверяем цены
+          sizePrices: firstProduct.sizePrices?.slice(0, 2).map((sp: any) => ({ sizeId: sp.sizeId, price: sp.price }))
         })
       }
       
