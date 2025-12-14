@@ -313,107 +313,141 @@ export class IikoClient {
    */
   async getMenu(): Promise<IikoMenuResponse> {
     try {
-      // Пробуем первый вариант: без startRevision (или null)
-      // Согласно документации, если startRevision не указан или null, 
-      // API должен вернуть все данные
-      const requestBody = {
+      // Сначала пробуем получить номенклатуру
+      // Если она пустая, пробуем использовать внешнее меню
+      console.log('[iikoCloud] Попытка 1: Получение номенклатуры через /api/1/nomenclature')
+      
+      const nomenclatureRequest = {
         organizationId: this.organizationId
-        // Убираем startRevision, чтобы получить все товары
-        // Если это не поможет, попробуем использовать externalMenuId
       }
       
-      console.log('[iikoCloud] Запрос меню:', {
-        organizationId: this.organizationId,
-        endpoint: '/api/1/nomenclature',
-        requestBody
-      })
-      
-      const response = await this.request<any>(
+      const nomenclatureResponse = await this.request<any>(
         '/api/1/nomenclature',
         {
           method: 'POST',
-          body: JSON.stringify(requestBody)
+          body: JSON.stringify(nomenclatureRequest)
         }
       )
 
-      // Логируем структуру ответа для отладки
-      console.log('[iikoCloud] Ответ от API:')
-      console.log('  - revision:', response.revision)
-      console.log('  - correlationId:', response.correlationId)
-      console.log('  - productCategories:', response.productCategories?.length || 0)
-      console.log('  - products:', response.products?.length || 0)
-      console.log('  - groups:', response.groups?.length || 0, '(стоп-листы, не используются)')
-      console.log('  - sizes:', response.sizes?.length || 0)
-      console.log('  - Ключи ответа:', Object.keys(response))
+      // Если номенклатура не пустая, используем её
+      if (nomenclatureResponse.products && nomenclatureResponse.products.length > 0) {
+        console.log(`[iikoCloud] ✅ Номенклатура получена: ${nomenclatureResponse.products.length} товаров`)
+        return this.formatNomenclatureResponse(nomenclatureResponse)
+      }
+
+      // Если номенклатура пустая, пробуем внешнее меню
+      console.log('[iikoCloud] Номенклатура пустая, пробуем внешнее меню через /api/2/menu')
       
-      // Если массивы пустые, но revision есть - возможно, это означает, что меню не изменилось
-      // Но если revision = null или 0, значит проблема
-      if ((!response.productCategories || response.productCategories.length === 0) && 
-          (!response.products || response.products.length === 0)) {
-        console.warn('[iikoCloud] ⚠️  Получены пустые массивы категорий и товаров!')
-        console.warn('  Возможные причины:')
-        console.warn('  1. В организации нет товаров в номенклатуре')
-        console.warn('  2. OrganizationId указан неправильно')
-        console.warn('  3. Нет прав доступа к номенклатуре организации')
-        console.warn('  4. Товары не добавлены в номенклатуру iiko')
-        console.warn('  5. Нужно использовать внешнее меню (/api/2/menu) вместо номенклатуры')
-        console.warn('  Проверьте:')
-        console.warn('  - organizationId:', this.organizationId)
-        console.warn('  - revision:', response.revision)
-        console.warn('  - correlationId:', response.correlationId)
-        console.warn('')
-        console.warn('  💡 РЕШЕНИЕ: Попробуйте использовать внешнее меню:')
-        console.warn('    1. Получите список внешних меню через /api/2/menu')
-        console.warn('    2. Используйте externalMenuId для получения конкретного меню')
-        console.warn('    3. Или проверьте в админке iiko, что товары добавлены в номенклатуру')
-        
-        // Логируем первые 500 символов полного ответа для диагностики
-        try {
-          const responseStr = JSON.stringify(response).substring(0, 500)
-          console.warn('  - Полный ответ (первые 500 символов):', responseStr)
-        } catch (e) {
-          console.warn('  - Не удалось сериализовать ответ')
+      // Получаем список внешних меню
+      // Согласно документации, /api/2/menu может не требовать body
+      // Попробуем сначала без body, если не работает - добавим organizationIds
+      let menusListResponse
+      try {
+        menusListResponse = await this.request<any>(
+          '/api/2/menu',
+          {
+            method: 'POST',
+            body: JSON.stringify({})
+          }
+        )
+      } catch (error: any) {
+        // Если не работает без body, пробуем с organizationIds
+        console.log('[iikoCloud] Попытка получить меню с organizationIds в body')
+        menusListResponse = await this.request<any>(
+          '/api/2/menu',
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              organizationIds: [this.organizationId]
+            })
+          }
+        )
+      }
+
+      console.log('[iikoCloud] Список внешних меню:', {
+        externalMenusCount: menusListResponse.externalMenus?.length || 0,
+        priceCategoriesCount: menusListResponse.priceCategories?.length || 0
+      })
+
+      if (!menusListResponse.externalMenus || menusListResponse.externalMenus.length === 0) {
+        console.warn('[iikoCloud] ⚠️  Внешних меню не найдено')
+        // Возвращаем пустой ответ
+        return {
+          groups: [],
+          items: [],
+          categories: []
         }
       }
-      
-      if (response.products && response.products.length > 0) {
-        const firstProduct = response.products[0]
-        console.log('  - Первый товар:', {
-          id: firstProduct.id,
-          name: firstProduct.name,
-          productCategoryId: firstProduct.productCategoryId,
-          type: firstProduct.type,
-          sizePricesCount: firstProduct.sizePrices?.length || 0,
-          hasImageLinks: !!(firstProduct.imageLinks && firstProduct.imageLinks.length > 0),
-          // Проверяем цены
-          sizePrices: firstProduct.sizePrices?.slice(0, 2).map((sp: any) => ({ sizeId: sp.sizeId, price: sp.price }))
-        })
-      }
-      
-      if (response.productCategories && response.productCategories.length > 0) {
-        const firstCategory = response.productCategories[0]
-        console.log('  - Первая категория:', {
-          id: firstCategory.id,
-          name: firstCategory.name,
-          isDeleted: firstCategory.isDeleted
-        })
+
+      // Используем первое внешнее меню
+      const firstMenu = menusListResponse.externalMenus[0]
+      console.log(`[iikoCloud] Используем внешнее меню: ${firstMenu.name} (ID: ${firstMenu.id})`)
+
+      // Получаем конкретное меню
+      const menuRequest = {
+        externalMenuId: firstMenu.id,
+        organizationIds: [this.organizationId],
+        version: 3 // Используем версию 3 (самую актуальную)
       }
 
-      // API возвращает структуру согласно документации:
-      // - productCategories: массив категорий товаров (ProductCategoryInfo: id, name, isDeleted)
-      // - products: массив товаров (ProductInfo: id, name, productCategoryId, sizePrices, imageLinks, type)
-      // - groups: группы стоп-листов (НЕ категории меню!)
-      // Преобразуем в наш формат для обратной совместимости
-      const menuResponse: IikoMenuResponse = {
-        groups: [], // Не используем groups - это стоп-листы, не категории
-        items: response.products || [], // Используем products как items для обработки в aiko-client
-        categories: response.productCategories || [] // Используем productCategories как категории
-      }
+      const menuResponse = await this.request<any>(
+        '/api/2/menu/by_id',
+        {
+          method: 'POST',
+          body: JSON.stringify(menuRequest)
+        }
+      )
 
-      return menuResponse
+      console.log('[iikoCloud] Внешнее меню получено:', {
+        itemsCount: menuResponse.items?.length || 0,
+        categoriesCount: menuResponse.categories?.length || 0
+      })
+
+      // Форматируем ответ внешнего меню
+      return this.formatExternalMenuResponse(menuResponse)
     } catch (error: any) {
       console.error('[iikoCloud] Ошибка получения меню:', error)
       throw new Error(`Ошибка получения меню из iikoCloud: ${error.message}`)
+    }
+  }
+
+  /**
+   * Форматирование ответа номенклатуры
+   */
+  private formatNomenclatureResponse(response: any): IikoMenuResponse {
+    // Логируем структуру ответа для отладки
+    console.log('[iikoCloud] Ответ номенклатуры:')
+    console.log('  - revision:', response.revision)
+    console.log('  - productCategories:', response.productCategories?.length || 0)
+    console.log('  - products:', response.products?.length || 0)
+    
+    return {
+      groups: [],
+      items: response.products || [],
+      categories: response.productCategories || []
+    }
+  }
+
+  /**
+   * Форматирование ответа внешнего меню
+   */
+  private formatExternalMenuResponse(menuResponse: any): IikoMenuResponse {
+    console.log('[iikoCloud] Форматирование внешнего меню...')
+    
+    // Внешнее меню может иметь другую структуру
+    // Проверяем, что у нас есть в ответе
+    const items = menuResponse.items || menuResponse.products || []
+    const categories = menuResponse.categories || menuResponse.productCategories || []
+
+    console.log('[iikoCloud] Форматированное меню:', {
+      itemsCount: items.length,
+      categoriesCount: categories.length
+    })
+
+    return {
+      groups: [],
+      items: items,
+      categories: categories
     }
   }
 
