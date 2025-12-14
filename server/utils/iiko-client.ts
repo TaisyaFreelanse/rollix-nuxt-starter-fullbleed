@@ -127,8 +127,19 @@ export class IikoClient {
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error(`[iikoCloud] Ошибка API (${response.status}):`, errorText)
-        throw new Error(`iikoCloud API ошибка (${response.status}): ${errorText}`)
+        console.error(`[iikoCloud] Ошибка API (${response.status}) при запросе ${url}:`, errorText.substring(0, 500))
+        
+        // Логируем детали запроса для отладки
+        if (options.body && typeof options.body === 'string') {
+          try {
+            const bodyObj = JSON.parse(options.body)
+            console.error(`[iikoCloud] Тело запроса было:`, JSON.stringify(bodyObj, null, 2))
+          } catch (e) {
+            console.error(`[iikoCloud] Не удалось распарсить тело запроса`)
+          }
+        }
+        
+        throw new Error(`iikoCloud API ошибка (${response.status}): ${errorText.substring(0, 200)}`)
       }
 
       return await response.json()
@@ -339,30 +350,16 @@ export class IikoClient {
       console.log('[iikoCloud] Номенклатура пустая, пробуем внешнее меню через /api/2/menu')
       
       // Получаем список внешних меню
-      // Согласно документации, /api/2/menu может не требовать body
-      // Попробуем сначала без body, если не работает - добавим organizationIds
-      let menusListResponse
-      try {
-        menusListResponse = await this.request<any>(
-          '/api/2/menu',
-          {
-            method: 'POST',
-            body: JSON.stringify({})
-          }
-        )
-      } catch (error: any) {
-        // Если не работает без body, пробуем с organizationIds
-        console.log('[iikoCloud] Попытка получить меню с organizationIds в body')
-        menusListResponse = await this.request<any>(
-          '/api/2/menu',
-          {
-            method: 'POST',
-            body: JSON.stringify({
-              organizationIds: [this.organizationId]
-            })
-          }
-        )
-      }
+      // Попробуем с organizationIds в body (согласно документации)
+      const menusListResponse = await this.request<any>(
+        '/api/2/menu',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            organizationIds: [this.organizationId]
+          })
+        }
+      )
 
       console.log('[iikoCloud] Список внешних меню:', {
         externalMenusCount: menusListResponse.externalMenus?.length || 0,
@@ -381,22 +378,39 @@ export class IikoClient {
 
       // Используем первое внешнее меню
       const firstMenu = menusListResponse.externalMenus[0]
-      console.log(`[iikoCloud] Используем внешнее меню: ${firstMenu.name} (ID: ${firstMenu.id})`)
+      console.log(`[iikoCloud] Используем внешнее меню: ${firstMenu.name} (ID: ${firstMenu.id}, тип: ${typeof firstMenu.id})`)
 
       // Получаем конкретное меню
-      const menuRequest = {
+      // Пробуем сначала с версией 2, если не работает - попробуем без версии
+      let menuRequest = {
         externalMenuId: firstMenu.id,
         organizationIds: [this.organizationId],
-        version: 3 // Используем версию 3 (самую актуальную)
+        version: 2 // Используем версию 2 (более стабильная)
       }
 
-      const menuResponse = await this.request<any>(
-        '/api/2/menu/by_id',
-        {
-          method: 'POST',
-          body: JSON.stringify(menuRequest)
-        }
-      )
+      console.log('[iikoCloud] Запрос меню:', JSON.stringify(menuRequest, null, 2))
+
+      let menuResponse
+      try {
+        menuResponse = await this.request<any>(
+          '/api/2/menu/by_id',
+          {
+            method: 'POST',
+            body: JSON.stringify(menuRequest)
+          }
+        )
+      } catch (error: any) {
+        // Если версия 2 не работает, пробуем версию 3
+        console.log('[iikoCloud] Версия 2 не сработала, пробуем версию 3...')
+        menuRequest.version = 3
+        menuResponse = await this.request<any>(
+          '/api/2/menu/by_id',
+          {
+            method: 'POST',
+            body: JSON.stringify(menuRequest)
+          }
+        )
+      }
 
       console.log('[iikoCloud] Внешнее меню получено:', {
         itemsCount: menuResponse.items?.length || 0,
