@@ -33,91 +33,86 @@ export class AikoClient {
       const menu = await this.iikoClient.getMenu()
       
       // Преобразуем формат iikoCloud в наш формат
-      // Согласно документации API, структура ответа:
-      // - groups: массив групп товаров (категорий)
-      //   - каждая группа содержит items: массив товаров
-      // - productCategories: категории товаров
-      // - items: все товары (опционально)
-      // - modifiers: модификаторы (опционально)
+      // Согласно документации API (NomenclatureResponse):
+      // - productCategories: массив категорий товаров (ProductCategoryInfo: id, name, isDeleted)
+      // - products: массив товаров (ProductInfo: id, name, productCategoryId, sizePrices, imageLinks, и т.д.)
+      // - groups: группы стоп-листов (НЕ категории меню!)
       
       const categories: any[] = []
       const products: any[] = []
       
-      // Обрабатываем группы товаров (это категории)
-      const groups = menu.groups || []
-      
-      groups.forEach((group: any) => {
-        // Группа товаров = категория
-        const categorySlug = (group.name || group.id || '')
+      // Обрабатываем категории товаров (productCategories)
+      const productCategories = menu.categories || []
+      productCategories.forEach((category: any) => {
+        // Пропускаем удаленные категории
+        if (category.isDeleted) {
+          return
+        }
+        
+        const categorySlug = (category.name || category.id || '')
           .toLowerCase()
           .replace(/\s+/g, '-')
           .replace(/[^a-z0-9-а-яё]/g, '')
         
         categories.push({
-          id: group.id,
-          name: group.name,
-          slug: categorySlug || group.id
+          id: category.id,
+          name: category.name,
+          slug: categorySlug || category.id
         })
-
-        // Обрабатываем товары внутри группы
-        if (group.items && Array.isArray(group.items)) {
-          group.items.forEach((item: any) => {
-            // Получаем изображение (может быть в разных полях)
-            const imageUrl = item.image || 
-                           (item.images && item.images.length > 0 ? item.images[0] : null) ||
-                           (item.imageLinks && item.imageLinks.length > 0 ? item.imageLinks[0] : null)
-            
-            // Получаем цену (может быть в разных полях или размерах)
-            let price = 0
-            if (item.price !== undefined) {
-              price = item.price
-            } else if (item.prices && item.prices.length > 0) {
-              price = item.prices[0].price || 0
-            } else if (item.sizePrices && item.sizePrices.length > 0) {
-              price = item.sizePrices[0].price || 0
-            }
-            
-            products.push({
-              id: item.id,
-              name: item.name,
-              description: item.description || item.additionalInfo,
-              price: price,
-              categoryId: group.id,
-              image: imageUrl,
-              // Модификаторы могут быть в группе или отдельно
-              modifiers: item.groupModifiers || item.modifiers || []
-            })
-          })
-        }
       })
       
-      // Если есть отдельный массив items (все товары), добавляем их тоже
-      if (menu.items && Array.isArray(menu.items)) {
-        menu.items.forEach((item: any) => {
-          // Проверяем, не добавлен ли уже этот товар
-          const existingProduct = products.find(p => p.id === item.id)
-          if (!existingProduct) {
-            const imageUrl = item.image || 
-                           (item.images && item.images.length > 0 ? item.images[0] : null) ||
-                           (item.imageLinks && item.imageLinks.length > 0 ? item.imageLinks[0] : null)
-            
-            let price = 0
-            if (item.price !== undefined) {
-              price = item.price
-            } else if (item.prices && item.prices.length > 0) {
-              price = item.prices[0].price || 0
-            }
-            
-            products.push({
-              id: item.id,
-              name: item.name,
-              description: item.description || item.additionalInfo,
-              price: price,
-              categoryId: item.productCategoryId || categories[0]?.id || 'default',
-              image: imageUrl,
-              modifiers: item.groupModifiers || item.modifiers || []
-            })
+      // Обрабатываем товары (products)
+      // В iiko-client.ts мы уже преобразовали response.products в menu.items
+      const iikoProducts = menu.items || []
+      
+      iikoProducts.forEach((product: any) => {
+        // Пропускаем модификаторы (type: "modifier") - они не являются товарами для меню
+        // Используем только товары типа "dish" или "good" (или без type, если он nullable)
+        // Согласно документации, type может быть: "dish" | "good" | "modifier" | null
+        if (product.type === 'modifier') {
+          return
+        }
+        
+        // Пропускаем товары без цены или с ценой 0 (возможно, они не в меню)
+        // Но это не критично - можно оставить, чтобы администратор видел все товары
+        
+        // Получаем изображение
+        const imageUrl = product.imageLinks && product.imageLinks.length > 0 
+          ? product.imageLinks[0] 
+          : null
+        
+        // Получаем цену из sizePrices (первая цена из массива)
+        let price = 0
+        if (product.sizePrices && Array.isArray(product.sizePrices) && product.sizePrices.length > 0) {
+          // sizePrices - массив объектов {sizeId, price}
+          const firstPrice = product.sizePrices.find((sp: any) => sp.price !== undefined && sp.price !== null)
+          if (firstPrice) {
+            price = firstPrice.price || 0
           }
+        }
+        
+        // Получаем описание (может быть в разных полях)
+        const description = product.description || product.additionalInfo || null
+        
+        products.push({
+          id: product.id,
+          name: product.name,
+          description: description,
+          price: price,
+          categoryId: product.productCategoryId || null, // Связь с категорией через productCategoryId
+          image: imageUrl,
+          // Модификаторы
+          modifiers: product.groupModifiers || product.modifiers || []
+        })
+      })
+      
+      console.log(`[АЙКО] Обработано: ${categories.length} категорий, ${products.length} товаров`)
+      
+      if (products.length > 0) {
+        console.log(`[АЙКО] Пример товара:`, {
+          name: products[0].name,
+          categoryId: products[0].categoryId,
+          price: products[0].price
         })
       }
 

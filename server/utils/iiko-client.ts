@@ -327,22 +327,41 @@ export class IikoClient {
 
       // Логируем структуру ответа для отладки
       console.log('[iikoCloud] Ответ от API:')
-      console.log('  - groups:', response.groups?.length || 0)
-      console.log('  - items:', response.items?.length || 0)
       console.log('  - productCategories:', response.productCategories?.length || 0)
+      console.log('  - products:', response.products?.length || 0)
+      console.log('  - groups:', response.groups?.length || 0, '(стоп-листы, не используются)')
       console.log('  - Ключи ответа:', Object.keys(response))
       
-      if (response.groups && response.groups.length > 0) {
-        console.log('  - Первая группа (первые 200 символов):', JSON.stringify(response.groups[0]).substring(0, 200))
+      if (response.products && response.products.length > 0) {
+        const firstProduct = response.products[0]
+        console.log('  - Первый товар:', {
+          id: firstProduct.id,
+          name: firstProduct.name,
+          productCategoryId: firstProduct.productCategoryId,
+          type: firstProduct.type,
+          sizePricesCount: firstProduct.sizePrices?.length || 0,
+          hasImageLinks: !!(firstProduct.imageLinks && firstProduct.imageLinks.length > 0)
+        })
+      }
+      
+      if (response.productCategories && response.productCategories.length > 0) {
+        const firstCategory = response.productCategories[0]
+        console.log('  - Первая категория:', {
+          id: firstCategory.id,
+          name: firstCategory.name,
+          isDeleted: firstCategory.isDeleted
+        })
       }
 
-      // API возвращает структуру с группами товаров (категориями)
-      // и товарами внутри групп, а также модификаторы отдельно
+      // API возвращает структуру согласно документации:
+      // - productCategories: массив категорий товаров (ProductCategoryInfo: id, name, isDeleted)
+      // - products: массив товаров (ProductInfo: id, name, productCategoryId, sizePrices, imageLinks, type)
+      // - groups: группы стоп-листов (НЕ категории меню!)
       // Преобразуем в наш формат для обратной совместимости
       const menuResponse: IikoMenuResponse = {
-        groups: response.groups || [],
-        items: response.items || [],
-        categories: response.productCategories || response.categories || []
+        groups: [], // Не используем groups - это стоп-листы, не категории
+        items: response.products || [], // Используем products как items для обработки в aiko-client
+        categories: response.productCategories || [] // Используем productCategories как категории
       }
 
       return menuResponse
