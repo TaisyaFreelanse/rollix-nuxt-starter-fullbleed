@@ -512,33 +512,42 @@ export class IikoClient {
 
       // Согласно документации, в примерах используется формат "15#3" (строка "число#число")
       // API /api/2/menu возвращает просто "67847", но возможно нужно использовать формат "67847#1"
-      // Пробуем разные форматы для совместимости с документацией
+      // Пробуем формат из документации: "67847#1" (как в примере "15#3")
       const originalId = String(firstMenu.id)
       
-      // Варианты формата externalMenuId для тестирования
-      const externalMenuIdVariants = [
-        originalId,                    // "67847" - как возвращает API
-        `${originalId}#1`,             // "67847#1" - формат из документации
-        `${originalId}#0`,             // "67847#0" - альтернативный формат
-        parseInt(originalId, 10)       // 67847 - число
-      ]
+      // В документации все примеры используют формат "число#число", пробуем "67847#1"
+      // Если это не сработает, можно попробовать другие варианты
+      const externalMenuId = `${originalId}#1`
       
-      console.log('[iikoCloud] Варианты externalMenuId для тестирования:', externalMenuIdVariants)
-      
-      // Используем первый вариант (как возвращает API)
-      const externalMenuId = externalMenuIdVariants[0]
+      console.log('[iikoCloud] Используем externalMenuId в формате документации:', externalMenuId)
+      console.log('[iikoCloud] Оригинальный ID от API:', originalId)
       
       // #region agent log
       fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:512',message:'External menu ID format variants',data:{originalId,externalMenuId,externalMenuIdType:typeof externalMenuId,allVariants:externalMenuIdVariants,firstMenuFull:firstMenu},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'A'})}).catch(()=>{});
       // #endregion
 
-      // Согласно документации, все примеры используют version: 2 или version: 3
-      // Добавляем version: 2 для совместимости с API
-      const menuRequest = {
+      // Согласно документации, есть два варианта:
+      // 1. БЕЗ priceCategoryId - цены из меню (пример: "Version 2 with prices from the menu")
+      // 2. С priceCategoryId - цены из категории (пример: "Version 2 with price category")
+      // 
+      // Мы используем priceCategoryId: "00000000-0000-0000-0000-000000000000" (базовая категория)
+      // Попробуем сначала БЕЗ priceCategoryId, как в первом примере документации
+      
+      // Вариант 1: БЕЗ priceCategoryId (цены из меню)
+      let menuRequest: any = {
         externalMenuId: externalMenuId,
         organizationIds: [this.organizationId],
-        priceCategoryId: priceCategoryId,
         version: 2
+      }
+      
+      // Если priceCategoryId не пустой UUID, добавляем его
+      // Но для "00000000-0000-0000-0000-000000000000" (базовая категория) 
+      // возможно лучше не передавать priceCategoryId вообще
+      if (priceCategoryId && priceCategoryId !== '00000000-0000-0000-0000-000000000000') {
+        menuRequest.priceCategoryId = priceCategoryId
+        console.log('[iikoCloud] Добавляем priceCategoryId в запрос:', priceCategoryId)
+      } else {
+        console.log('[iikoCloud] Используем цены из меню (без priceCategoryId)')
       }
       
       // #region agent log
