@@ -460,18 +460,30 @@ export class IikoClient {
       const firstMenu = menusListResponse.externalMenus[0]
       console.log(`[iikoCloud] Используем внешнее меню: ${firstMenu.name} (ID: ${firstMenu.id}, тип: ${typeof firstMenu.id})`)
 
+      // Получаем первую доступную категорию цен
+      const priceCategory = menusListResponse.priceCategories?.[0]
+      const priceCategoryId = priceCategory?.id
+      
+      if (!priceCategoryId) {
+        console.error('[iikoCloud] ❌ Категория цен не найдена в ответе')
+        throw new Error('Категория цен не найдена. Убедитесь, что в организации настроены категории цен.')
+      }
+      
+      console.log(`[iikoCloud] Используем категорию цен: ${priceCategory.name} (ID: ${priceCategoryId})`)
+
       // Согласно документации, externalMenuId должен быть строкой
-      // Пробуем разные варианты запроса
+      // Пробуем разные варианты запроса с priceCategoryId
       let menuResponse
       
-      // Вариант 1: externalMenuId как строка, с version: 2, без priceCategoryId
+      // Вариант 1: externalMenuId как строка, с version: 2, с priceCategoryId
       try {
         const menuRequest1 = {
           externalMenuId: String(firstMenu.id),
           organizationIds: [this.organizationId],
+          priceCategoryId: priceCategoryId,
           version: 2
         }
-        console.log('[iikoCloud] Попытка 1: Запрос меню с version: 2, без priceCategoryId')
+        console.log('[iikoCloud] Попытка 1: Запрос меню с version: 2, с priceCategoryId')
         console.log('[iikoCloud] Запрос:', JSON.stringify(menuRequest1, null, 2))
         menuResponse = await this.request<any>(
           '/api/2/menu/by_id',
@@ -485,14 +497,15 @@ export class IikoClient {
       } catch (error: any) {
         console.log('[iikoCloud] ❌ Попытка 1 не сработала:', error.message?.substring(0, 100))
         
-        // Вариант 2: externalMenuId как строка, с version: 3, без priceCategoryId
+        // Вариант 2: externalMenuId как строка, с version: 3, с priceCategoryId
         try {
           const menuRequest2 = {
             externalMenuId: String(firstMenu.id),
             organizationIds: [this.organizationId],
+            priceCategoryId: priceCategoryId,
             version: 3
           }
-          console.log('[iikoCloud] Попытка 2: Запрос меню с version: 3, без priceCategoryId')
+          console.log('[iikoCloud] Попытка 2: Запрос меню с version: 3, с priceCategoryId')
           console.log('[iikoCloud] Запрос:', JSON.stringify(menuRequest2, null, 2))
           menuResponse = await this.request<any>(
             '/api/2/menu/by_id',
@@ -506,13 +519,14 @@ export class IikoClient {
         } catch (error2: any) {
           console.log('[iikoCloud] ❌ Попытка 2 не сработала:', error2.message?.substring(0, 100))
           
-          // Вариант 3: externalMenuId как строка, без version, без priceCategoryId
+          // Вариант 3: externalMenuId как строка, без version, с priceCategoryId
           try {
             const menuRequest3 = {
               externalMenuId: String(firstMenu.id),
-              organizationIds: [this.organizationId]
+              organizationIds: [this.organizationId],
+              priceCategoryId: priceCategoryId
             }
-            console.log('[iikoCloud] Попытка 3: Запрос меню без version и без priceCategoryId')
+            console.log('[iikoCloud] Попытка 3: Запрос меню без version, с priceCategoryId')
             console.log('[iikoCloud] Запрос:', JSON.stringify(menuRequest3, null, 2))
             menuResponse = await this.request<any>(
               '/api/2/menu/by_id',
@@ -530,10 +544,11 @@ export class IikoClient {
             console.error(`  1. Проверьте в админке iiko, что меню "${firstMenu.name}" (ID: ${firstMenu.id}) настроено и активно`)
             console.error(`  2. Убедитесь, что товары включены в это меню`)
             console.error(`  3. Проверьте, что externalMenuId правильный (текущий: ${firstMenu.id})`)
-            console.error('  4. Возможно, нужно использовать номенклатуру вместо внешнего меню')
-            console.error('  5. Проверьте настройки API ключа и прав доступа в iikoCloud')
+            console.error(`  4. Проверьте, что категория цен "${priceCategory.name}" (ID: ${priceCategoryId}) правильная`)
+            console.error('  5. Возможно, нужно использовать номенклатуру вместо внешнего меню')
+            console.error('  6. Проверьте настройки API ключа и прав доступа в iikoCloud')
             
-            throw new Error(`Не удалось получить внешнее меню (externalMenuId: ${firstMenu.id}). Проверьте настройки меню в админке iiko.`)
+            throw new Error(`Не удалось получить внешнее меню (externalMenuId: ${firstMenu.id}, priceCategoryId: ${priceCategoryId}). Проверьте настройки меню в админке iiko.`)
           }
         }
       }
