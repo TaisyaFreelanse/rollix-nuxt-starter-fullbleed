@@ -510,17 +510,13 @@ export class IikoClient {
       fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:476',message:'Price category selected',data:{priceCategoryId,hasPriceCategory:!!priceCategory,priceCategoryName:priceCategory?.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
       // #endregion
 
-      // Согласно документации, в примерах используется формат "15#3" (строка "число#число")
-      // API /api/2/menu возвращает просто "67847", но возможно нужно использовать формат "67847#1"
-      // Пробуем формат из документации: "67847#1" (как в примере "15#3")
-      const originalId = String(firstMenu.id)
+      // API /api/2/menu возвращает id как строку "67847"
+      // Используем его как есть, без преобразования
+      // Формат "15#3" в документации - это просто пример, реальный ID может быть любым
+      const externalMenuId = String(firstMenu.id)
       
-      // В документации все примеры используют формат "число#число", пробуем "67847#1"
-      // Если это не сработает, можно попробовать другие варианты
-      const externalMenuId = `${originalId}#1`
-      
-      console.log('[iikoCloud] Используем externalMenuId в формате документации:', externalMenuId)
-      console.log('[iikoCloud] Оригинальный ID от API:', originalId)
+      console.log('[iikoCloud] Используем externalMenuId как возвращает API:', externalMenuId)
+      console.log('[iikoCloud] Тип externalMenuId:', typeof externalMenuId)
       
       // #region agent log
       fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:525',message:'External menu ID format decision',data:{originalId,externalMenuId,externalMenuIdType:typeof externalMenuId,formatUsed:'number#number',firstMenuFull:firstMenu},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'A'})}).catch(()=>{});
