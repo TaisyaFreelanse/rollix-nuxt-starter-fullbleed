@@ -128,6 +128,52 @@ export class IikoClient {
       if (!response.ok) {
         const errorText = await response.text()
         
+        // Обработка ошибки авторизации (401) - сбрасываем токен и повторяем запрос
+        if (response.status === 401) {
+          console.warn(`[iikoCloud] ⚠️  Ошибка авторизации (401). Сбрасываем токен и повторяем запрос...`)
+          
+          // Сбрасываем токен
+          this.token = null
+          this.tokenExpiresAt = 0
+          
+          // Получаем новый токен
+          const newToken = await this.getToken()
+          
+          // Обновляем заголовки с новым токеном
+          const newHeaders = {
+            'Authorization': `Bearer ${newToken}`,
+            'Content-Type': 'application/json',
+            ...options.headers
+          }
+          
+          // Повторная попытка запроса с новым токеном
+          console.log(`[iikoCloud] Повторная попытка запроса с новым токеном...`)
+          const retryResponse = await fetch(url, {
+            ...options,
+            headers: newHeaders
+          })
+          
+          if (retryResponse.ok) {
+            console.log(`[iikoCloud] ✅ Запрос успешен после обновления токена`)
+            return await retryResponse.json()
+          } else {
+            const retryErrorText = await retryResponse.text()
+            console.error(`[iikoCloud] ❌ Повторная попытка также не удалась (${retryResponse.status})`)
+            console.error(`[iikoCloud] Возможные причины ошибки 401:`)
+            console.error(`  1. API ключ (IIKO_API_KEY) неверный или истек`)
+            console.error(`  2. У API ключа нет необходимых прав доступа в iiko Web`)
+            console.error(`  3. Нужно настроить права доступа в iiko Web:`)
+            console.error(`     - Откройте iiko Web → Настройки → Права доступа`)
+            console.error(`     - Убедитесь, что для вашего API ключа включены права:`)
+            console.error(`       * Работа с API`)
+            console.error(`       * Просмотр внешнего меню`)
+            console.error(`       * Создание заказов`)
+            console.error(`  4. OrganizationId указан неправильно`)
+            console.error(`[iikoCloud] Текст ошибки:`, retryErrorText.substring(0, 200))
+            throw new Error(`iikoCloud API ошибка (401): Недостаточно прав доступа. Проверьте настройки прав в iiko Web. ${retryErrorText.substring(0, 200)}`)
+          }
+        }
+        
         // Обработка rate limiting (429) - делаем задержку и повторную попытку
         if (response.status === 429) {
           console.warn(`[iikoCloud] ⚠️  Rate limit (429). Ожидание 5 секунд перед повторной попыткой...`)
@@ -166,7 +212,7 @@ export class IikoClient {
 
       return await response.json()
     } catch (error: any) {
-      if (error.message.includes('токена') || error.message.includes('token')) {
+      if (error.message.includes('токена') || error.message.includes('token') || error.message.includes('401')) {
         // Сбрасываем токен при ошибке авторизации
         this.token = null
         this.tokenExpiresAt = 0
