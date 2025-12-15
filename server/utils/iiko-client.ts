@@ -475,11 +475,9 @@ export class IikoClient {
         console.log(`[iikoCloud] Категории цен нет в ответе, используем значение по умолчанию: ${priceCategoryId}`)
       }
 
-      // Преобразуем externalMenuId в число, как требуется
-      const externalMenuId = typeof firstMenu.id === 'string' ? parseInt(firstMenu.id, 10) : firstMenu.id
-      if (isNaN(externalMenuId)) {
-        throw new Error(`Неверный формат externalMenuId: ${firstMenu.id}`)
-      }
+      // Согласно документации, externalMenuId должен быть строкой (например, "15#3")
+      // Используем строковое представление ID меню
+      const externalMenuId = String(firstMenu.id)
 
       // Простой запрос без version, с обязательным priceCategoryId
       const menuRequest = {
