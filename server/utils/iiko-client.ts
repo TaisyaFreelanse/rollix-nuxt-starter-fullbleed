@@ -522,29 +522,17 @@ export class IikoClient {
       fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:521',message:'External menu ID format decision',data:{originalIdFromAPI:firstMenu.id,externalMenuId,externalMenuIdType:typeof externalMenuId,formatUsed:'as_returned_by_api',firstMenuFull:firstMenu},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'A'})}).catch(()=>{});
       // #endregion
 
-      // Согласно документации, есть два варианта:
-      // 1. БЕЗ priceCategoryId - цены из меню (пример: "Version 2 with prices from the menu")
-      // 2. С priceCategoryId - цены из категории (пример: "Version 2 with price category")
-      // 
-      // Мы используем priceCategoryId: "00000000-0000-0000-0000-000000000000" (базовая категория)
-      // Попробуем сначала БЕЗ priceCategoryId, как в первом примере документации
-      
-      // Вариант 1: БЕЗ priceCategoryId (цены из меню)
-      let menuRequest: any = {
+      // Согласно документации и поддержке iiko, priceCategoryId обязателен
+      // Для "цен из меню" нужно использовать "00000000-0000-0000-0000-000000000000"
+      // API возвращает ошибку "Price category id is not correct" если priceCategoryId отсутствует
+      const menuRequest = {
         externalMenuId: externalMenuId,
         organizationIds: [this.organizationId],
+        priceCategoryId: priceCategoryId, // Обязательный параметр, даже для "цен из меню"
         version: 2
       }
       
-      // Если priceCategoryId не пустой UUID, добавляем его
-      // Но для "00000000-0000-0000-0000-000000000000" (базовая категория) 
-      // возможно лучше не передавать priceCategoryId вообще
-      if (priceCategoryId && priceCategoryId !== '00000000-0000-0000-0000-000000000000') {
-        menuRequest.priceCategoryId = priceCategoryId
-        console.log('[iikoCloud] Добавляем priceCategoryId в запрос:', priceCategoryId)
-      } else {
-        console.log('[iikoCloud] Используем цены из меню (без priceCategoryId)')
-      }
+      console.log('[iikoCloud] Используем priceCategoryId:', priceCategoryId === '00000000-0000-0000-0000-000000000000' ? 'цены из меню' : priceCategoryId)
       
       // #region agent log
       fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:520',message:'Menu request before API call',data:{menuRequest:JSON.stringify(menuRequest),hasVersion:menuRequest.version!==undefined,version:menuRequest.version,organizationId:this.organizationId},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'B'})}).catch(()=>{});
