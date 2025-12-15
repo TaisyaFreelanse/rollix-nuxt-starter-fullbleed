@@ -519,7 +519,7 @@ export class IikoClient {
       console.log('[iikoCloud] Тип externalMenuId:', typeof externalMenuId)
       
       // #region agent log
-      fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:525',message:'External menu ID format decision',data:{originalId,externalMenuId,externalMenuIdType:typeof externalMenuId,formatUsed:'number#number',firstMenuFull:firstMenu},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'A'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:521',message:'External menu ID format decision',data:{originalIdFromAPI:firstMenu.id,externalMenuId,externalMenuIdType:typeof externalMenuId,formatUsed:'as_returned_by_api',firstMenuFull:firstMenu},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'A'})}).catch(()=>{});
       // #endregion
 
       // Согласно документации, есть два варианта:
