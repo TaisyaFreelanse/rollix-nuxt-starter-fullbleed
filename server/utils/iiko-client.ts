@@ -128,8 +128,15 @@ export class IikoClient {
       if (!response.ok) {
         const errorText = await response.text()
         
+        // Логируем полную информацию об ошибке
+        console.error(`[iikoCloud] Полная информация об ошибке API:`)
+        console.error(`  Status: ${response.status} ${response.statusText}`)
+        console.error(`  URL: ${url}`)
+        console.error(`  Endpoint: ${endpoint}`)
+        console.error(`  Полный текст ошибки (первые 1000 символов):`, errorText.substring(0, 1000))
+        
         // #region agent log
-        fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:128',message:'API error response',data:{status:response.status,statusText:response.status,errorTextPreview:errorText.substring(0,500),url,endpoint},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+        fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:131',message:'Full API error details',data:{status:response.status,statusText:response.statusText,url,endpoint,errorTextFull:errorText,errorTextPreview:errorText.substring(0,1000),responseHeaders:Object.fromEntries(response.headers.entries())},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'E'})}).catch(()=>{});
         // #endregion
         
         // Обработка ошибки авторизации (401) - сбрасываем токен и повторяем запрос
@@ -455,8 +462,11 @@ export class IikoClient {
         priceCategoriesCount: menusListResponse.priceCategories?.length || 0
       })
 
+      // Логируем полный ответ от API для анализа структуры
+      console.log('[iikoCloud] Полный ответ /api/2/menu:', JSON.stringify(menusListResponse, null, 2))
+
       // #region agent log
-      fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:444',message:'Menu list response',data:{externalMenus:menusListResponse.externalMenus,priceCategories:menusListResponse.priceCategories,firstMenuId:menusListResponse.externalMenus?.[0]?.id,firstMenuIdType:typeof menusListResponse.externalMenus?.[0]?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'A'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:458',message:'Full menu list response',data:{fullResponse:JSON.stringify(menusListResponse),externalMenus:menusListResponse.externalMenus,priceCategories:menusListResponse.priceCategories,firstMenu:menusListResponse.externalMenus?.[0],firstMenuId:menusListResponse.externalMenus?.[0]?.id,firstMenuIdType:typeof menusListResponse.externalMenus?.[0]?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'A'})}).catch(()=>{});
       // #endregion
 
       if (!menusListResponse.externalMenus || menusListResponse.externalMenus.length === 0) {
@@ -500,18 +510,26 @@ export class IikoClient {
       fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:476',message:'Price category selected',data:{priceCategoryId,hasPriceCategory:!!priceCategory,priceCategoryName:priceCategory?.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
       // #endregion
 
-      // Согласно документации, externalMenuId должен быть строкой
-      // В примерах используется формат "15#3" (строка "число#число")
-      // Но API может принимать и просто строку с числом
-      // Пробуем использовать строку, как в документации
-      const externalMenuId = String(firstMenu.id)
+      // Согласно документации, в примерах используется формат "15#3" (строка "число#число")
+      // API /api/2/menu возвращает просто "67847", но возможно нужно использовать формат "67847#1"
+      // Пробуем разные форматы для совместимости с документацией
+      const originalId = String(firstMenu.id)
+      
+      // Варианты формата externalMenuId для тестирования
+      const externalMenuIdVariants = [
+        originalId,                    // "67847" - как возвращает API
+        `${originalId}#1`,             // "67847#1" - формат из документации
+        `${originalId}#0`,             // "67847#0" - альтернативный формат
+        parseInt(originalId, 10)       // 67847 - число
+      ]
+      
+      console.log('[iikoCloud] Варианты externalMenuId для тестирования:', externalMenuIdVariants)
+      
+      // Используем первый вариант (как возвращает API)
+      const externalMenuId = externalMenuIdVariants[0]
       
       // #region agent log
-      fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:507',message:'External menu ID format decision',data:{externalMenuId,externalMenuIdType:typeof externalMenuId,originalId:firstMenu.id,originalIdType:typeof firstMenu.id,menuIdString:String(firstMenu.id)},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
-
-      // #region agent log
-      fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:480',message:'External menu ID format',data:{externalMenuId,externalMenuIdType:typeof externalMenuId,originalId:firstMenu.id,originalIdType:typeof firstMenu.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:512',message:'External menu ID format variants',data:{originalId,externalMenuId,externalMenuIdType:typeof externalMenuId,allVariants:externalMenuIdVariants,firstMenuFull:firstMenu},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'A'})}).catch(()=>{});
       // #endregion
 
       // Согласно документации, все примеры используют version: 2 или version: 3
@@ -528,6 +546,12 @@ export class IikoClient {
       // #endregion
       
       console.log('[iikoCloud] Запрос меню:', JSON.stringify(menuRequest, null, 2))
+      console.log('[iikoCloud] URL запроса:', `${this.baseUrl}/api/2/menu/by_id`)
+      console.log('[iikoCloud] Полное тело запроса (JSON):', JSON.stringify(menuRequest))
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:535',message:'Full menu request details',data:{url:`${this.baseUrl}/api/2/menu/by_id`,requestBody:menuRequest,requestBodyString:JSON.stringify(menuRequest),organizationId:this.organizationId},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       
       const menuResponse = await this.request<any>(
         '/api/2/menu/by_id',
@@ -536,6 +560,13 @@ export class IikoClient {
           body: JSON.stringify(menuRequest)
         }
       )
+      
+      // Логируем успешный ответ
+      console.log('[iikoCloud] Полный ответ /api/2/menu/by_id:', JSON.stringify(menuResponse, null, 2))
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:545',message:'Menu response received',data:{hasResponse:!!menuResponse,responseKeys:menuResponse?Object.keys(menuResponse):[],fullResponse:JSON.stringify(menuResponse)},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
       
       // #region agent log
       fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:497',message:'Menu response received',data:{hasResponse:!!menuResponse,responseKeys:menuResponse?Object.keys(menuResponse):[]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
