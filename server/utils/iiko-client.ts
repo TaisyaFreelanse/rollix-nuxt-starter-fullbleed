@@ -455,6 +455,10 @@ export class IikoClient {
         priceCategoriesCount: menusListResponse.priceCategories?.length || 0
       })
 
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:444',message:'Menu list response',data:{externalMenus:menusListResponse.externalMenus,priceCategories:menusListResponse.priceCategories,firstMenuId:menusListResponse.externalMenus?.[0]?.id,firstMenuIdType:typeof menusListResponse.externalMenus?.[0]?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+
       if (!menusListResponse.externalMenus || menusListResponse.externalMenus.length === 0) {
         console.warn('[iikoCloud] ⚠️  Внешних меню не найдено')
         // Возвращаем пустой ответ
@@ -467,7 +471,11 @@ export class IikoClient {
 
       // Используем первое внешнее меню
       const firstMenu = menusListResponse.externalMenus[0]
-      console.log(`[iikoCloud] Используем внешнее меню: ${firstMenu.name} (ID: ${firstMenu.id})`)
+      console.log(`[iikoCloud] Используем внешнее меню: ${firstMenu.name} (ID: ${firstMenu.id}, тип: ${typeof firstMenu.id})`)
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:456',message:'First menu details',data:{menuName:firstMenu.name,menuId:firstMenu.id,menuIdType:typeof firstMenu.id,menuIdString:String(firstMenu.id),menuIdNumber:typeof firstMenu.id==='string'?parseInt(firstMenu.id,10):firstMenu.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
 
       // #region agent log
       fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:461',message:'External menu data',data:{menuName:firstMenu.name,menuId:firstMenu.id,menuIdType:typeof firstMenu.id,priceCategoriesCount:menusListResponse.priceCategories?.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
@@ -500,15 +508,17 @@ export class IikoClient {
       fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:480',message:'External menu ID format',data:{externalMenuId,externalMenuIdType:typeof externalMenuId,originalId:firstMenu.id,originalIdType:typeof firstMenu.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
       // #endregion
 
-      // Простой запрос без version, с обязательным priceCategoryId
+      // Согласно документации, все примеры используют version: 2 или version: 3
+      // Добавляем version: 2 для совместимости с API
       const menuRequest = {
         externalMenuId: externalMenuId,
         organizationIds: [this.organizationId],
-        priceCategoryId: priceCategoryId
+        priceCategoryId: priceCategoryId,
+        version: 2
       }
       
       // #region agent log
-      fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:487',message:'Menu request before API call',data:{menuRequest:JSON.stringify(menuRequest),hasVersion:false,organizationId:this.organizationId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:520',message:'Menu request before API call',data:{menuRequest:JSON.stringify(menuRequest),hasVersion:menuRequest.version!==undefined,version:menuRequest.version,organizationId:this.organizationId},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'B'})}).catch(()=>{});
       // #endregion
       
       console.log('[iikoCloud] Запрос меню:', JSON.stringify(menuRequest, null, 2))
