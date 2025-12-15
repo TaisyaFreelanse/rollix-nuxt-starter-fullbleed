@@ -469,7 +469,7 @@ export class IikoClient {
       const priceCategoryId = priceCategory.id
       console.log(`[iikoCloud] Используем категорию цен: ${priceCategory.name} (ID: ${priceCategoryId})`)
 
-      // Преобразуем externalMenuId в число
+      // Преобразуем externalMenuId в число, как требуется
       const externalMenuId = typeof firstMenu.id === 'string' ? parseInt(firstMenu.id, 10) : firstMenu.id
       if (isNaN(externalMenuId)) {
         throw new Error(`Неверный формат externalMenuId: ${firstMenu.id}`)
