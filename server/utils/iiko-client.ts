@@ -460,14 +460,20 @@ export class IikoClient {
       const firstMenu = menusListResponse.externalMenus[0]
       console.log(`[iikoCloud] Используем внешнее меню: ${firstMenu.name} (ID: ${firstMenu.id})`)
 
-      // Получаем первую доступную категорию цен
+      // Получаем первую доступную категорию цен или используем значение по умолчанию
       const priceCategory = menusListResponse.priceCategories?.[0]
-      if (!priceCategory || !priceCategory.id) {
-        throw new Error('Категория цен не найдена. Убедитесь, что в организации настроены категории цен.')
-      }
+      let priceCategoryId: string
       
-      const priceCategoryId = priceCategory.id
-      console.log(`[iikoCloud] Используем категорию цен: ${priceCategory.name} (ID: ${priceCategoryId})`)
+      if (priceCategory && priceCategory.id) {
+        priceCategoryId = priceCategory.id
+        console.log(`[iikoCloud] Используем категорию цен: ${priceCategory.name} (ID: ${priceCategoryId})`)
+      } else {
+        // Если категории цен нет в ответе, используем значение по умолчанию
+        // Согласно поддержке iiko: если указали источником цен ценовую категорию,
+        // нужно использовать "00000000-0000-0000-0000-000000000000"
+        priceCategoryId = '00000000-0000-0000-0000-000000000000'
+        console.log(`[iikoCloud] Категории цен нет в ответе, используем значение по умолчанию: ${priceCategoryId}`)
+      }
 
       // Преобразуем externalMenuId в число, как требуется
       const externalMenuId = typeof firstMenu.id === 'string' ? parseInt(firstMenu.id, 10) : firstMenu.id
