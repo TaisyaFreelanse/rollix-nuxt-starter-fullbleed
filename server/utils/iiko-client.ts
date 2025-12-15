@@ -500,9 +500,13 @@ export class IikoClient {
       fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:476',message:'Price category selected',data:{priceCategoryId,hasPriceCategory:!!priceCategory,priceCategoryName:priceCategory?.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
       // #endregion
 
-      // Согласно документации, externalMenuId должен быть строкой (например, "15#3")
-      // Используем строковое представление ID меню
-      const externalMenuId = String(firstMenu.id)
+      // Преобразуем externalMenuId в число, как требуется
+      // Согласно документации, externalMenuId может быть строкой или числом
+      // Пробуем число, как было запрошено ранее
+      const externalMenuId = typeof firstMenu.id === 'string' ? parseInt(firstMenu.id, 10) : firstMenu.id
+      if (isNaN(externalMenuId as any)) {
+        throw new Error(`Неверный формат externalMenuId: ${firstMenu.id}`)
+      }
 
       // #region agent log
       fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:480',message:'External menu ID format',data:{externalMenuId,externalMenuIdType:typeof externalMenuId,originalId:firstMenu.id,originalIdType:typeof firstMenu.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
