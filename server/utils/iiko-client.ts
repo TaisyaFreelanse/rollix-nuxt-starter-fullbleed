@@ -128,6 +128,10 @@ export class IikoClient {
       if (!response.ok) {
         const errorText = await response.text()
         
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:128',message:'API error response',data:{status:response.status,statusText:response.status,errorTextPreview:errorText.substring(0,500),url,endpoint},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+        // #endregion
+        
         // Обработка ошибки авторизации (401) - сбрасываем токен и повторяем запрос
         if (response.status === 401) {
           console.warn(`[iikoCloud] ⚠️  Ошибка авторизации (401). Сбрасываем токен и повторяем запрос...`)
@@ -198,14 +202,19 @@ export class IikoClient {
         console.error(`[iikoCloud] Ошибка API (${response.status}) при запросе ${url}:`, errorText.substring(0, 500))
         
         // Логируем детали запроса для отладки
+        let requestBodyObj: any = null
         if (options.body && typeof options.body === 'string') {
           try {
-            const bodyObj = JSON.parse(options.body)
-            console.error(`[iikoCloud] Тело запроса было:`, JSON.stringify(bodyObj, null, 2))
+            requestBodyObj = JSON.parse(options.body)
+            console.error(`[iikoCloud] Тело запроса было:`, JSON.stringify(requestBodyObj, null, 2))
           } catch (e) {
             console.error(`[iikoCloud] Не удалось распарсить тело запроса`)
           }
         }
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:210',message:'API error details',data:{status:response.status,url,endpoint,errorTextPreview:errorText.substring(0,500),requestBody:requestBodyObj,hasVersion:requestBodyObj?.version!==undefined,externalMenuIdType:typeof requestBodyObj?.externalMenuId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+        // #endregion
         
         throw new Error(`iikoCloud API ошибка (${response.status}): ${errorText.substring(0, 200)}`)
       }
@@ -460,6 +469,10 @@ export class IikoClient {
       const firstMenu = menusListResponse.externalMenus[0]
       console.log(`[iikoCloud] Используем внешнее меню: ${firstMenu.name} (ID: ${firstMenu.id})`)
 
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:461',message:'External menu data',data:{menuName:firstMenu.name,menuId:firstMenu.id,menuIdType:typeof firstMenu.id,priceCategoriesCount:menusListResponse.priceCategories?.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+
       // Получаем первую доступную категорию цен или используем значение по умолчанию
       const priceCategory = menusListResponse.priceCategories?.[0]
       let priceCategoryId: string
@@ -475,9 +488,17 @@ export class IikoClient {
         console.log(`[iikoCloud] Категории цен нет в ответе, используем значение по умолчанию: ${priceCategoryId}`)
       }
 
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:476',message:'Price category selected',data:{priceCategoryId,hasPriceCategory:!!priceCategory,priceCategoryName:priceCategory?.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
+
       // Согласно документации, externalMenuId должен быть строкой (например, "15#3")
       // Используем строковое представление ID меню
       const externalMenuId = String(firstMenu.id)
+
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:480',message:'External menu ID format',data:{externalMenuId,externalMenuIdType:typeof externalMenuId,originalId:firstMenu.id,originalIdType:typeof firstMenu.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
 
       // Простой запрос без version, с обязательным priceCategoryId
       const menuRequest = {
@@ -485,6 +506,10 @@ export class IikoClient {
         organizationIds: [this.organizationId],
         priceCategoryId: priceCategoryId
       }
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:487',message:'Menu request before API call',data:{menuRequest:JSON.stringify(menuRequest),hasVersion:false,organizationId:this.organizationId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       
       console.log('[iikoCloud] Запрос меню:', JSON.stringify(menuRequest, null, 2))
       
@@ -495,6 +520,10 @@ export class IikoClient {
           body: JSON.stringify(menuRequest)
         }
       )
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:497',message:'Menu response received',data:{hasResponse:!!menuResponse,responseKeys:menuResponse?Object.keys(menuResponse):[]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
       
       console.log('[iikoCloud] ✅ Меню получено успешно')
       return this.formatExternalMenuResponse(menuResponse)
