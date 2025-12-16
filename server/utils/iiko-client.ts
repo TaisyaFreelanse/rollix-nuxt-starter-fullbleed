@@ -70,32 +70,48 @@ export class IikoClient {
    * Получение токена доступа
    */
   private async getToken(): Promise<string> {
-    // Проверяем, не истёк ли токен (с запасом 5 минут)
-    if (this.token && Date.now() < this.tokenExpiresAt - 5 * 60 * 1000) {
+    // Проверяем, не истёк ли токен (с запасом 2 минуты)
+    // Токен действителен 1 час согласно документации
+    if (this.token && Date.now() < this.tokenExpiresAt - 2 * 60 * 1000) {
+      console.log('[iikoCloud] Используем существующий токен (ещё действителен)')
       return this.token
     }
 
+    console.log('[iikoCloud] 🔐 Начало авторизации в iikoCloud API...')
+    console.log('[iikoCloud] URL авторизации:', `${this.baseUrl}/api/1/access_token`)
+    console.log('[iikoCloud] API Key (первые 10 символов):', this.apiKey?.substring(0, 10) + '...')
+
     try {
+      const requestBody = {
+        apiLogin: this.apiKey
+      }
+      
+      console.log('[iikoCloud] Тело запроса авторизации:', JSON.stringify(requestBody).replace(this.apiKey, '***'))
+
       const response = await fetch(`${this.baseUrl}/api/1/access_token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          apiLogin: this.apiKey
-        })
+        body: JSON.stringify(requestBody)
       })
+
+      console.log('[iikoCloud] Статус ответа авторизации:', response.status, response.statusText)
 
       if (!response.ok) {
         const errorText = await response.text()
+        console.error('[iikoCloud] ❌ Ошибка получения токена:', errorText)
         throw new Error(`Ошибка получения токена iikoCloud (${response.status}): ${errorText}`)
       }
 
       const data: IikoTokenResponse = await response.json()
       this.token = data.token
-      // Токен обычно действителен 24 часа
-      this.tokenExpiresAt = Date.now() + 23 * 60 * 60 * 1000
+      // Согласно документации: "The standard token lifetime is 1 hour"
+      // Устанавливаем время истечения на 55 минут (с запасом 5 минут)
+      this.tokenExpiresAt = Date.now() + 55 * 60 * 1000
 
+      console.log('[iikoCloud] ✅ Токен получен успешно, действителен 1 час')
+      console.log('[iikoCloud] Токен (первые 20 символов):', this.token?.substring(0, 20) + '...')
       return this.token
     } catch (error: any) {
       console.error('[iikoCloud] Ошибка получения токена:', error)
@@ -120,15 +136,13 @@ export class IikoClient {
     }
 
     // Логируем детали запроса для диагностики
-    if (endpoint === '/api/2/menu/by_id') {
-      console.log('[iikoCloud] Детали запроса:')
-      console.log('  - URL:', url)
-      console.log('  - Method:', options.method || 'GET')
-      console.log('  - Headers:', {
-        'Authorization': `Bearer ${token.substring(0, 20)}...${token.substring(token.length - 10)}`,
-        'Content-Type': headers['Content-Type']
-      })
-      console.log('  - Body:', options.body)
+    console.log(`[iikoCloud] 📤 Отправка запроса к iikoCloud API:`)
+    console.log(`  - Endpoint: ${endpoint}`)
+    console.log(`  - URL: ${url}`)
+    console.log(`  - Method: ${options.method || 'GET'}`)
+    console.log(`  - Authorization: Bearer ${token.substring(0, 20)}...${token.substring(token.length - 10)}`)
+    if (options.body) {
+      console.log(`  - Body: ${typeof options.body === 'string' ? options.body : JSON.stringify(options.body)}`)
     }
 
     try {
