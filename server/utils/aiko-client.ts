@@ -62,7 +62,7 @@ export class AikoClient {
       })
       
       // Обрабатываем товары (products)
-      // В iiko-client.ts мы уже преобразовали response.products в menu.items
+      // В iiko-client.ts мы уже преобразовали response в menu.items и menu.categories
       const iikoProducts = menu.items || []
       
       iikoProducts.forEach((product: any) => {
@@ -73,17 +73,16 @@ export class AikoClient {
           return
         }
         
-        // Пропускаем товары без цены или с ценой 0 (возможно, они не в меню)
-        // Но это не критично - можно оставить, чтобы администратор видел все товары
-        
         // Получаем изображение
-        const imageUrl = product.imageLinks && product.imageLinks.length > 0 
+        // Внешнее меню использует поле image, номенклатура - imageLinks
+        const imageUrl = product.image || (product.imageLinks && product.imageLinks.length > 0 
           ? product.imageLinks[0] 
-          : null
+          : null)
         
-        // Получаем цену из sizePrices (первая цена из массива)
-        let price = 0
-        if (product.sizePrices && Array.isArray(product.sizePrices) && product.sizePrices.length > 0) {
+        // Получаем цену
+        // Внешнее меню уже имеет price, номенклатура - sizePrices
+        let price = product.price || 0
+        if (price === 0 && product.sizePrices && Array.isArray(product.sizePrices) && product.sizePrices.length > 0) {
           // sizePrices - массив объектов {sizeId, price}
           const firstPrice = product.sizePrices.find((sp: any) => sp.price !== undefined && sp.price !== null)
           if (firstPrice) {
@@ -94,12 +93,16 @@ export class AikoClient {
         // Получаем описание (может быть в разных полях)
         const description = product.description || product.additionalInfo || null
         
+        // Получаем categoryId
+        // Внешнее меню использует categoryId, номенклатура - productCategoryId
+        const categoryId = product.categoryId || product.productCategoryId || null
+        
         products.push({
           id: product.id,
           name: product.name,
           description: description,
           price: price,
-          categoryId: product.productCategoryId || null, // Связь с категорией через productCategoryId
+          categoryId: categoryId, // Связь с категорией
           image: imageUrl,
           // Модификаторы
           modifiers: product.groupModifiers || product.modifiers || []
