@@ -135,21 +135,32 @@ export class IikoClient {
       ...options.headers
     }
 
-    // Логируем детали запроса для диагностики
-    console.log(`[iikoCloud] 📤 Отправка запроса к iikoCloud API:`)
-    console.log(`  - Endpoint: ${endpoint}`)
-    console.log(`  - URL: ${url}`)
-    console.log(`  - Method: ${options.method || 'GET'}`)
-    console.log(`  - Authorization: Bearer ${token.substring(0, 20)}...${token.substring(token.length - 10)}`)
-    if (options.body) {
-      console.log(`  - Body: ${typeof options.body === 'string' ? options.body : JSON.stringify(options.body)}`)
+    // Логируем детали запроса для диагностики (только для важных запросов)
+    if (endpoint === '/api/2/menu/by_id') {
+      console.log(`[iikoCloud] 📤 Отправка запроса к iikoCloud API:`)
+      console.log(`  - Endpoint: ${endpoint}`)
+      console.log(`  - Method: ${options.method || 'GET'}`)
+      if (options.body) {
+        const bodyStr = typeof options.body === 'string' ? options.body : JSON.stringify(options.body)
+        console.log(`  - Body: ${bodyStr}`)
+      }
     }
 
     try {
-      const response = await fetch(url, {
+      // Добавляем User-Agent как в браузере/Postman для совместимости
+      const fetchOptions = {
         ...options,
-        headers
-      })
+        headers: {
+          ...headers,
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Accept': '*/*',
+          'Accept-Language': 'ru,en;q=0.9',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Connection': 'keep-alive'
+        }
+      }
+      
+      const response = await fetch(url, fetchOptions)
 
       if (!response.ok) {
         const errorText = await response.text()
@@ -623,19 +634,64 @@ export class IikoClient {
   private formatExternalMenuResponse(menuResponse: any): IikoMenuResponse {
     console.log('[iikoCloud] Форматирование внешнего меню...')
     
-    // Внешнее меню может иметь другую структуру
-    // Проверяем, что у нас есть в ответе
-    const items = menuResponse.items || menuResponse.products || []
-    const categories = menuResponse.categories || menuResponse.productCategories || []
+    // Структура внешнего меню: itemCategories содержит категории, каждая категория содержит items
+    const itemCategories = menuResponse.itemCategories || []
+    const allItems: any[] = []
+    const categories: any[] = []
+
+    // Обрабатываем каждую категорию
+    itemCategories.forEach((category: any) => {
+      // Добавляем категорию
+      categories.push({
+        id: category.id,
+        name: category.name,
+        description: category.description || '',
+        slug: (category.name || category.id || '')
+          .toLowerCase()
+          .replace(/\s+/g, '-')
+          .replace(/[^a-z0-9-а-яё]/g, '')
+          .substring(0, 100)
+      })
+
+      // Извлекаем товары из категории
+      if (category.items && Array.isArray(category.items)) {
+        category.items.forEach((item: any) => {
+          // Обрабатываем размеры товара (itemSizes)
+          if (item.itemSizes && Array.isArray(item.itemSizes) && item.itemSizes.length > 0) {
+            const defaultSize = item.itemSizes.find((size: any) => size.isDefault) || item.itemSizes[0]
+            
+            // Получаем цену из первого размера
+            let price = 0
+            if (defaultSize.prices && Array.isArray(defaultSize.prices) && defaultSize.prices.length > 0) {
+              price = defaultSize.prices[0].price || 0
+            }
+
+            // Получаем изображение
+            const imageUrl = item.buttonImageUrl || (item.itemSizes[0]?.buttonImageUrl) || null
+
+            allItems.push({
+              id: item.itemId || item.sku,
+              name: item.name,
+              description: item.description || '',
+              price: price,
+              categoryId: category.id,
+              image: imageUrl,
+              sku: item.sku,
+              type: item.type || 'DISH'
+            })
+          }
+        })
+      }
+    })
 
     console.log('[iikoCloud] Форматированное меню:', {
-      itemsCount: items.length,
+      itemsCount: allItems.length,
       categoriesCount: categories.length
     })
 
     return {
       groups: [],
-      items: items,
+      items: allItems,
       categories: categories
     }
   }
