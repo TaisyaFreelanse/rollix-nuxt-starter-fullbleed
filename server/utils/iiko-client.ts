@@ -510,16 +510,65 @@ export class IikoClient {
         throw new Error(`Заказ ${iikoOrderId} не найден в iikoCloud`)
       }
 
+      // Проверяем creationStatus - если Error, заказ не был создан успешно
+      if (order.creationStatus === 'Error') {
+        const errorMessage = order.errorInfo?.message || order.errorInfo?.description || 'Ошибка создания заказа в iikoCloud'
+        const errorCode = order.errorInfo?.code || 'UNKNOWN'
+        
+        console.warn(`[iikoCloud] ⚠️  Заказ ${iikoOrderId} не был создан успешно (creationStatus: Error)`)
+        console.warn(`[iikoCloud] Код ошибки: ${errorCode}`)
+        console.warn(`[iikoCloud] Сообщение: ${errorMessage}`)
+        
+        // Если это таймаут создания (ожидаемо для тестовых заказов), возвращаем статус New
+        // В реальной работе с кассой эта ошибка не должна возникать
+        if (errorMessage.includes('Creation timeout expired')) {
+          console.log('[iikoCloud] ℹ️  Таймаут создания заказа (ожидаемо для тестовых заказов без реальной кассы)')
+          // Возвращаем статус New, так как заказ был принят, но не обработан кассой
+          return {
+            orderId: order.orderId || order.id || iikoOrderId,
+            status: 'New',
+            statusInfo: `Заказ принят, но не обработан кассой: ${errorMessage}`,
+            creationDate: order.timestamp ? new Date(order.timestamp).toISOString() : new Date().toISOString(),
+            items: []
+          }
+        }
+        
+        // Для других ошибок выбрасываем исключение
+        throw new Error(`Заказ не был создан в iikoCloud: ${errorMessage} (код: ${errorCode})`)
+      }
+
+      // Если creationStatus = InProgress, заказ еще обрабатывается
+      if (order.creationStatus === 'InProgress') {
+        console.log('[iikoCloud] ℹ️  Заказ еще обрабатывается (creationStatus: InProgress)')
+        // Возвращаем статус New, так как заказ еще не обработан
+        return {
+          orderId: order.orderId || order.id || iikoOrderId,
+          status: 'New',
+          statusInfo: 'Заказ обрабатывается в iikoCloud',
+          creationDate: order.timestamp ? new Date(order.timestamp).toISOString() : new Date().toISOString(),
+          items: order.order?.items || []
+        }
+      }
+
+      // Если заказ успешно создан (creationStatus = Success или отсутствует), получаем его статус
+      // Структура ответа может быть разной:
+      // 1. { order: { status: "New", ... } } - если заказ уже создан
+      // 2. { status: "New", ... } - прямая структура
+      const actualOrder = order.order || order
+      
       // Преобразуем статус в наш формат
       const status: IikoOrderStatus = {
         orderId: order.orderId || order.id || iikoOrderId,
-        status: order.status || order.orderStatus || 'New',
-        statusInfo: order.statusInfo || order.statusDescription || '',
-        creationDate: order.creationDate || order.dateCreated || new Date().toISOString(),
-        items: order.items || []
+        status: actualOrder.status || order.status || order.orderStatus || 'New',
+        statusInfo: actualOrder.statusInfo || order.statusInfo || order.statusDescription || actualOrder.comment || '',
+        creationDate: actualOrder.creationDate || order.creationDate || order.dateCreated || (order.timestamp ? new Date(order.timestamp).toISOString() : new Date().toISOString()),
+        items: actualOrder.items || order.items || []
       }
 
       console.log('[iikoCloud] ✅ Статус заказа:', status.status)
+      if (order.creationStatus) {
+        console.log('[iikoCloud] Статус создания:', order.creationStatus)
+      }
       
       return status
     } catch (error: any) {
