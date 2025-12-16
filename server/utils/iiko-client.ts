@@ -525,17 +525,17 @@ export class IikoClient {
       // Согласно документации и поддержке iiko, priceCategoryId обязателен
       // Для "цен из меню" нужно использовать "00000000-0000-0000-0000-000000000000"
       // API возвращает ошибку "Price category id is not correct" если priceCategoryId отсутствует
+      // Параметр version НЕ нужен - на скриншоте поддержки запрос работает без него
       const menuRequest = {
         externalMenuId: externalMenuId,
         organizationIds: [this.organizationId],
-        priceCategoryId: priceCategoryId, // Обязательный параметр, даже для "цен из меню"
-        version: 2
+        priceCategoryId: priceCategoryId // Обязательный параметр, даже для "цен из меню"
       }
       
       console.log('[iikoCloud] Используем priceCategoryId:', priceCategoryId === '00000000-0000-0000-0000-000000000000' ? 'цены из меню' : priceCategoryId)
       
       // #region agent log
-      fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:520',message:'Menu request before API call',data:{menuRequest:JSON.stringify(menuRequest),hasVersion:menuRequest.version!==undefined,version:menuRequest.version,organizationId:this.organizationId},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'B'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7243/ingest/40534d43-2dfd-4648-82fe-1c8af019d1c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'iiko-client.ts:520',message:'Menu request before API call',data:{menuRequest:JSON.stringify(menuRequest),organizationId:this.organizationId},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'B'})}).catch(()=>{});
       // #endregion
       
       console.log('[iikoCloud] Запрос меню:', JSON.stringify(menuRequest, null, 2))
