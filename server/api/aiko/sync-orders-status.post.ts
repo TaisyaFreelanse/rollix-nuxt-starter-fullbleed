@@ -58,8 +58,26 @@ export default defineEventHandler(async (event) => {
 
         const mappedStatus = statusMap[aikoStatus.status] || aikoStatus.status.toUpperCase()
 
-        // Обновляем статус заказа в БД, если он изменился
-        if (order.status !== mappedStatus) {
+        // Определяем порядок статусов для предотвращения отката назад
+        const statusOrder: Record<string, number> = {
+          'PENDING': 1,
+          'CONFIRMED': 2,
+          'PREPARING': 3,
+          'READY': 4,
+          'DELIVERING': 5,
+          'DELIVERED': 6,
+          'CANCELLED': 99 // CANCELLED можно установить в любой момент
+        }
+
+        const currentStatusOrder = statusOrder[order.status] || 0
+        const newStatusOrder = statusOrder[mappedStatus] || 0
+
+        // Обновляем статус заказа в БД, если он изменился И новый статус не является откатом назад
+        // Исключение: CANCELLED можно установить в любой момент
+        const shouldUpdate = order.status !== mappedStatus && 
+          (newStatusOrder >= currentStatusOrder || mappedStatus === 'CANCELLED')
+
+        if (shouldUpdate) {
           const updatedOrder = await prisma.order.update({
             where: { id: order.id },
             data: { status: mappedStatus as any },
@@ -74,27 +92,8 @@ export default defineEventHandler(async (event) => {
 
           console.log(`[АЙКО] ✅ Статус заказа ${order.orderNumber} обновлен: ${order.status} → ${mappedStatus}`)
           updatedCount++
-
-          // Начисляем бонусы при доставке заказа
-          if (mappedStatus === 'DELIVERED' && updatedOrder.userId && updatedOrder.user) {
-            try {
-              const { awardBonusForDeliveredOrder } = await import('~/server/utils/bonus')
-              await awardBonusForDeliveredOrder(updatedOrder.id)
-            } catch (error) {
-              console.error(`[АЙКО] Ошибка начисления бонусов за заказ ${order.orderNumber}:`, error)
-            }
-          }
-
-          // Отправляем обновление через WebSocket (если настроен)
-          try {
-            const { broadcastOrderUpdate } = await import('~/server/websocket/orders')
-            broadcastOrderUpdate(order.id, mappedStatus, {
-              orderNumber: order.orderNumber,
-              estimatedTime: aikoStatus.estimatedTime
-            })
-          } catch (error) {
-            // WebSocket может быть не настроен
-          }
+        } else if (order.status !== mappedStatus && newStatusOrder < currentStatusOrder) {
+          console.log(`[АЙКО] ⚠️  Статус заказа ${order.orderNumber} не обновлен (откат назад предотвращен): ${order.status} → ${mappedStatus}`)
         }
 
         syncedCount++

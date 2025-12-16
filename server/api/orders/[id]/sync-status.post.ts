@@ -51,8 +51,26 @@ export default defineEventHandler(async (event) => {
 
     const mappedStatus = statusMap[aikoStatus.status] || aikoStatus.status.toUpperCase()
 
-    // Обновляем статус заказа в БД, если он изменился
-    if (order.status !== mappedStatus) {
+    // Определяем порядок статусов для предотвращения отката назад
+    const statusOrder: Record<string, number> = {
+      'PENDING': 1,
+      'CONFIRMED': 2,
+      'PREPARING': 3,
+      'READY': 4,
+      'DELIVERING': 5,
+      'DELIVERED': 6,
+      'CANCELLED': 99 // CANCELLED можно установить в любой момент
+    }
+
+    const currentStatusOrder = statusOrder[order.status] || 0
+    const newStatusOrder = statusOrder[mappedStatus] || 0
+
+    // Обновляем статус заказа в БД, если он изменился И новый статус не является откатом назад
+    // Исключение: CANCELLED можно установить в любой момент
+    const shouldUpdate = order.status !== mappedStatus && 
+      (newStatusOrder >= currentStatusOrder || mappedStatus === 'CANCELLED')
+
+    if (shouldUpdate) {
       const updatedOrder = await prisma.order.update({
         where: { id: order.id },
         data: { status: mappedStatus as any },
@@ -88,6 +106,8 @@ export default defineEventHandler(async (event) => {
         // WebSocket может быть не настроен
         console.log('[АЙКО] WebSocket не настроен, пропускаем broadcast')
       }
+    } else if (order.status !== mappedStatus && newStatusOrder < currentStatusOrder) {
+      console.log(`[АЙКО] ⚠️  Статус заказа ${order.orderNumber} не обновлен (откат назад предотвращен): ${order.status} → ${mappedStatus}`)
     }
 
     return {
