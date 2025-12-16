@@ -243,6 +243,37 @@ export class IikoClient {
           }
         }
         
+        // Обработка временных ошибок сервера (502, 503, 504) - делаем задержку и повторную попытку
+        if (response.status === 502 || response.status === 503 || response.status === 504) {
+          const maxRetries = 2
+          const retryDelay = 2000 // 2 секунды
+          
+          for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            console.warn(`[iikoCloud] ⚠️  Временная ошибка сервера (${response.status}). Попытка ${attempt}/${maxRetries} через ${retryDelay}мс...`)
+            await new Promise(resolve => setTimeout(resolve, retryDelay * attempt)) // Увеличиваем задержку с каждой попыткой
+            
+            // Повторная попытка запроса
+            console.log(`[iikoCloud] Повторная попытка запроса (попытка ${attempt})...`)
+            const retryResponse = await fetch(url, {
+              ...options,
+              headers
+            })
+            
+            if (retryResponse.ok) {
+              console.log(`[iikoCloud] ✅ Запрос успешен после повторной попытки`)
+              return await retryResponse.json()
+            } else if (attempt < maxRetries) {
+              const retryErrorText = await retryResponse.text()
+              console.warn(`[iikoCloud] Попытка ${attempt} не удалась (${retryResponse.status}), пробуем еще раз...`)
+              // Продолжаем цикл для следующей попытки
+            } else {
+              const retryErrorText = await retryResponse.text()
+              console.error(`[iikoCloud] ❌ Все попытки не удались (${retryResponse.status})`)
+              throw new Error(`iikoCloud API временная ошибка сервера (${retryResponse.status}): ${retryErrorText.substring(0, 200)}`)
+            }
+          }
+        }
+        
         console.error(`[iikoCloud] Ошибка API (${response.status}) при запросе ${url}:`, errorText.substring(0, 500))
         
         // Логируем детали запроса для отладки
