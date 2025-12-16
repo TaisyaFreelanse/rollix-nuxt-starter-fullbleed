@@ -119,6 +119,18 @@ export class IikoClient {
       ...options.headers
     }
 
+    // Логируем детали запроса для диагностики
+    if (endpoint === '/api/2/menu/by_id') {
+      console.log('[iikoCloud] Детали запроса:')
+      console.log('  - URL:', url)
+      console.log('  - Method:', options.method || 'GET')
+      console.log('  - Headers:', {
+        'Authorization': `Bearer ${token.substring(0, 20)}...${token.substring(token.length - 10)}`,
+        'Content-Type': headers['Content-Type']
+      })
+      console.log('  - Body:', options.body)
+    }
+
     try {
       const response = await fetch(url, {
         ...options,
@@ -511,10 +523,13 @@ export class IikoClient {
       // #endregion
 
       // API /api/2/menu возвращает id как строку "67847"
-      // Используем его как есть, без преобразования
-      // Формат "15#3" в документации - это просто пример, реальный ID может быть любым
-      const externalMenuId = String(firstMenu.id)
+      // В документации показан формат "15#3", но API возвращает просто "67847"
+      // Пробуем использовать формат "67847#1" как в документации, если простой формат не работает
+      // Но сначала пробуем как возвращает API
+      let externalMenuId = String(firstMenu.id)
       
+      // Если ID не содержит "#", пробуем добавить версию "#1" (как в документации "15#3")
+      // Но на скриншоте поддержки работал просто "67847", так что сначала пробуем без версии
       console.log('[iikoCloud] Используем externalMenuId как возвращает API:', externalMenuId)
       console.log('[iikoCloud] Тип externalMenuId:', typeof externalMenuId)
       
