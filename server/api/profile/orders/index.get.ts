@@ -35,6 +35,8 @@ export default defineEventHandler(async (event) => {
       deliveryPrice: Number(order.deliveryPrice),
       discount: Number(order.discount),
       total: Number(order.total),
+      hasIikoSync: !!order.aikoOrderId,
+      iikoOrderId: order.aikoOrderId,
       items: order.items.map((item) => ({
         ...item,
         price: Number(item.price),

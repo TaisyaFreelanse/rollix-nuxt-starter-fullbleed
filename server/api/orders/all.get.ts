@@ -51,7 +51,9 @@ export default defineEventHandler(async (event) => {
         subtotal: Number(order.subtotal),
         deliveryPrice: Number(order.deliveryPrice),
         discount: Number(order.discount),
-        total: Number(order.total)
+        total: Number(order.total),
+        hasIikoSync: !!order.aikoOrderId,
+        iikoOrderId: order.aikoOrderId
       })),
       total,
       limit,
