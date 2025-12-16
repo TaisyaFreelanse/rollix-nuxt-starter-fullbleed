@@ -538,12 +538,9 @@ export class IikoClient {
 
       // API /api/2/menu возвращает id как строку "67847"
       // В документации показан формат "15#3", но API возвращает просто "67847"
-      // Пробуем использовать формат "67847#1" как в документации, если простой формат не работает
-      // Но сначала пробуем как возвращает API
-      let externalMenuId = String(firstMenu.id)
+      // Используем как возвращает API - в Postman это работает
+      const externalMenuId = String(firstMenu.id)
       
-      // Если ID не содержит "#", пробуем добавить версию "#1" (как в документации "15#3")
-      // Но на скриншоте поддержки работал просто "67847", так что сначала пробуем без версии
       console.log('[iikoCloud] Используем externalMenuId как возвращает API:', externalMenuId)
       console.log('[iikoCloud] Тип externalMenuId:', typeof externalMenuId)
       
@@ -554,11 +551,12 @@ export class IikoClient {
       // Согласно документации и поддержке iiko, priceCategoryId обязателен
       // Для "цен из меню" нужно использовать "00000000-0000-0000-0000-000000000000"
       // API возвращает ошибку "Price category id is not correct" если priceCategoryId отсутствует
-      // Параметр version НЕ нужен - на скриншоте поддержки запрос работает без него
+      // Параметр version: 2 ОБЯЗАТЕЛЕН - в Postman запрос работает только с version: 2
       const menuRequest = {
         externalMenuId: externalMenuId,
         organizationIds: [this.organizationId],
-        priceCategoryId: priceCategoryId // Обязательный параметр, даже для "цен из меню"
+        priceCategoryId: priceCategoryId, // Обязательный параметр, даже для "цен из меню"
+        version: 2 // Обязательный параметр согласно документации и рабочему примеру в Postman
       }
       
       console.log('[iikoCloud] Используем priceCategoryId:', priceCategoryId === '00000000-0000-0000-0000-000000000000' ? 'цены из меню' : priceCategoryId)
