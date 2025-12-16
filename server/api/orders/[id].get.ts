@@ -74,13 +74,18 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    return {
+    // Если заказ был отправлен в iikoCloud, добавляем информацию о синхронизации
+    const result: any = {
       ...order,
       subtotal: Number(order.subtotal),
       deliveryPrice: Number(order.deliveryPrice),
       discount: Number(order.discount),
-      total: Number(order.total)
+      total: Number(order.total),
+      hasIikoSync: !!order.aikoOrderId,
+      iikoOrderId: order.aikoOrderId
     }
+
+    return result
   } catch (error: any) {
     if (error.statusCode) {
       throw error

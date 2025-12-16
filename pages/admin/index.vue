@@ -326,6 +326,20 @@ const getOrderStatusColor = (status: string) => {
   return colors[status] || 'bg-gray-500/20 text-gray-400'
 }
 
+// Автоматическое обновление статусов заказов из iikoCloud
+let statusSyncInterval: NodeJS.Timeout | null = null
+
+const syncOrderStatuses = async () => {
+  try {
+    // Синхронизируем статусы всех активных заказов из iikoCloud
+    await $fetch('/api/aiko/sync-orders-status', { method: 'POST' })
+    // Перезагружаем список заказов
+    await loadOrders()
+  } catch (error) {
+    console.error('Ошибка синхронизации статусов заказов:', error)
+  }
+}
+
 const getOrderStatusLabel = (status: string) => {
   const labels: Record<string, string> = {
     PENDING: 'Ожидает',
@@ -910,6 +924,22 @@ const loadTabData = async (tab: string) => {
 // Загрузка данных при переключении вкладок
 watch(activeTab, async (newTab) => {
   await loadTabData(newTab)
+  
+  // Если переключились на вкладку заказов, запускаем синхронизацию
+  if (newTab === 'orders' && !statusSyncInterval) {
+    statusSyncInterval = setInterval(() => {
+      syncOrderStatuses()
+    }, 30000) // 30 секунд
+  } else if (newTab !== 'orders' && statusSyncInterval) {
+    clearInterval(statusSyncInterval)
+    statusSyncInterval = null
+  }
+})
+
+onUnmounted(() => {
+  if (statusSyncInterval) {
+    clearInterval(statusSyncInterval)
+  }
 })
 
 // Загружаем начальные данные после авторизации

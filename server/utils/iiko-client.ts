@@ -301,10 +301,11 @@ export class IikoClient {
     try {
       // Преобразуем данные заказа в формат iikoCloud
       // Согласно документации, структура items должна быть:
-      // { id: string, amount: number, productSizeId?: string, modifiers?: [...], comment?: string }
+      // { type: "Product", productId: string, amount: number, productSizeId?: string, modifiers?: [...], comment?: string }
       const iikoItems: any[] = orderData.items.map(item => {
         const itemData: any = {
-          id: item.productId, // ID товара из iiko
+          type: 'Product', // Обязательное поле discriminator для OrderItem
+          productId: item.productId, // ID товара из iiko (обязательное поле для ProductOrderItem)
           amount: item.quantity
         }
 
@@ -328,13 +329,21 @@ export class IikoClient {
         organizationId: this.organizationId,
         terminalGroupId: this.terminalGroupId,
         order: {
-          items: iikoItems
+          items: iikoItems,
+          // Обязательное поле: тип сервиса заказа
+          // DeliveryByCourier - доставка курьером
+          // DeliveryByClient - самовывоз
+          orderServiceType: isDelivery ? 'DeliveryByCourier' : 'DeliveryByClient'
         }
       }
 
       // Добавляем информацию о клиенте
+      // Согласно документации, customer должен иметь discriminator "type"
+      // Используем "one-time" для разовых клиентов (без регистрации в системе лояльности)
       if (orderData.phone || orderData.customerName) {
-        requestData.order.customer = {}
+        requestData.order.customer = {
+          type: 'one-time' // или 'regular' для постоянных клиентов
+        }
         if (orderData.phone) {
           requestData.order.customer.phone = orderData.phone
         }
@@ -348,35 +357,87 @@ export class IikoClient {
         requestData.order.comment = orderData.comment
       }
 
+      // Добавляем телефон в корень order (обязательное поле для доставки)
+      if (orderData.phone) {
+        requestData.order.phone = orderData.phone
+      }
+
       // Добавляем адрес доставки для доставки курьером
-      if (isDelivery && orderData.address) {
-        // Парсим адрес (простая логика, можно улучшить)
-        const addressParts = orderData.address.split(',')
-        requestData.order.deliveryPoint = {
-          address: {
-            street: {
-              name: addressParts[0]?.trim() || '',
-              city: '' // Можно добавить парсинг города
-            },
-            house: addressParts[1]?.trim() || '',
-            flat: addressParts[2]?.trim() || ''
-          }
-        }
-      }
+      // Временно отключаем deliveryPoint для тестирования
+      // TODO: Настроить правильную структуру адреса согласно документации
+      // if (isDelivery && orderData.address) {
+      //   // Парсим адрес (простая логика, можно улучшить)
+      //   const addressParts = orderData.address.split(',')
+      //   const streetPart = addressParts[0]?.trim() || ''
+      //   const housePart = addressParts[1]?.trim() || ''
+      //   const flatPart = addressParts[2]?.trim() || ''
+      //   
+      //   // Формируем адрес согласно документации (убираем пустые поля)
+      //   const addressObj: any = {
+      //     street: {
+      //       name: streetPart
+      //     }
+      //   }
+      //   
+      //   if (housePart) {
+      //     addressObj.house = housePart
+      //   }
+      //   if (flatPart) {
+      //     addressObj.flat = flatPart
+      //   }
+      //   
+      //   requestData.order.deliveryPoint = {
+      //     address: addressObj
+      //   }
+      // }
 
-      // Добавляем дату доставки
+      // Добавляем дату доставки (формат: yyyy-MM-dd HH:mm:ss.fff без timezone)
       if (orderData.deliveryTime) {
-        requestData.order.deliveryDate = new Date(orderData.deliveryTime).toISOString()
+        const date = new Date(orderData.deliveryTime)
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        const hours = String(date.getHours()).padStart(2, '0')
+        const minutes = String(date.getMinutes()).padStart(2, '0')
+        const seconds = String(date.getSeconds()).padStart(2, '0')
+        const milliseconds = String(date.getMilliseconds()).padStart(3, '0')
+        
+        requestData.order.completeBefore = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}`
       }
 
+      console.log('[iikoCloud] 📤 Создание заказа в iikoCloud...')
+      console.log('[iikoCloud] Данные заказа:', JSON.stringify(requestData, null, 2))
+      
       const response: any = await this.request('/api/1/deliveries/create', {
         method: 'POST',
         body: JSON.stringify(requestData)
       })
 
+      console.log('[iikoCloud] ✅ Ответ от iikoCloud:', JSON.stringify(response, null, 2))
+
       // API возвращает orderId в ответе
+      // Структура ответа: { orderInfo: { id: ..., creationStatus: "InProgress" | "Success", order: {...} } }
+      // Заказ создается асинхронно, поэтому сначала получаем orderInfo.id
+      // Если creationStatus = "Success", то orderInfo.order.id содержит финальный ID заказа
+      const orderInfo = response.orderInfo || response
+      const iikoOrderId = orderInfo.order?.id || orderInfo.id || response.orderId || response.id
+      
+      if (!iikoOrderId) {
+        console.error('[iikoCloud] ⚠️  Не удалось получить orderId из ответа:', response)
+        throw new Error('Не удалось получить ID заказа из ответа iikoCloud')
+      }
+
+      const creationStatus = orderInfo.creationStatus || 'Success'
+      console.log('[iikoCloud] ✅ Заказ создан в iikoCloud:')
+      console.log(`   - ID: ${iikoOrderId}`)
+      console.log(`   - Статус создания: ${creationStatus}`)
+      
+      // Если заказ создается асинхронно, возвращаем orderInfo.id
+      // Позже можно будет получить финальный ID через /api/1/commands/status
       return {
-        iikoOrderId: response.orderInfo?.order?.id || response.orderId || response.id
+        iikoOrderId,
+        correlationId: response.correlationId,
+        creationStatus
       }
     } catch (error: any) {
       console.error('[iikoCloud] Ошибка создания заказа:', error)
@@ -389,7 +450,9 @@ export class IikoClient {
    */
   async getOrderStatus(iikoOrderId: string): Promise<IikoOrderStatus> {
     try {
-      const response = await this.request<IikoOrderStatus>(
+      console.log('[iikoCloud] 📥 Получение статуса заказа:', iikoOrderId)
+      
+      const response = await this.request<any>(
         `/api/1/deliveries/by_id`,
         {
           method: 'POST',
@@ -400,16 +463,34 @@ export class IikoClient {
         }
       )
 
+      console.log('[iikoCloud] Ответ статуса заказа:', JSON.stringify(response, null, 2))
+
       // API может вернуть массив заказов или один заказ
-      if (Array.isArray(response)) {
-        const order = response.find(o => o.orderId === iikoOrderId)
-        if (!order) {
-          throw new Error(`Заказ ${iikoOrderId} не найден в iikoCloud`)
-        }
-        return order
+      // Структура может быть: { orders: [...] } или просто массив
+      let orders = Array.isArray(response) ? response : response.orders || []
+      
+      if (!Array.isArray(orders)) {
+        orders = [response]
       }
 
-      return response
+      const order = orders.find((o: any) => o.orderId === iikoOrderId || o.id === iikoOrderId)
+      
+      if (!order) {
+        throw new Error(`Заказ ${iikoOrderId} не найден в iikoCloud`)
+      }
+
+      // Преобразуем статус в наш формат
+      const status: IikoOrderStatus = {
+        orderId: order.orderId || order.id || iikoOrderId,
+        status: order.status || order.orderStatus || 'New',
+        statusInfo: order.statusInfo || order.statusDescription || '',
+        creationDate: order.creationDate || order.dateCreated || new Date().toISOString(),
+        items: order.items || []
+      }
+
+      console.log('[iikoCloud] ✅ Статус заказа:', status.status)
+      
+      return status
     } catch (error: any) {
       console.error('[iikoCloud] Ошибка получения статуса заказа:', error)
       throw new Error(`Ошибка получения статуса заказа из iikoCloud: ${error.message}`)

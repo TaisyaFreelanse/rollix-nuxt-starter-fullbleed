@@ -146,9 +146,13 @@ export default defineEventHandler(async (event) => {
         })
       }
 
-      // Автоматическая отправка заказа в АЙКО (если настроено)
-      if (process.env.AUTO_SEND_TO_AIKO === 'true') {
+      // Автоматическая отправка заказа в iikoCloud
+      // По умолчанию включено, можно отключить через AUTO_SEND_TO_AIKO=false
+      const autoSendToAiko = process.env.AUTO_SEND_TO_AIKO !== 'false'
+      
+      if (autoSendToAiko) {
         try {
+          console.log('[АЙКО] Автоматическая отправка заказа в iikoCloud...')
           const { aikoClient } = await import('~/server/utils/aiko-client')
           const aikoResponse = await aikoClient.createOrder({
             orderNumber: order.orderNumber,
@@ -175,15 +179,20 @@ export default defineEventHandler(async (event) => {
             deliveryPrice: Number(order.deliveryPrice)
           })
 
-          // Обновляем заказ с ID из АЙКО
+          // Обновляем заказ с ID из iikoCloud
           await prisma.order.update({
             where: { id: order.id },
             data: { aikoOrderId: aikoResponse.aikoOrderId }
           })
-        } catch (error) {
-          console.error('[АЙКО] Ошибка автоматической отправки заказа:', error)
-          // Не прерываем создание заказа, если АЙКО недоступен
+          
+          console.log('[АЙКО] ✅ Заказ успешно отправлен в iikoCloud, ID:', aikoResponse.aikoOrderId)
+        } catch (error: any) {
+          console.error('[АЙКО] ❌ Ошибка автоматической отправки заказа:', error.message)
+          // Не прерываем создание заказа, если iikoCloud недоступен
+          // Заказ сохраняется в БД, но не отправляется в iikoCloud
         }
+      } else {
+        console.log('[АЙКО] Автоматическая отправка заказов отключена (AUTO_SEND_TO_AIKO=false)')
       }
 
       return {

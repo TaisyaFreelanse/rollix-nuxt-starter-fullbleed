@@ -22,10 +22,23 @@ const updateOrderStatuses = async () => {
   // Обновляем только активные заказы
   for (const order of activeOrders.value) {
     try {
+      // Если заказ синхронизирован с iiko, синхронизируем статус из iikoCloud
+      if (order.hasIikoSync || order.aikoOrderId) {
+        try {
+          await $fetch(`/api/orders/${order.id}/sync-status`, { method: 'POST' })
+        } catch (error) {
+          // Игнорируем ошибки синхронизации
+          console.log('Не удалось синхронизировать статус из iikoCloud:', error)
+        }
+      }
+      
+      // Получаем обновленный статус заказа
       const updated = await auth.$fetchWithAuth(`/api/orders/${order.id}`)
       const index = orders.value.findIndex((o) => o.id === order.id)
       if (index > -1) {
         orders.value[index].status = updated.status
+        orders.value[index].hasIikoSync = updated.hasIikoSync
+        orders.value[index].aikoOrderId = updated.iikoOrderId
       }
     } catch (error: any) {
       // Игнорируем 404 ошибки (заказ был удален или не найден)
@@ -104,6 +117,20 @@ const getProductThumbnails = (order: any) => {
     image: item.product?.image || '/placeholder-product.png',
     name: item.product?.name || 'Товар'
   })) || []
+}
+
+// Получение текста статуса
+const getStatusLabel = (status: string) => {
+  const labels: Record<string, string> = {
+    PENDING: 'Ожидает',
+    CONFIRMED: 'Подтвержден',
+    PREPARING: 'Готовится',
+    READY: 'Готов',
+    DELIVERING: 'Доставляется',
+    DELIVERED: 'Доставлен',
+    CANCELLED: 'Отменен'
+  }
+  return labels[status] || status
 }
 
 let statusInterval: NodeJS.Timeout | null = null
@@ -224,6 +251,25 @@ onUnmounted(() => {
         <div>
           <div class="text-[10px] sm:text-xs text-gray-400 mb-1">Номер заказа</div>
           <div class="font-semibold text-xs sm:text-sm">#{{ selectedOrder.orderNumber }}</div>
+        </div>
+        <div>
+          <div class="text-[10px] sm:text-xs text-gray-400 mb-1">Статус</div>
+          <div class="font-semibold text-xs sm:text-sm">
+            <span :class="{
+              'text-yellow-400': selectedOrder.status === 'PENDING',
+              'text-blue-400': selectedOrder.status === 'CONFIRMED',
+              'text-orange-400': selectedOrder.status === 'PREPARING',
+              'text-purple-400': selectedOrder.status === 'READY',
+              'text-indigo-400': selectedOrder.status === 'DELIVERING',
+              'text-green-400': selectedOrder.status === 'DELIVERED',
+              'text-red-400': selectedOrder.status === 'CANCELLED'
+            }">
+              {{ getStatusLabel(selectedOrder.status) }}
+            </span>
+            <span v-if="selectedOrder.hasIikoSync || selectedOrder.aikoOrderId" class="ml-2 text-[10px] text-gray-500">
+              (синхронизировано с iiko)
+            </span>
+          </div>
         </div>
         <div>
           <div class="text-[10px] sm:text-xs text-gray-400 mb-1">Дата</div>

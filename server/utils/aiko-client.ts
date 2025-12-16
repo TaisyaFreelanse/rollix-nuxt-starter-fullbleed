@@ -171,7 +171,9 @@ export class AikoClient {
       })
 
       return {
-        aikoOrderId: result.iikoOrderId
+        aikoOrderId: result.iikoOrderId,
+        correlationId: result.correlationId,
+        creationStatus: result.creationStatus
       }
     } catch (error: any) {
       console.error('[АЙКО] Ошибка создания заказа:', error)

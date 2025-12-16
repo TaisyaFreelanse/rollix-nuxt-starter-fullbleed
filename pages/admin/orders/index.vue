@@ -109,8 +109,33 @@ const getStatusLabel = (status: string) => {
   return labels[status] || status
 }
 
+// Автоматическое обновление статусов заказов из iikoCloud
+let statusSyncInterval: NodeJS.Timeout | null = null
+
+const syncOrderStatuses = async () => {
+  try {
+    // Синхронизируем статусы всех активных заказов из iikoCloud
+    await $fetch('/api/aiko/sync-orders-status', { method: 'POST' })
+    // Перезагружаем список заказов
+    await loadOrders()
+  } catch (error) {
+    console.error('Ошибка синхронизации статусов заказов:', error)
+  }
+}
+
 onMounted(() => {
   loadOrders()
+  
+  // Синхронизируем статусы каждые 30 секунд для активных заказов
+  statusSyncInterval = setInterval(() => {
+    syncOrderStatuses()
+  }, 30000) // 30 секунд
+})
+
+onUnmounted(() => {
+  if (statusSyncInterval) {
+    clearInterval(statusSyncInterval)
+  }
 })
 </script>
 

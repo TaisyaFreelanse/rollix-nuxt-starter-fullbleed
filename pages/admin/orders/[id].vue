@@ -57,8 +57,37 @@ const formatDate = (dateString: string) => {
   return date.toLocaleString('ru-RU')
 }
 
+// Автоматическое обновление статуса заказа из iikoCloud
+let statusSyncInterval: NodeJS.Timeout | null = null
+
+const syncOrderStatus = async () => {
+  if (!order.value || !order.value.aikoOrderId) return
+  
+  try {
+    // Синхронизируем статус из iikoCloud
+    await $fetch(`/api/orders/${orderId}/sync-status`, { method: 'POST' })
+    // Перезагружаем заказ
+    await loadOrder()
+  } catch (error) {
+    console.error('Ошибка синхронизации статуса заказа:', error)
+  }
+}
+
 onMounted(() => {
   loadOrder()
+  
+  // Синхронизируем статус каждые 10 секунд, если заказ синхронизирован с iiko
+  statusSyncInterval = setInterval(() => {
+    if (order.value && order.value.aikoOrderId && !['DELIVERED', 'CANCELLED'].includes(order.value.status)) {
+      syncOrderStatus()
+    }
+  }, 10000) // 10 секунд
+})
+
+onUnmounted(() => {
+  if (statusSyncInterval) {
+    clearInterval(statusSyncInterval)
+  }
 })
 </script>
 
@@ -92,6 +121,13 @@ onMounted(() => {
                 {{ option.label }}
               </option>
             </select>
+            <span v-if="order.hasIikoSync || order.aikoOrderId" class="ml-2 text-xs text-gray-500">
+              (синхронизировано с iiko)
+            </span>
+          </div>
+          <div v-if="order.aikoOrderId">
+            <span class="text-gray-400">ID в iikoCloud:</span>
+            <span class="text-white ml-2 text-sm font-mono">{{ order.aikoOrderId }}</span>
           </div>
           <div>
             <span class="text-gray-400">Тип доставки:</span>
