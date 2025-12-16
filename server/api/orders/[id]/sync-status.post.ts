@@ -53,12 +53,29 @@ export default defineEventHandler(async (event) => {
 
     // Обновляем статус заказа в БД, если он изменился
     if (order.status !== mappedStatus) {
-      await prisma.order.update({
+      const updatedOrder = await prisma.order.update({
         where: { id: order.id },
-        data: { status: mappedStatus as any }
+        data: { status: mappedStatus as any },
+        include: {
+          user: {
+            select: {
+              id: true
+            }
+          }
+        }
       })
 
       console.log(`[АЙКО] ✅ Статус заказа ${order.orderNumber} обновлен: ${order.status} → ${mappedStatus}`)
+
+      // Начисляем бонусы при доставке заказа
+      if (mappedStatus === 'DELIVERED' && updatedOrder.userId && updatedOrder.user) {
+        try {
+          const { awardBonusForDeliveredOrder } = await import('~/server/utils/bonus')
+          await awardBonusForDeliveredOrder(updatedOrder.id)
+        } catch (error) {
+          console.error('[АЙКО] Ошибка начисления бонусов:', error)
+        }
+      }
 
       // Отправляем обновление через WebSocket (если настроен)
       try {

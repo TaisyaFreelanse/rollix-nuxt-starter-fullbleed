@@ -46,68 +46,12 @@ export default defineEventHandler(async (event) => {
       }
     })
 
-    // Начисляем бонусы при оплате заказа (1% от итоговой суммы)
-    if (updateData.paymentStatus === 'PAID' && order.userId && order.user) {
+    // Начисляем бонусы при доставке заказа (1% от итоговой суммы)
+    // Бонусы начисляются только за оплаченные и доставленные заказы
+    if (updateData.status === 'DELIVERED' && order.userId && order.user) {
       try {
-        // Проверяем, не начислялись ли уже бонусы за этот заказ
-        const existingBonus = await prisma.bonusTransaction.findFirst({
-          where: {
-            orderId: order.id,
-            userId: order.userId
-          }
-        })
-
-        if (!existingBonus) {
-          // Начисляем 1% от итоговой суммы заказа
-          const bonusAmount = Number(order.total) * 0.01
-          
-          // Проверяем, существует ли система бонусов (поле bonusBalance и таблица bonus_transactions)
-          try {
-            // Проверяем наличие поля bonusBalance
-            const bonusFieldCheck = await prisma.$queryRawUnsafe<Array<{column_name: string}>>(
-              `SELECT column_name 
-               FROM information_schema.columns 
-               WHERE table_name = 'users' AND column_name = 'bonusBalance'`
-            )
-            
-            const tableCheck = await prisma.$queryRawUnsafe<Array<{table_name: string}>>(
-              `SELECT table_name 
-               FROM information_schema.tables 
-               WHERE table_name = 'bonus_transactions'`
-            )
-            
-            if (bonusFieldCheck.length > 0 && tableCheck.length > 0) {
-              // Система бонусов настроена, начисляем бонусы
-              await prisma.user.update({
-                where: { id: order.userId },
-                data: {
-                  bonusBalance: {
-                    increment: bonusAmount
-                  }
-                }
-              })
-
-              // Создаем запись о начислении бонусов
-              await prisma.bonusTransaction.create({
-                data: {
-                  userId: order.userId,
-                  orderId: order.id,
-                  amount: bonusAmount,
-                  description: `Начисление бонусов за заказ №${order.orderNumber}`
-                }
-              })
-            } else {
-              console.log('Система бонусов еще не применена к базе данных, пропускаем начисление')
-            }
-          } catch (bonusError: any) {
-            // Если не можем использовать Prisma, пробуем через raw SQL
-            if (bonusError.message?.includes('bonus') || bonusError.message?.includes('does not exist')) {
-              console.log('Система бонусов еще не применена к базе данных')
-            } else {
-              throw bonusError
-            }
-          }
-        }
+        const { awardBonusForDeliveredOrder } = await import('~/server/utils/bonus')
+        await awardBonusForDeliveredOrder(order.id)
       } catch (error) {
         // Логируем ошибку, но не прерываем обновление заказа
         console.error('Ошибка начисления бонусов:', error)

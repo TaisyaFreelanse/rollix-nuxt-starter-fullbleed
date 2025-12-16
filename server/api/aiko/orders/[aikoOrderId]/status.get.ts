@@ -35,10 +35,27 @@ export default defineEventHandler(async (event) => {
       const mappedStatus = statusMap[aikoStatus.status.toLowerCase()] || aikoStatus.status
 
       if (order.status !== mappedStatus) {
-        await prisma.order.update({
+        const updatedOrder = await prisma.order.update({
           where: { id: order.id },
-          data: { status: mappedStatus as any }
+          data: { status: mappedStatus as any },
+          include: {
+            user: {
+              select: {
+                id: true
+              }
+            }
+          }
         })
+
+        // Начисляем бонусы при доставке заказа
+        if (mappedStatus === 'DELIVERED' && updatedOrder.userId && updatedOrder.user) {
+          try {
+            const { awardBonusForDeliveredOrder } = await import('~/server/utils/bonus')
+            await awardBonusForDeliveredOrder(updatedOrder.id)
+          } catch (error) {
+            console.error('[iikoCloud] Ошибка начисления бонусов:', error)
+          }
+        }
 
         // Отправляем обновление через WebSocket
         try {

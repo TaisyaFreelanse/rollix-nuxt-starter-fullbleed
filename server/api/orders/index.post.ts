@@ -126,7 +126,8 @@ export default defineEventHandler(async (event) => {
                   name: true,
                   image: true
                 }
-              }
+              },
+              modifiers: true
             }
           },
           address: true,
@@ -169,7 +170,7 @@ export default defineEventHandler(async (event) => {
               productName: item.product.name,
               quantity: item.quantity,
               price: Number(item.price),
-              modifiers: item.modifiers.map((mod) => ({
+              modifiers: (item.modifiers || []).map((mod) => ({
                 name: mod.name,
                 price: Number(mod.price)
               }))
