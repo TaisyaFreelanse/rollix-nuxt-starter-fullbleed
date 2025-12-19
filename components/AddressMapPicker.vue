@@ -23,6 +23,7 @@ const isMapReady = ref(false)
 const selectedAddress = ref(props.modelValue || '')
 const selectedCoordinates = ref<[number, number] | null>(props.coordinates || null)
 const mapInstance = ref<any>(null) // Ссылка на объект карты
+const markerInstance = ref<any>(null) // Ссылка на маркер
 
 // Глобальная переменная для ymaps3
 declare global {
@@ -34,6 +35,7 @@ declare global {
       YMapControls: any
       YMapGeolocationControl: any
       YMapZoomControl: any
+      YMapMarker: any
     }
   }
 }
@@ -80,7 +82,7 @@ const initMap = async () => {
       return
     }
 
-    const { YMap, YMapDefaultSchemeLayer, YMapControls, YMapGeolocationControl, YMapZoomControl } = window.ymaps3
+    const { YMap, YMapDefaultSchemeLayer, YMapControls, YMapGeolocationControl, YMapZoomControl, YMapMarker } = window.ymaps3
 
     // Создаем карту (в Яндекс Картах координаты: [lng, lat])
     const LOCATION: YMapLocationRequest = selectedCoordinates.value
@@ -115,6 +117,34 @@ const initMap = async () => {
     map.on('click', async (event: any) => {
       const [lng, lat] = event.coordinates
       selectedCoordinates.value = [lat, lng] // Сохраняем как [lat, lng] для API
+
+      // Удаляем предыдущий маркер, если есть
+      if (markerInstance.value) {
+        try {
+          map.removeChild(markerInstance.value)
+        } catch (e) {
+          console.warn('Ошибка удаления маркера:', e)
+        }
+        markerInstance.value = null
+      }
+
+      // Добавляем маркер на выбранную точку
+      try {
+        // Создаем HTML элемент для маркера
+        const markerElement = document.createElement('div')
+        markerElement.style.cssText = 'background: #ff0000; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);'
+        
+        const marker = new YMapMarker(
+          {
+            coordinates: [lng, lat]
+          },
+          markerElement
+        )
+        map.addChild(marker)
+        markerInstance.value = marker
+      } catch (error) {
+        console.warn('Ошибка добавления маркера:', error)
+      }
 
       // Показываем индикатор загрузки
       isLoading.value = true
@@ -186,12 +216,57 @@ const searchAddress = async () => {
       emit('update:coordinates', [lat, lng])
       emit('addressSelected', { address, coordinates: [lat, lng] })
 
-      // Обновляем центр карты
+      // Обновляем центр карты и добавляем маркер
       if (mapInstance.value) {
-        mapInstance.value.setLocation({
-          center: [lng, lat],
-          zoom: 15
-        })
+        // Удаляем предыдущий маркер, если есть
+        if (markerInstance.value) {
+          try {
+            mapInstance.value.removeChild(markerInstance.value)
+          } catch (e) {
+            console.warn('Ошибка удаления маркера:', e)
+          }
+          markerInstance.value = null
+        }
+
+        // Обновляем местоположение карты (в API 3.0 используем update с location)
+        try {
+          // В API 3.0 для обновления карты нужно использовать updateLocation или напрямую изменять location
+          if (typeof mapInstance.value.updateLocation === 'function') {
+            mapInstance.value.updateLocation({
+              center: [lng, lat],
+              zoom: 15
+            })
+          } else if (mapInstance.value.location) {
+            // Пробуем обновить через свойство location
+            Object.assign(mapInstance.value.location, {
+              center: [lng, lat],
+              zoom: 15
+            })
+          }
+        } catch (error) {
+          console.warn('Не удалось обновить местоположение карты:', error)
+        }
+
+        // Добавляем маркер на найденный адрес
+        try {
+          const { YMapMarker } = window.ymaps3
+          if (YMapMarker) {
+            // Создаем HTML элемент для маркера
+            const markerElement = document.createElement('div')
+            markerElement.style.cssText = 'background: #ff0000; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);'
+            
+            const marker = new YMapMarker(
+              {
+                coordinates: [lng, lat]
+              },
+              markerElement
+            )
+            mapInstance.value.addChild(marker)
+            markerInstance.value = marker
+          }
+        } catch (error) {
+          console.warn('Ошибка добавления маркера:', error)
+        }
       }
     } else {
       alert('Адрес не найден')
@@ -325,6 +400,14 @@ const openMap = async () => {
 const closeMap = () => {
   showMap.value = false
   // Очищаем карту при закрытии
+  if (markerInstance.value && mapInstance.value) {
+    try {
+      mapInstance.value.removeChild(markerInstance.value)
+    } catch (e) {
+      console.warn('Ошибка удаления маркера:', e)
+    }
+    markerInstance.value = null
+  }
   if (mapInstance.value) {
     mapInstance.value.destroy?.()
     mapInstance.value = null
