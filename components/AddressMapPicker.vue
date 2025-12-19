@@ -230,7 +230,7 @@ const initMap = async () => {
   }
 }
 
-// Получение подсказок через Suggest API
+// Получение подсказок через серверный прокси (обход CORS)
 const fetchSuggestions = async (text: string) => {
   if (!text.trim() || text.length < 2) {
     suggestions.value = []
@@ -245,12 +245,14 @@ const fetchSuggestions = async (text: string) => {
     const [lng, lat] = center
 
     // Для Suggest API параметр ll должен быть в формате lat,lng (широта, долгота)
-    const response = await fetch(
-      `https://suggest-maps.yandex.ru/v1/suggest?apikey=51d550e0-cf8f-4247-bae5-dfd32b51048d&text=${encodeURIComponent(
-        text
-      )}&lang=ru_RU&types=house,street,locality&ll=${lat},${lng}&spn=0.5,0.5&print_address=1&attrs=uri`
-    )
-    const data = await response.json()
+    // Используем серверный прокси для обхода CORS
+    const data = await $fetch('/api/yandex/suggest', {
+      query: {
+        text,
+        ll: `${lat},${lng}`,
+        spn: '0.5,0.5'
+      }
+    })
 
     if (data.results && Array.isArray(data.results)) {
       suggestions.value = data.results
@@ -471,7 +473,7 @@ const searchAddress = async () => {
 }
 
 // Debounce для подсказок
-let suggestionTimeout: NodeJS.Timeout | null = null
+let suggestionTimeout: ReturnType<typeof setTimeout> | null = null
 const onSearchInput = () => {
   if (suggestionTimeout) {
     clearTimeout(suggestionTimeout)
@@ -479,6 +481,16 @@ const onSearchInput = () => {
   suggestionTimeout = setTimeout(() => {
     fetchSuggestions(searchInput.value)
   }, 300) // Задержка 300мс
+}
+
+// Обработчик blur для скрытия подсказок
+const handleInputBlur = () => {
+  // Используем window.setTimeout для SSR совместимости
+  if (typeof window !== 'undefined') {
+    window.setTimeout(() => {
+      showSuggestions.value = false
+    }, 200)
+  }
 }
 
 // Функция для загрузки скрипта Яндекс Карт
@@ -601,6 +613,11 @@ const openMap = async () => {
 // Закрытие карты
 const closeMap = () => {
   showMap.value = false
+  
+  // Очищаем подсказки
+  suggestions.value = []
+  showSuggestions.value = false
+  
   // Очищаем карту при закрытии
   if (markerInstance.value && mapInstance.value) {
     try {
@@ -610,9 +627,27 @@ const closeMap = () => {
     }
     markerInstance.value = null
   }
+  
+  // Уничтожаем карту с задержкой, чтобы избежать ошибок
   if (mapInstance.value) {
-    mapInstance.value.destroy?.()
-    mapInstance.value = null
+    try {
+      // Даем время для завершения анимаций
+      if (typeof window !== 'undefined') {
+        window.setTimeout(() => {
+          try {
+            if (mapInstance.value && typeof mapInstance.value.destroy === 'function') {
+              mapInstance.value.destroy()
+            }
+          } catch (e) {
+            console.warn('Ошибка при уничтожении карты:', e)
+          }
+          mapInstance.value = null
+        }, 100)
+      }
+    } catch (e) {
+      console.warn('Ошибка при закрытии карты:', e)
+      mapInstance.value = null
+    }
   }
   isMapReady.value = false
 }
@@ -670,7 +705,7 @@ watch(
                 @input="onSearchInput"
                 @keyup.enter="searchAddress"
                 @focus="showSuggestions = suggestions.length > 0"
-                @blur="setTimeout(() => { showSuggestions = false }, 200)" />
+                @blur="handleInputBlur" />
               
               <!-- Список подсказок -->
               <div
