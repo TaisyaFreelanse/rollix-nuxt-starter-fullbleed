@@ -32,6 +32,7 @@ declare global {
       ready: Promise<void>
       YMap: any
       YMapDefaultSchemeLayer: any
+      YMapDefaultFeaturesLayer: any
       YMapControls: any
       YMapGeolocationControl: any
       YMapZoomControl: any
@@ -77,12 +78,12 @@ const initMap = async () => {
     }
 
     // Проверяем наличие необходимых компонентов
-    if (!window.ymaps3.YMap || !window.ymaps3.YMapDefaultSchemeLayer) {
+    if (!window.ymaps3.YMap || !window.ymaps3.YMapDefaultSchemeLayer || !window.ymaps3.YMapDefaultFeaturesLayer) {
       console.error('Не все компоненты Яндекс Карт загружены')
       return
     }
 
-    const { YMap, YMapDefaultSchemeLayer, YMapControls, YMapGeolocationControl, YMapZoomControl, YMapMarker } = window.ymaps3
+    const { YMap, YMapDefaultSchemeLayer, YMapDefaultFeaturesLayer, YMapControls, YMapGeolocationControl, YMapZoomControl, YMapMarker } = window.ymaps3
 
     // Создаем карту (в Яндекс Картах координаты: [lng, lat])
     const LOCATION: YMapLocationRequest = selectedCoordinates.value
@@ -103,6 +104,9 @@ const initMap = async () => {
     
     // Добавляем слой карты (это обязательно!)
     map.addChild(new YMapDefaultSchemeLayer({}))
+    
+    // Добавляем слой для маркеров (обязательно для YMapMarker!)
+    map.addChild(new YMapDefaultFeaturesLayer({}))
 
     // Добавляем контролы
     const controls = new YMapControls({ position: 'right' })
@@ -261,6 +265,8 @@ const searchAddress = async () => {
               },
               markerElement
             )
+            // Добавляем маркер на слой features (не напрямую на карту)
+            // В API 3.0 маркеры добавляются на YMapDefaultFeaturesLayer
             mapInstance.value.addChild(marker)
             markerInstance.value = marker
           }

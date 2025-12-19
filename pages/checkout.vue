@@ -99,9 +99,24 @@ const calculateDelivery = async (coordinates: [number, number]) => {
   } catch (error: any) {
     console.error('Ошибка расчета доставки:', error)
     selectedZone.value = null
-    if (error.data?.message) {
-      const toast = useToast()
+    
+    const toast = useToast()
+    
+    // Обработка различных типов ошибок
+    if (error.status === 404 || error.statusCode === 404) {
+      if (error.data?.message) {
+        toast.error(error.data.message)
+      } else {
+        toast.error('Адрес не входит в зону доставки')
+      }
+    } else if (error.status === 400 || error.statusCode === 400) {
+      toast.error(error.data?.message || 'Неверные данные для расчета доставки')
+    } else if (error.status === 500 || error.statusCode === 500) {
+      toast.error('Ошибка сервера при расчете доставки')
+    } else if (error.data?.message) {
       toast.error(error.data.message)
+    } else {
+      toast.error('Не удалось рассчитать стоимость доставки')
     }
   } finally {
     isCalculatingDelivery.value = false

@@ -72,25 +72,51 @@ export default defineEventHandler(async (event) => {
 
 // Функция проверки точки в полигоне
 function isPointInZone(lat: number, lng: number, coordinates: any): boolean {
-  if (Array.isArray(coordinates) && coordinates.length > 0) {
-    const polygon = Array.isArray(coordinates[0][0]) ? coordinates[0] : coordinates
-    let inside = false
-
-    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-      const xi = polygon[i][1] || polygon[i][0]
-      const yi = polygon[i][0] || polygon[i][1]
-      const xj = polygon[j][1] || polygon[j][0]
-      const yj = polygon[j][0] || polygon[j][1]
-
-      const intersect =
-        yi > lng !== yj > lng && lat < ((xj - xi) * (lng - yi)) / (yj - yi) + xi
-
-      if (intersect) inside = !inside
-    }
-
-    return inside
+  if (!Array.isArray(coordinates) || coordinates.length === 0) {
+    return false
   }
 
-  return false
+  // Обрабатываем разные форматы координат
+  let polygon: number[][]
+  
+  if (Array.isArray(coordinates[0])) {
+    if (Array.isArray(coordinates[0][0])) {
+      // Формат: [[[lat, lng], [lat, lng], ...]]
+      polygon = coordinates[0]
+    } else {
+      // Формат: [[lat, lng], [lat, lng], ...]
+      polygon = coordinates
+    }
+  } else {
+    return false
+  }
+
+  if (polygon.length < 3) {
+    return false // Полигон должен иметь минимум 3 точки
+  }
+
+  let inside = false
+
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const pointI = polygon[i]
+    const pointJ = polygon[j]
+    
+    if (!Array.isArray(pointI) || !Array.isArray(pointJ) || pointI.length < 2 || pointJ.length < 2) {
+      continue
+    }
+
+    // Координаты могут быть в формате [lat, lng] или [lng, lat]
+    const xi = pointI[1] ?? pointI[0]
+    const yi = pointI[0] ?? pointI[1]
+    const xj = pointJ[1] ?? pointJ[0]
+    const yj = pointJ[0] ?? pointJ[1]
+
+    const intersect =
+      yi > lng !== yj > lng && lat < ((xj - xi) * (lng - yi)) / (yj - yi) + xi
+
+    if (intersect) inside = !inside
+  }
+
+  return inside
 }
 
