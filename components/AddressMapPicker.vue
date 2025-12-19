@@ -24,6 +24,9 @@ const selectedAddress = ref(props.modelValue || '')
 const selectedCoordinates = ref<[number, number] | null>(props.coordinates || null)
 const mapInstance = ref<any>(null) // Ссылка на объект карты
 const markerInstance = ref<any>(null) // Ссылка на маркер
+const suggestions = ref<any[]>([]) // Список подсказок от Suggest API
+const showSuggestions = ref(false) // Показывать ли список подсказок
+const suggestionListRef = ref<HTMLDivElement | null>(null)
 
 // Глобальная переменная для ymaps3
 declare global {
@@ -154,23 +157,55 @@ const initMap = async () => {
       isLoading.value = true
 
       // Получаем адрес по координатам через HTTP Geocoder API (обратный геокодинг)
+      // В API Яндекс координаты передаются как [долгота, широта]
       try {
         const response = await fetch(
-          `https://geocode-maps.yandex.ru/1.x/?apikey=51d550e0-cf8f-4247-bae5-dfd32b51048d&geocode=${lng},${lat}&format=json&results=1&kind=house`
+          `https://geocode-maps.yandex.ru/1.x/?apikey=51d550e0-cf8f-4247-bae5-dfd32b51048d&geocode=${lng},${lat}&format=json&results=1&kind=house&lang=ru_RU`
         )
         const data = await response.json()
         const geoObject = data.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject
         
         if (geoObject) {
           // Используем полный адрес из GeocoderMetaData
-          const address = geoObject.metaDataProperty?.GeocoderMetaData?.text || 
-                         geoObject.name || 
-                         `${lat.toFixed(6)}, ${lng.toFixed(6)}`
+          // Проверяем, что адрес относится к правильному региону (Россия, Петропавловск-Камчатский)
+          const addressText = geoObject.metaDataProperty?.GeocoderMetaData?.text || geoObject.name
+          const addressComponents = geoObject.metaDataProperty?.GeocoderMetaData?.Address?.Components || []
           
-          selectedAddress.value = address
-          emit('update:modelValue', address)
-          emit('update:coordinates', [lat, lng])
-          emit('addressSelected', { address, coordinates: [lat, lng] })
+          // Проверяем, что адрес в России (не Куба и не другие страны)
+          const isRussia = addressComponents.some((comp: any) => 
+            comp.kind === 'COUNTRY' && (comp.name?.includes('Россия') || comp.name?.includes('Russia'))
+          )
+          
+          if (!isRussia && addressText) {
+            // Если адрес не в России, пробуем найти более точный адрес с параметром kind=house
+            const preciseResponse = await fetch(
+              `https://geocode-maps.yandex.ru/1.x/?apikey=51d550e0-cf8f-4247-bae5-dfd32b51048d&geocode=${lng},${lat}&format=json&results=1&kind=house&lang=ru_RU&rspn=1&ll=${lat},${lng}&spn=0.1,0.1`
+            )
+            const preciseData = await preciseResponse.json()
+            const preciseGeoObject = preciseData.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject
+            
+            if (preciseGeoObject) {
+              const preciseAddress = preciseGeoObject.metaDataProperty?.GeocoderMetaData?.text || 
+                                    preciseGeoObject.name || 
+                                    addressText
+              selectedAddress.value = preciseAddress
+              emit('update:modelValue', preciseAddress)
+              emit('update:coordinates', [lat, lng])
+              emit('addressSelected', { address: preciseAddress, coordinates: [lat, lng] })
+            } else {
+              // Используем исходный адрес, но с предупреждением
+              selectedAddress.value = addressText
+              emit('update:modelValue', addressText)
+              emit('update:coordinates', [lat, lng])
+              emit('addressSelected', { address: addressText, coordinates: [lat, lng] })
+            }
+          } else {
+            // Адрес в России - используем его
+            selectedAddress.value = addressText
+            emit('update:modelValue', addressText)
+            emit('update:coordinates', [lat, lng])
+            emit('addressSelected', { address: addressText, coordinates: [lat, lng] })
+          }
         } else {
           // Если адрес не найден, используем координаты
           const fallbackAddress = `${lat.toFixed(6)}, ${lng.toFixed(6)}`
@@ -195,10 +230,168 @@ const initMap = async () => {
   }
 }
 
-// Поиск адреса
+// Получение подсказок через Suggest API
+const fetchSuggestions = async (text: string) => {
+  if (!text.trim() || text.length < 2) {
+    suggestions.value = []
+    showSuggestions.value = false
+    return
+  }
+
+  try {
+    // Получаем текущий центр карты для ограничения области поиска
+    // В Yandex Maps API 3.0 координаты в формате [lng, lat]
+    const center = mapInstance.value?.location?.center || [158.6503, 53.0194] // Петропавловск-Камчатский по умолчанию [lng, lat]
+    const [lng, lat] = center
+
+    // Для Suggest API параметр ll должен быть в формате lat,lng (широта, долгота)
+    const response = await fetch(
+      `https://suggest-maps.yandex.ru/v1/suggest?apikey=51d550e0-cf8f-4247-bae5-dfd32b51048d&text=${encodeURIComponent(
+        text
+      )}&lang=ru_RU&types=house,street,locality&ll=${lat},${lng}&spn=0.5,0.5&print_address=1&attrs=uri`
+    )
+    const data = await response.json()
+
+    if (data.results && Array.isArray(data.results)) {
+      suggestions.value = data.results
+      showSuggestions.value = data.results.length > 0
+    } else {
+      suggestions.value = []
+      showSuggestions.value = false
+    }
+  } catch (error) {
+    console.error('Ошибка получения подсказок:', error)
+    suggestions.value = []
+    showSuggestions.value = false
+  }
+}
+
+// Выбор адреса из подсказок
+const selectSuggestion = async (suggestion: any) => {
+  showSuggestions.value = false
+  searchInput.value = suggestion.title.text
+  isLoading.value = true
+
+  try {
+    // Используем uri для получения точных координат через Geocoder API
+    let lat: number, lng: number
+    let address = suggestion.title.text
+
+    if (suggestion.uri) {
+      // Используем uri для получения координат
+      const geocodeResponse = await fetch(
+        `https://geocode-maps.yandex.ru/1.x/?apikey=51d550e0-cf8f-4247-bae5-dfd32b51048d&geocode=${encodeURIComponent(
+          suggestion.uri
+        )}&format=json&results=1`
+      )
+      const geocodeData = await geocodeResponse.json()
+      const geoObject = geocodeData.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject
+
+      if (geoObject) {
+        const [lngStr, latStr] = geoObject.Point.pos.split(' ').map(Number)
+        lng = lngStr
+        lat = latStr
+        address = geoObject.metaDataProperty?.GeocoderMetaData?.text || suggestion.address?.formatted_address || address
+      } else {
+        throw new Error('Не удалось получить координаты')
+      }
+    } else if (suggestion.address?.formatted_address) {
+      // Если нет uri, используем адрес для геокодинга
+      const geocodeResponse = await fetch(
+        `https://geocode-maps.yandex.ru/1.x/?apikey=51d550e0-cf8f-4247-bae5-dfd32b51048d&geocode=${encodeURIComponent(
+          suggestion.address.formatted_address
+        )}&format=json&results=1`
+      )
+      const geocodeData = await geocodeResponse.json()
+      const geoObject = geocodeData.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject
+
+      if (geoObject) {
+        const [lngStr, latStr] = geoObject.Point.pos.split(' ').map(Number)
+        lng = lngStr
+        lat = latStr
+        address = geoObject.metaDataProperty?.GeocoderMetaData?.text || suggestion.address.formatted_address
+      } else {
+        throw new Error('Не удалось получить координаты')
+      }
+    } else {
+      throw new Error('Недостаточно данных для определения координат')
+    }
+
+    selectedAddress.value = address
+    selectedCoordinates.value = [lat, lng]
+
+    emit('update:modelValue', address)
+    emit('update:coordinates', [lat, lng])
+    emit('addressSelected', { address, coordinates: [lat, lng] })
+
+    // Обновляем центр карты и добавляем маркер
+    if (mapInstance.value) {
+      // Удаляем предыдущий маркер, если есть
+      if (markerInstance.value) {
+        try {
+          mapInstance.value.removeChild(markerInstance.value)
+        } catch (e) {
+          console.warn('Ошибка удаления маркера:', e)
+        }
+        markerInstance.value = null
+      }
+
+      // Обновляем местоположение карты
+      try {
+        if (typeof mapInstance.value.updateLocation === 'function') {
+          mapInstance.value.updateLocation({
+            center: [lng, lat],
+            zoom: 15
+          })
+        } else if (mapInstance.value.location) {
+          Object.assign(mapInstance.value.location, {
+            center: [lng, lat],
+            zoom: 15
+          })
+        }
+      } catch (error) {
+        console.warn('Не удалось обновить местоположение карты:', error)
+      }
+
+      // Добавляем маркер
+      try {
+        const { YMapMarker } = window.ymaps3
+        if (YMapMarker) {
+          const markerElement = document.createElement('div')
+          markerElement.style.cssText = 'background: #ff0000; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);'
+          
+          const marker = new YMapMarker(
+            {
+              coordinates: [lng, lat]
+            },
+            markerElement
+          )
+          mapInstance.value.addChild(marker)
+          markerInstance.value = marker
+        }
+      } catch (error) {
+        console.warn('Ошибка добавления маркера:', error)
+      }
+    }
+  } catch (error) {
+    console.error('Ошибка выбора адреса:', error)
+    alert('Ошибка при выборе адреса')
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Поиск адреса (старый метод для обратной совместимости)
 const searchAddress = async () => {
   if (!searchInput.value.trim()) return
 
+  // Если есть подсказки, выбираем первую
+  if (suggestions.value.length > 0) {
+    await selectSuggestion(suggestions.value[0])
+    return
+  }
+
+  // Иначе используем геокодинг
   isLoading.value = true
   try {
     const response = await fetch(
@@ -222,7 +415,6 @@ const searchAddress = async () => {
 
       // Обновляем центр карты и добавляем маркер
       if (mapInstance.value) {
-        // Удаляем предыдущий маркер, если есть
         if (markerInstance.value) {
           try {
             mapInstance.value.removeChild(markerInstance.value)
@@ -232,16 +424,13 @@ const searchAddress = async () => {
           markerInstance.value = null
         }
 
-        // Обновляем местоположение карты (в API 3.0 используем update с location)
         try {
-          // В API 3.0 для обновления карты нужно использовать updateLocation или напрямую изменять location
           if (typeof mapInstance.value.updateLocation === 'function') {
             mapInstance.value.updateLocation({
               center: [lng, lat],
               zoom: 15
             })
           } else if (mapInstance.value.location) {
-            // Пробуем обновить через свойство location
             Object.assign(mapInstance.value.location, {
               center: [lng, lat],
               zoom: 15
@@ -251,11 +440,9 @@ const searchAddress = async () => {
           console.warn('Не удалось обновить местоположение карты:', error)
         }
 
-        // Добавляем маркер на найденный адрес
         try {
           const { YMapMarker } = window.ymaps3
           if (YMapMarker) {
-            // Создаем HTML элемент для маркера
             const markerElement = document.createElement('div')
             markerElement.style.cssText = 'background: #ff0000; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);'
             
@@ -265,8 +452,6 @@ const searchAddress = async () => {
               },
               markerElement
             )
-            // Добавляем маркер на слой features (не напрямую на карту)
-            // В API 3.0 маркеры добавляются на YMapDefaultFeaturesLayer
             mapInstance.value.addChild(marker)
             markerInstance.value = marker
           }
@@ -283,6 +468,17 @@ const searchAddress = async () => {
   } finally {
     isLoading.value = false
   }
+}
+
+// Debounce для подсказок
+let suggestionTimeout: NodeJS.Timeout | null = null
+const onSearchInput = () => {
+  if (suggestionTimeout) {
+    clearTimeout(suggestionTimeout)
+  }
+  suggestionTimeout = setTimeout(() => {
+    fetchSuggestions(searchInput.value)
+  }, 300) // Задержка 300мс
 }
 
 // Функция для загрузки скрипта Яндекс Карт
@@ -463,19 +659,47 @@ watch(
     <Modal :open="showMap" title="Выберите адрес доставки" @close="closeMap">
       <div class="space-y-3">
         <!-- Поиск адреса -->
-        <div class="flex gap-2">
-          <input
-            v-model="searchInput"
-            type="text"
-            placeholder="Введите адрес или найдите на карте"
-            class="flex-1 px-3 py-2 rounded bg-white/5 border border-white/10 focus:border-accent focus:outline-none text-sm"
-            @keyup.enter="searchAddress" />
-          <button
-            @click="searchAddress"
-            :disabled="isLoading"
-            class="px-4 py-2 bg-accent hover:bg-accent-700 rounded text-white font-medium transition disabled:opacity-50 disabled:cursor-not-allowed">
-            {{ isLoading ? '...' : 'Найти' }}
-          </button>
+        <div class="relative">
+          <div class="flex gap-2">
+            <div class="flex-1 relative">
+              <input
+                v-model="searchInput"
+                type="text"
+                placeholder="Введите адрес или найдите на карте"
+                class="w-full px-3 py-2 rounded bg-white/5 border border-white/10 focus:border-accent focus:outline-none text-sm"
+                @input="onSearchInput"
+                @keyup.enter="searchAddress"
+                @focus="showSuggestions = suggestions.length > 0"
+                @blur="setTimeout(() => { showSuggestions = false }, 200)" />
+              
+              <!-- Список подсказок -->
+              <div
+                v-if="showSuggestions && suggestions.length > 0"
+                ref="suggestionListRef"
+                class="absolute z-50 w-full mt-1 bg-gray-800 border border-white/10 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                <button
+                  v-for="(suggestion, index) in suggestions"
+                  :key="index"
+                  type="button"
+                  @click="selectSuggestion(suggestion)"
+                  class="w-full px-3 py-2 text-left hover:bg-white/10 transition text-sm border-b border-white/5 last:border-b-0">
+                  <div class="font-medium text-white">{{ suggestion.title.text }}</div>
+                  <div v-if="suggestion.subtitle?.text" class="text-xs text-gray-400 mt-0.5">
+                    {{ suggestion.subtitle.text }}
+                  </div>
+                  <div v-if="suggestion.address?.formatted_address" class="text-xs text-gray-500 mt-0.5">
+                    {{ suggestion.address.formatted_address }}
+                  </div>
+                </button>
+              </div>
+            </div>
+            <button
+              @click="searchAddress"
+              :disabled="isLoading"
+              class="px-4 py-2 bg-accent hover:bg-accent-700 rounded text-white font-medium transition disabled:opacity-50 disabled:cursor-not-allowed">
+              {{ isLoading ? '...' : 'Найти' }}
+            </button>
+          </div>
         </div>
 
         <!-- Карта -->
