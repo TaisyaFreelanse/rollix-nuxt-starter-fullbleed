@@ -13,11 +13,13 @@ const deliveryType = ref<'delivery' | 'pickup'>('delivery')
 const deliveryZones = ref<any[]>([])
 const selectedZone = ref<any>(null)
 const deliveryAddress = ref('')
+const deliveryCoordinates = ref<[number, number] | null>(null)
 const phone = ref('')
 const name = ref('')
 const comment = ref('')
 const selectedTime = ref<string | null>(null)
 const isLoadingZones = ref(false)
+const isCalculatingDelivery = ref(false)
 const agreeToOffer = ref(true)
 
 // Функция для форматирования телефона
@@ -58,20 +60,59 @@ const handleAuthCancel = () => {
   showAuthModal.value = false
 }
 
-// Загрузка зон доставки
+// Загрузка зон доставки (для отображения информации, не для выбора)
 const loadDeliveryZones = async () => {
   isLoadingZones.value = true
   try {
     const data = await $fetch('/api/delivery-zones')
     deliveryZones.value = data.zones || []
-    if (data.matchedZone) {
-      selectedZone.value = data.matchedZone
-    }
   } catch (error) {
     console.error('Ошибка загрузки зон доставки', error)
   } finally {
     isLoadingZones.value = false
   }
+}
+
+// Автоматический расчет доставки при выборе адреса
+const calculateDelivery = async (coordinates: [number, number]) => {
+  if (!coordinates) return
+
+  isCalculatingDelivery.value = true
+  try {
+    const result = await $fetch('/api/delivery-zones/calculate', {
+      method: 'POST',
+      body: {
+        lat: coordinates[0],
+        lng: coordinates[1],
+        subtotal: cartStore.subtotal
+      }
+    })
+
+    selectedZone.value = {
+      id: result.zone.id,
+      name: result.zone.name,
+      estimatedTime: result.zone.estimatedTime,
+      deliveryPrice: result.deliveryPrice,
+      freeDeliveryThreshold: result.freeDeliveryThreshold,
+      minOrderAmount: result.minOrderAmount
+    }
+  } catch (error: any) {
+    console.error('Ошибка расчета доставки:', error)
+    selectedZone.value = null
+    if (error.data?.message) {
+      const toast = useToast()
+      toast.error(error.data.message)
+    }
+  } finally {
+    isCalculatingDelivery.value = false
+  }
+}
+
+// Обработчик выбора адреса на карте
+const handleAddressSelected = (data: { address: string; coordinates: [number, number] }) => {
+  deliveryAddress.value = data.address
+  deliveryCoordinates.value = data.coordinates
+  calculateDelivery(data.coordinates)
 }
 
 onMounted(() => {
@@ -366,32 +407,28 @@ input[type="checkbox"]:checked::after {
           <h2 class="text-xs sm:text-sm font-semibold mb-2 sm:mb-3">Адрес доставки</h2>
           <div class="space-y-2 sm:space-y-3">
             <div>
-              <label class="block text-[10px] sm:text-xs text-gray-400 mb-1">Адрес</label>
-              <input
+              <label class="block text-[10px] sm:text-xs text-gray-400 mb-1">Указать адрес доставки</label>
+              <AddressMapPicker
                 v-model="deliveryAddress"
-                type="text"
-                placeholder="Улица, дом, квартира"
-                class="w-full px-2 sm:px-3 py-1.5 rounded bg-white/5 border border-white/10 focus:border-accent focus:outline-none text-[10px] sm:text-xs" />
+                :coordinates="deliveryCoordinates"
+                @address-selected="handleAddressSelected" />
             </div>
-            <div v-if="!isLoadingZones && deliveryZones.length > 0">
-              <label class="block text-[10px] sm:text-xs text-gray-400 mb-1">Зона доставки</label>
-              <select
-                v-model="selectedZone"
-                class="w-full px-2 sm:px-3 py-1.5 rounded bg-white/5 border border-white/10 focus:border-accent focus:outline-none text-[10px] sm:text-xs">
-                <option :value="null">Выберите зону</option>
-                <option
-                  v-for="zone in deliveryZones"
-                  :key="zone.id"
-                  :value="zone">
-                  {{ zone.name }} - {{ zone.deliveryPrice }} ₽
-                  <span v-if="zone.freeDeliveryThreshold">
-                    (бесплатно от {{ zone.freeDeliveryThreshold }} ₽)
-                  </span>
-                </option>
-              </select>
-              <p v-if="selectedZone" class="text-[9px] sm:text-[10px] text-gray-400 mt-1">
+            <div v-if="isCalculatingDelivery" class="text-[9px] sm:text-[10px] text-gray-400">
+              ⏳ Расчет доставки...
+            </div>
+            <div v-else-if="selectedZone" class="p-2 bg-white/5 rounded border border-white/10">
+              <div class="text-[10px] sm:text-xs font-medium text-white mb-1">
+                Зона доставки: {{ selectedZone.name }}
+              </div>
+              <div class="text-[9px] sm:text-[10px] text-gray-400">
                 Время доставки: ~{{ selectedZone.estimatedTime }} мин
-              </p>
+              </div>
+              <div v-if="selectedZone.minOrderAmount" class="text-[9px] sm:text-[10px] text-yellow-400 mt-1">
+                Минимальная сумма заказа: {{ selectedZone.minOrderAmount }} ₽
+              </div>
+            </div>
+            <div v-else-if="deliveryAddress && !isCalculatingDelivery" class="text-[9px] sm:text-[10px] text-red-400">
+              ⚠️ Адрес не входит в зону доставки
             </div>
           </div>
         </div>
@@ -494,7 +531,7 @@ input[type="checkbox"]:checked::after {
             </div>
           </div>
           <button
-            :disabled="isSubmitting || !phone || (deliveryType === 'delivery' && (!deliveryAddress || !selectedZone))"
+            :disabled="isSubmitting || !phone || (deliveryType === 'delivery' && (!deliveryAddress || !selectedZone || isCalculatingDelivery))"
             class="w-full py-2 bg-accent hover:bg-accent-700 rounded-lg text-white font-medium transition disabled:opacity-50 disabled:cursor-not-allowed text-xs"
             @click="submitOrder">
             {{ isSubmitting ? 'Оформление...' : 'Оформить заказ' }}

@@ -17,6 +17,12 @@ export default defineNuxtConfig({
       link: [
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap' }
+      ],
+      script: [
+        {
+          src: 'https://api-maps.yandex.ru/v3/?apikey=51d550e0-cf8f-4247-bae5-dfd32b51048d&lang=ru_RU',
+          defer: true
+        }
       ]
     }
   },
@@ -31,6 +37,10 @@ export default defineNuxtConfig({
     iikoApiKey: process.env.IIKO_API_KEY,
     iikoOrganizationId: process.env.IIKO_ORGANIZATION_ID,
     iikoTerminalGroupId: process.env.IIKO_TERMINAL_GROUP_ID,
-    iikoApiUrl: process.env.IIKO_API_URL || 'https://api-ru.iiko.services'
+    iikoApiUrl: process.env.IIKO_API_URL || 'https://api-ru.iiko.services',
+    // Public keys (available on client-side)
+    public: {
+      yandexMapsApiKey: '51d550e0-cf8f-4247-bae5-dfd32b51048d'
+    }
   }
 })
