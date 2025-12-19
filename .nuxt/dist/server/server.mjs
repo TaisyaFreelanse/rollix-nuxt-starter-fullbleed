@@ -1,1 +1,1 @@
-export { default } from "file:///C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/@nuxt/vite-builder/dist/runtime/vite-node.mjs"
+export { default } from "file:///C:/Users/GameOn-DP/Desktop/rollix-nuxt-starter-fullbleed/rollix-nuxt-starter-fullbleed/node_modules/@nuxt/vite-builder/dist/runtime/vite-node.mjs"

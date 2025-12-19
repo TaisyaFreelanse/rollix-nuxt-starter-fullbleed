@@ -127,12 +127,22 @@ declare module 'nuxt/schema' {
       cdnURL: string,
    },
 
+   smsRuApiKey: string,
+
+   iikoApiKey: string,
+
+   iikoOrganizationId: string,
+
+   iikoTerminalGroupId: string,
+
+   iikoApiUrl: string,
+
    nitro: {
       envPrefix: string,
    },
   }
   interface PublicRuntimeConfig {
-
+   yandexMapsApiKey: string,
   }
 }
 declare module 'vue' {

@@ -251,7 +251,22 @@ const loadYmapsScript = (): Promise<void> => {
     }
 
     script.onerror = () => {
-      reject(new Error('Ошибка загрузки скрипта Яндекс Карт. Проверьте подключение к интернету и API ключ.'))
+      // Проверяем статус загрузки скрипта
+      const checkStatus = async () => {
+        try {
+          const response = await fetch(script.src, { method: 'HEAD', mode: 'no-cors' })
+          // Если получили ответ, проверяем статус
+          if (response.status === 403) {
+            reject(new Error('403 Forbidden: API ключ не имеет доступа к JavaScript API 3.0.\n\nРешение:\n1. Перейдите в кабинет разработчика: https://developer.tech.yandex.ru/\n2. Проверьте, что ключ активирован для "JavaScript API и HTTP Геокодер"\n3. Настройте "Ограничение по HTTP Referer": добавьте http://localhost:* и https://rollix-delivery.onrender.com/*\n4. Подождите 1-2 минуты после изменений'))
+          } else {
+            reject(new Error(`Ошибка загрузки скрипта Яндекс Карт. Проверьте подключение к интернету и API ключ.`))
+          }
+        } catch (e) {
+          // Если не удалось проверить статус, выдаем общую ошибку
+          reject(new Error('Ошибка загрузки скрипта Яндекс Карт. Возможные причины:\n- API ключ не имеет доступа к JavaScript API 3.0 (403 Forbidden)\n- Не настроены ограничения по HTTP Referer\n- Проблемы с подключением к интернету\n\nПроверьте настройки ключа в кабинете разработчика Яндекс.'))
+        }
+      }
+      checkStatus()
     }
 
     document.head.appendChild(script)

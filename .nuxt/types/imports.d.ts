@@ -156,7 +156,10 @@ declare global {
   const until: typeof import('@vueuse/core')['until']
   const updateAppConfig: typeof import('../../node_modules/nuxt/dist/app/config')['updateAppConfig']
   const useActiveElement: typeof import('@vueuse/core')['useActiveElement']
+  const useAdminAuth: typeof import('../../composables/useAdminAuth')['useAdminAuth']
+  const useAiko: typeof import('../../composables/useAiko')['useAiko']
   const useAnimate: typeof import('@vueuse/core')['useAnimate']
+  const useAnimations: typeof import('../../composables/useAnimations')['useAnimations']
   const useAppConfig: typeof import('../../node_modules/nuxt/dist/app/config')['useAppConfig']
   const useArrayDifference: typeof import('@vueuse/core')['useArrayDifference']
   const useArrayEvery: typeof import('@vueuse/core')['useArrayEvery']
@@ -174,6 +177,7 @@ declare global {
   const useAsyncQueue: typeof import('@vueuse/core')['useAsyncQueue']
   const useAsyncState: typeof import('@vueuse/core')['useAsyncState']
   const useAttrs: typeof import('../../node_modules/vue')['useAttrs']
+  const useAuth: typeof import('../../composables/useAuth')['useAuth']
   const useBase64: typeof import('@vueuse/core')['useBase64']
   const useBattery: typeof import('@vueuse/core')['useBattery']
   const useBluetooth: typeof import('@vueuse/core')['useBluetooth']
@@ -181,6 +185,7 @@ declare global {
   const useBroadcastChannel: typeof import('@vueuse/core')['useBroadcastChannel']
   const useBrowserLocation: typeof import('@vueuse/core')['useBrowserLocation']
   const useCached: typeof import('@vueuse/core')['useCached']
+  const useCartStore: typeof import('../../stores/cart')['useCartStore']
   const useCatalog: typeof import('../../composables/useCatalog')['useCatalog']
   const useClipboard: typeof import('@vueuse/core')['useClipboard']
   const useClipboardItems: typeof import('@vueuse/core')['useClipboardItems']
@@ -245,6 +250,7 @@ declare global {
   const useLoadingIndicator: typeof import('../../node_modules/nuxt/dist/app/composables/loading-indicator')['useLoadingIndicator']
   const useLocalStorage: typeof import('@vueuse/core')['useLocalStorage']
   const useMagicKeys: typeof import('@vueuse/core')['useMagicKeys']
+  const useMaintenance: typeof import('../../composables/useMaintenance')['useMaintenance']
   const useManualRefHistory: typeof import('@vueuse/core')['useManualRefHistory']
   const useMediaControls: typeof import('@vueuse/core')['useMediaControls']
   const useMediaQuery: typeof import('@vueuse/core')['useMediaQuery']
@@ -265,9 +271,12 @@ declare global {
   const useObjectUrl: typeof import('@vueuse/core')['useObjectUrl']
   const useOffsetPagination: typeof import('@vueuse/core')['useOffsetPagination']
   const useOnline: typeof import('@vueuse/core')['useOnline']
+  const useOrderStatus: typeof import('../../composables/useOrderStatus')['useOrderStatus']
+  const useOrderWebSocket: typeof import('../../composables/useOrderWebSocket')['useOrderWebSocket']
   const usePageLeave: typeof import('@vueuse/core')['usePageLeave']
   const useParallax: typeof import('@vueuse/core')['useParallax']
   const useParentElement: typeof import('@vueuse/core')['useParentElement']
+  const usePayment: typeof import('../../composables/usePayment')['usePayment']
   const usePerformanceObserver: typeof import('@vueuse/core')['usePerformanceObserver']
   const usePermission: typeof import('@vueuse/core')['usePermission']
   const usePinia: typeof import('../../node_modules/@pinia/nuxt/dist/runtime/composables')['usePinia']
@@ -366,7 +375,10 @@ declare global {
   const useTitle: typeof import('@vueuse/core')['useTitle']
   const useToNumber: typeof import('@vueuse/core')['useToNumber']
   const useToString: typeof import('@vueuse/core')['useToString']
+  const useToast: typeof import('../../composables/useToast')['useToast']
+  const useToastStore: typeof import('../../stores/toast')['useToastStore']
   const useToggle: typeof import('@vueuse/core')['useToggle']
+  const useTouchGestures: typeof import('../../composables/useTouchGestures')['useTouchGestures']
   const useTransition: typeof import('@vueuse/core')['useTransition']
   const useTransitionState: typeof import('../../node_modules/vue')['useTransitionState']
   const useUrlSearchParams: typeof import('@vueuse/core')['useUrlSearchParams']
@@ -412,8 +424,20 @@ declare global {
   export type { Component, ComponentPublicInstance, ComputedRef, DirectiveBinding, ExtractDefaultPropTypes, ExtractPropTypes, ExtractPublicPropTypes, InjectionKey, PropType, Ref, MaybeRef, MaybeRefOrGetter, VNode, WritableComputedRef } from '../../node_modules/vue'
   import('../../node_modules/vue')
   // @ts-ignore
+  export type { AikoSyncResult, AikoOrderResponse, AikoOrderStatus } from '../../composables/useAiko'
+  import('../../composables/useAiko')
+  // @ts-ignore
   export type { Category, ProductModifierOption, ProductModifier, Product, ProductsResponse } from '../../composables/useCatalog'
   import('../../composables/useCatalog')
+  // @ts-ignore
+  export type { CreatePaymentRequest, CreatePaymentResponse, PaymentStatusResponse, RefundRequest } from '../../composables/usePayment'
+  import('../../composables/usePayment')
+  // @ts-ignore
+  export type { CartItemModifier, CartItem, PromoCode } from '../../stores/cart'
+  import('../../stores/cart')
+  // @ts-ignore
+  export type { ToastType, Toast } from '../../stores/toast'
+  import('../../stores/toast')
 }
 // for vue template auto import
 import { UnwrapRef } from 'vue'
@@ -574,7 +598,10 @@ declare module 'vue' {
     readonly until: UnwrapRef<typeof import('@vueuse/core')['until']>
     readonly updateAppConfig: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/config')['updateAppConfig']>
     readonly useActiveElement: UnwrapRef<typeof import('@vueuse/core')['useActiveElement']>
+    readonly useAdminAuth: UnwrapRef<typeof import('../../composables/useAdminAuth')['useAdminAuth']>
+    readonly useAiko: UnwrapRef<typeof import('../../composables/useAiko')['useAiko']>
     readonly useAnimate: UnwrapRef<typeof import('@vueuse/core')['useAnimate']>
+    readonly useAnimations: UnwrapRef<typeof import('../../composables/useAnimations')['useAnimations']>
     readonly useAppConfig: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/config')['useAppConfig']>
     readonly useArrayDifference: UnwrapRef<typeof import('@vueuse/core')['useArrayDifference']>
     readonly useArrayEvery: UnwrapRef<typeof import('@vueuse/core')['useArrayEvery']>
@@ -592,6 +619,7 @@ declare module 'vue' {
     readonly useAsyncQueue: UnwrapRef<typeof import('@vueuse/core')['useAsyncQueue']>
     readonly useAsyncState: UnwrapRef<typeof import('@vueuse/core')['useAsyncState']>
     readonly useAttrs: UnwrapRef<typeof import('../../node_modules/vue')['useAttrs']>
+    readonly useAuth: UnwrapRef<typeof import('../../composables/useAuth')['useAuth']>
     readonly useBase64: UnwrapRef<typeof import('@vueuse/core')['useBase64']>
     readonly useBattery: UnwrapRef<typeof import('@vueuse/core')['useBattery']>
     readonly useBluetooth: UnwrapRef<typeof import('@vueuse/core')['useBluetooth']>
@@ -599,6 +627,7 @@ declare module 'vue' {
     readonly useBroadcastChannel: UnwrapRef<typeof import('@vueuse/core')['useBroadcastChannel']>
     readonly useBrowserLocation: UnwrapRef<typeof import('@vueuse/core')['useBrowserLocation']>
     readonly useCached: UnwrapRef<typeof import('@vueuse/core')['useCached']>
+    readonly useCartStore: UnwrapRef<typeof import('../../stores/cart')['useCartStore']>
     readonly useCatalog: UnwrapRef<typeof import('../../composables/useCatalog')['useCatalog']>
     readonly useClipboard: UnwrapRef<typeof import('@vueuse/core')['useClipboard']>
     readonly useClipboardItems: UnwrapRef<typeof import('@vueuse/core')['useClipboardItems']>
@@ -663,6 +692,7 @@ declare module 'vue' {
     readonly useLoadingIndicator: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/loading-indicator')['useLoadingIndicator']>
     readonly useLocalStorage: UnwrapRef<typeof import('@vueuse/core')['useLocalStorage']>
     readonly useMagicKeys: UnwrapRef<typeof import('@vueuse/core')['useMagicKeys']>
+    readonly useMaintenance: UnwrapRef<typeof import('../../composables/useMaintenance')['useMaintenance']>
     readonly useManualRefHistory: UnwrapRef<typeof import('@vueuse/core')['useManualRefHistory']>
     readonly useMediaControls: UnwrapRef<typeof import('@vueuse/core')['useMediaControls']>
     readonly useMediaQuery: UnwrapRef<typeof import('@vueuse/core')['useMediaQuery']>
@@ -683,9 +713,12 @@ declare module 'vue' {
     readonly useObjectUrl: UnwrapRef<typeof import('@vueuse/core')['useObjectUrl']>
     readonly useOffsetPagination: UnwrapRef<typeof import('@vueuse/core')['useOffsetPagination']>
     readonly useOnline: UnwrapRef<typeof import('@vueuse/core')['useOnline']>
+    readonly useOrderStatus: UnwrapRef<typeof import('../../composables/useOrderStatus')['useOrderStatus']>
+    readonly useOrderWebSocket: UnwrapRef<typeof import('../../composables/useOrderWebSocket')['useOrderWebSocket']>
     readonly usePageLeave: UnwrapRef<typeof import('@vueuse/core')['usePageLeave']>
     readonly useParallax: UnwrapRef<typeof import('@vueuse/core')['useParallax']>
     readonly useParentElement: UnwrapRef<typeof import('@vueuse/core')['useParentElement']>
+    readonly usePayment: UnwrapRef<typeof import('../../composables/usePayment')['usePayment']>
     readonly usePerformanceObserver: UnwrapRef<typeof import('@vueuse/core')['usePerformanceObserver']>
     readonly usePermission: UnwrapRef<typeof import('@vueuse/core')['usePermission']>
     readonly usePinia: UnwrapRef<typeof import('../../node_modules/@pinia/nuxt/dist/runtime/composables')['usePinia']>
@@ -784,7 +817,10 @@ declare module 'vue' {
     readonly useTitle: UnwrapRef<typeof import('@vueuse/core')['useTitle']>
     readonly useToNumber: UnwrapRef<typeof import('@vueuse/core')['useToNumber']>
     readonly useToString: UnwrapRef<typeof import('@vueuse/core')['useToString']>
+    readonly useToast: UnwrapRef<typeof import('../../composables/useToast')['useToast']>
+    readonly useToastStore: UnwrapRef<typeof import('../../stores/toast')['useToastStore']>
     readonly useToggle: UnwrapRef<typeof import('@vueuse/core')['useToggle']>
+    readonly useTouchGestures: UnwrapRef<typeof import('../../composables/useTouchGestures')['useTouchGestures']>
     readonly useTransition: UnwrapRef<typeof import('@vueuse/core')['useTransition']>
     readonly useTransitionState: UnwrapRef<typeof import('../../node_modules/vue')['useTransitionState']>
     readonly useUrlSearchParams: UnwrapRef<typeof import('@vueuse/core')['useUrlSearchParams']>

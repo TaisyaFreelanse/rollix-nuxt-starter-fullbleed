@@ -7,12 +7,12 @@
     "module": true,
     "resourceType": "script"
   },
-  "C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/nuxt/dist/app/entry.js": {
+  "C:/Users/GameOn-DP/Desktop/rollix-nuxt-starter-fullbleed/rollix-nuxt-starter-fullbleed/node_modules/nuxt/dist/app/entry.js": {
     "resourceType": "script",
     "module": true,
     "prefetch": true,
     "preload": true,
     "isEntry": true,
-    "file": "C:/Users/GameOn-DP/Desktop/rollix/rollix-nuxt-starter-fullbleed/node_modules/nuxt/dist/app/entry.js"
+    "file": "C:/Users/GameOn-DP/Desktop/rollix-nuxt-starter-fullbleed/rollix-nuxt-starter-fullbleed/node_modules/nuxt/dist/app/entry.js"
   }
 }

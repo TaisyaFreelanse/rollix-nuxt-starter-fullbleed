@@ -3,14 +3,183 @@ import type { Serialize, Simplify } from "nitropack/types";
 declare module "nitropack/types" {
   type Awaited<T> = T extends PromiseLike<infer U> ? Awaited<U> : T
   interface InternalApi {
+    '/api/admin/admins/:id': {
+      'delete': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/admins/[id].delete').default>>>>
+      'put': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/admins/[id].put').default>>>>
+    }
+    '/api/admin/admins': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/admins/index.get').default>>>>
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/admins/index.post').default>>>>
+    }
+    '/api/admin/apply-bonus-migration': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/apply-bonus-migration.post').default>>>>
+    }
+    '/api/admin/auth/check': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/auth/check.get').default>>>>
+    }
+    '/api/admin/auth/login': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/auth/login.post').default>>>>
+    }
+    '/api/admin/auth/logout': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/auth/logout.post').default>>>>
+    }
+    '/api/admin/banners/:id': {
+      'delete': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/banners/[id].delete').default>>>>
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/banners/[id].get').default>>>>
+      'put': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/banners/[id].put').default>>>>
+    }
+    '/api/admin/banners': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/banners/index.get').default>>>>
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/banners/index.post').default>>>>
+    }
+    '/api/admin/delivery-zones/:id': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/delivery-zones/[id].get').default>>>>
+      'put': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/delivery-zones/[id].put').default>>>>
+    }
+    '/api/admin/delivery-zones': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/delivery-zones/index.get').default>>>>
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/delivery-zones/index.post').default>>>>
+    }
+    '/api/admin/promocode-widget': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/promocode-widget/index.get').default>>>>
+      'put': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/promocode-widget/index.put').default>>>>
+    }
+    '/api/admin/promotions/:id': {
+      'delete': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/promotions/[id].delete').default>>>>
+      'put': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/promotions/[id].put').default>>>>
+    }
+    '/api/admin/promotions': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/promotions/index.get').default>>>>
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/promotions/index.post').default>>>>
+    }
+    '/api/admin/settings': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/settings.get').default>>>>
+      'put': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/settings.put').default>>>>
+    }
+    '/api/aiko/health': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/aiko/health.get').default>>>>
+    }
+    '/api/aiko/orders/:aikoOrderId/status': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/aiko/orders/[aikoOrderId]/status.get').default>>>>
+    }
+    '/api/aiko/orders': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/aiko/orders/index.post').default>>>>
+    }
+    '/api/aiko/sync-orders-status': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/aiko/sync-orders-status.post').default>>>>
+    }
+    '/api/aiko/sync-status': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/aiko/sync-status.get').default>>>>
+    }
+    '/api/aiko/sync': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/aiko/sync.post').default>>>>
+    }
+    '/api/auth/send-sms': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/auth/send-sms.post').default>>>>
+    }
+    '/api/auth/verify-sms': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/auth/verify-sms.post').default>>>>
+    }
+    '/api/banners': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/banners/index.get').default>>>>
+    }
+    '/api/categories/:id': {
+      'delete': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/categories/[id].delete').default>>>>
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/categories/[id].get').default>>>>
+      'put': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/categories/[id].put').default>>>>
+    }
     '/api/categories': {
       'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/categories/index.get').default>>>>
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/categories/index.post').default>>>>
+    }
+    '/api/delivery-zones/:id': {
+      'delete': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/delivery-zones/[id].delete').default>>>>
+    }
+    '/api/delivery-zones/calculate': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/delivery-zones/calculate.post').default>>>>
+    }
+    '/api/delivery-zones': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/delivery-zones/index.get').default>>>>
+    }
+    '/api/migrate-sms-table': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/migrate-sms-table.post').default>>>>
+    }
+    '/api/orders/:id': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/orders/[id].get').default>>>>
+      'put': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/orders/[id].put').default>>>>
+    }
+    '/api/orders/:id/sync-status': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/orders/[id]/sync-status.post').default>>>>
+    }
+    '/api/orders/all': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/orders/all.get').default>>>>
+    }
+    '/api/orders': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/orders/index.post').default>>>>
+    }
+    '/api/payments/:paymentId/cancel': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/payments/[paymentId]/cancel.post').default>>>>
+    }
+    '/api/payments/:paymentId/refund': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/payments/[paymentId]/refund.post').default>>>>
+    }
+    '/api/payments/:paymentId/status': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/payments/[paymentId]/status.get').default>>>>
+    }
+    '/api/payments/create': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/payments/create.post').default>>>>
+    }
+    '/api/payments/webhook': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/payments/webhook.post').default>>>>
     }
     '/api/products/:id': {
+      'delete': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/products/[id].delete').default>>>>
       'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/products/[id].get').default>>>>
+      'put': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/products/[id].put').default>>>>
     }
     '/api/products': {
       'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/products/index.get').default>>>>
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/products/index.post').default>>>>
+    }
+    '/api/profile/addresses/:id': {
+      'delete': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/profile/addresses/[id].delete').default>>>>
+      'put': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/profile/addresses/[id].put').default>>>>
+    }
+    '/api/profile/addresses': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/profile/addresses/index.get').default>>>>
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/profile/addresses/index.post').default>>>>
+    }
+    '/api/profile/bonuses': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/profile/bonuses/index.get').default>>>>
+    }
+    '/api/profile/favorites/:productId': {
+      'delete': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/profile/favorites/[productId].delete').default>>>>
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/profile/favorites/[productId].get').default>>>>
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/profile/favorites/[productId].post').default>>>>
+    }
+    '/api/profile/favorites': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/profile/favorites/index.get').default>>>>
+    }
+    '/api/profile/orders': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/profile/orders/index.get').default>>>>
+    }
+    '/api/promo-codes/:id': {
+      'delete': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/promo-codes/[id].delete').default>>>>
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/promo-codes/[id].get').default>>>>
+      'put': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/promo-codes/[id].put').default>>>>
+    }
+    '/api/promo-codes/by-code': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/promo-codes/by-code.get').default>>>>
+    }
+    '/api/promo-codes': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/promo-codes/index.get').default>>>>
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/promo-codes/index.post').default>>>>
+    }
+    '/api/promocode-widget': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/promocode-widget/index.get').default>>>>
+    }
+    '/api/promotions': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/promotions/index.get').default>>>>
     }
     '/__nuxt_error': {
       'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../node_modules/nuxt/dist/core/runtime/nitro/handlers/renderer').default>>>>

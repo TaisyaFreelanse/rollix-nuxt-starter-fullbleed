@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест Яндекс Карт API</title>
+    <script src="https://api-maps.yandex.ru/3.0/?apikey=51d550e0-cf8f-4247-bae5-dfd32b51048d&lang=ru_RU" type="text/javascript"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #2a2a2a;
+            border-radius: 8px;
+        }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+        .info { color: #60a5fa; }
+        #map { width: 100%; height: 400px; margin: 20px 0; border-radius: 8px; }
+        button { padding: 10px 20px; margin: 5px; background: #3b82f6; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #2563eb; }
+        input { padding: 8px; width: 300px; margin: 5px; border-radius: 5px; border: 1px solid #444; background: #333; color: #fff; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Тест Яндекс Карт API</h1>
+    
+    <div class="test-section">
+        <h2>1. Проверка загрузки API</h2>
+        <div id="api-status">⏳ Проверка...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Тест Геокодера</h2>
+        <input type="text" id="address-input" placeholder="Введите адрес (например: Москва, Красная площадь)" value="Москва, Красная площадь">
+        <button onclick="testGeocoder()">Найти адрес</button>
+        <div id="geocoder-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Тест обратного геокодинга</h2>
+        <button onclick="testReverseGeocoder()">Получить адрес по координатам (55.7558, 37.6173)</button>
+        <div id="reverse-geocoder-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Тест карты</h2>
+        <button onclick="initMap()">Инициализировать карту</button>
+        <div id="map-status"></div>
+        <div id="map"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 Итоговый отчет</h2>
+        <div id="final-report"></div>
+    </div>
+
+    <script>
+        const results = {
+            apiLoaded: false,
+            geocoder: false,
+            reverseGeocoder: false,
+            map: false
+        };
+
+        // Проверка загрузки API
+        function checkAPI() {
+            const statusDiv = document.getElementById('api-status');
+            
+            if (typeof ymaps3 !== 'undefined') {
+                statusDiv.innerHTML = '<span class="success">✅ API загружен (ymaps3 доступен)</span>';
+                results.apiLoaded = true;
+                
+                if (ymaps3.ready) {
+                    ymaps3.ready.then(() => {
+                        statusDiv.innerHTML += '<br><span class="success">✅ API готов к использованию</span>';
+                        updateFinalReport();
+                    });
+                }
+            } else {
+                // Ждем загрузки
+                setTimeout(() => {
+                    if (typeof ymaps3 !== 'undefined') {
+                        checkAPI();
+                    } else {
+                        statusDiv.innerHTML = '<span class="error">❌ API не загружен. Проверьте консоль на ошибки.</span>';
+                        updateFinalReport();
+                    }
+                }, 1000);
+            }
+        }
+
+        // Тест геокодера
+        async function testGeocoder() {
+            const input = document.getElementById('address-input').value;
+            const resultDiv = document.getElementById('geocoder-result');
+            resultDiv.innerHTML = '<span class="info">⏳ Поиск...</span>';
+
+            try {
+                const encoded = encodeURIComponent(input);
+                const url = `https://geocode-maps.yandex.ru/1.x/?apikey=51d550e0-cf8f-4247-bae5-dfd32b51048d&geocode=${encoded}&format=json&results=1`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                const feature = data.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject;
+
+                if (feature) {
+                    const [lng, lat] = feature.Point.pos.split(' ').map(Number);
+                    const address = feature.metaDataProperty?.GeocoderMetaData?.text;
+                    resultDiv.innerHTML = `
+                        <span class="success">✅ Адрес найден!</span><br>
+                        <strong>Адрес:</strong> ${address}<br>
+                        <strong>Координаты:</strong> ${lat.toFixed(6)}, ${lng.toFixed(6)}
+                    `;
+                    results.geocoder = true;
+                } else {
+                    resultDiv.innerHTML = '<span class="error">❌ Адрес не найден</span>';
+                    results.geocoder = false;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">❌ Ошибка: ${error.message}</span>`;
+                results.geocoder = false;
+            }
+            updateFinalReport();
+        }
+
+        // Тест обратного геокодинга
+        async function testReverseGeocoder() {
+            const resultDiv = document.getElementById('reverse-geocoder-result');
+            resultDiv.innerHTML = '<span class="info">⏳ Получение адреса...</span>';
+
+            try {
+                const url = `https://geocode-maps.yandex.ru/1.x/?apikey=51d550e0-cf8f-4247-bae5-dfd32b51048d&geocode=37.6173,55.7558&format=json&results=1`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                const feature = data.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject;
+
+                if (feature) {
+                    const address = feature.metaDataProperty?.GeocoderMetaData?.text;
+                    resultDiv.innerHTML = `
+                        <span class="success">✅ Адрес получен!</span><br>
+                        <strong>Адрес:</strong> ${address}
+                    `;
+                    results.reverseGeocoder = true;
+                } else {
+                    resultDiv.innerHTML = '<span class="error">❌ Адрес не найден</span>';
+                    results.reverseGeocoder = false;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">❌ Ошибка: ${error.message}</span>`;
+                results.reverseGeocoder = false;
+            }
+            updateFinalReport();
+        }
+
+        // Инициализация карты
+        async function initMap() {
+            const statusDiv = document.getElementById('map-status');
+            const mapDiv = document.getElementById('map');
+            
+            statusDiv.innerHTML = '<span class="info">⏳ Инициализация карты...</span>';
+
+            try {
+                if (typeof ymaps3 === 'undefined') {
+                    throw new Error('ymaps3 не загружен');
+                }
+
+                await ymaps3.ready;
+
+                const { YMap, YMapDefaultSchemeLayer } = ymaps3;
+
+                if (!YMap || !YMapDefaultSchemeLayer) {
+                    throw new Error('Компоненты карты не загружены');
+                }
+
+                // Очищаем контейнер
+                mapDiv.innerHTML = '';
+
+                const map = new YMap(mapDiv, {
+                    location: {
+                        center: [37.6173, 55.7558], // Москва [lng, lat]
+                        zoom: 10
+                    }
+                });
+
+                map.addChild(new YMapDefaultSchemeLayer({}));
+
+                statusDiv.innerHTML = '<span class="success">✅ Карта успешно инициализирована!</span>';
+                results.map = true;
+
+                // Тест клика на карте
+                map.on('click', async (event) => {
+                    const [lng, lat] = event.coordinates;
+                    statusDiv.innerHTML += `<br><span class="info">📍 Клик: ${lat.toFixed(6)}, ${lng.toFixed(6)}</span>`;
+                });
+
+            } catch (error) {
+                statusDiv.innerHTML = `<span class="error">❌ Ошибка: ${error.message}</span>`;
+                results.map = false;
+            }
+            updateFinalReport();
+        }
+
+        // Обновление итогового отчета
+        function updateFinalReport() {
+            const reportDiv = document.getElementById('final-report');
+            const allPassed = Object.values(results).every(r => r === true);
+            const passedCount = Object.values(results).filter(r => r === true).length;
+            const totalCount = Object.keys(results).length;
+
+            reportDiv.innerHTML = `
+                <div>
+                    <strong>Пройдено тестов:</strong> ${passedCount}/${totalCount}<br>
+                    <strong>API загружен:</strong> ${results.apiLoaded ? '✅' : '❌'}<br>
+                    <strong>Геокодер:</strong> ${results.geocoder ? '✅' : '❌'}<br>
+                    <strong>Обратный геокодинг:</strong> ${results.reverseGeocoder ? '✅' : '❌'}<br>
+                    <strong>Карта:</strong> ${results.map ? '✅' : '❌'}<br><br>
+                    <strong style="font-size: 1.2em; color: ${allPassed ? '#4ade80' : '#f87171'}">
+                        ${allPassed ? '✅ ВСЕ ТЕСТЫ ПРОЙДЕНЫ!' : '⚠️ НЕКОТОРЫЕ ТЕСТЫ НЕ ПРОЙДЕНЫ'}
+                    </strong>
+                </div>
+            `;
+        }
+
+        // Запуск проверки при загрузке
+        window.addEventListener('load', () => {
+            setTimeout(checkAPI, 500);
+        });
+    </script>
+</body>
+</html>
+
