@@ -27,7 +27,14 @@ const mapInstance = ref<any>(null) // Ссылка на объект карты
 // Глобальная переменная для ymaps3
 declare global {
   interface Window {
-    ymaps3: any
+    ymaps3?: {
+      ready: Promise<void>
+      YMap: any
+      YMapDefaultSchemeLayer: any
+      YMapControls: any
+      YMapGeolocationControl: any
+      YMapZoomControl: any
+    }
   }
 }
 
@@ -54,12 +61,23 @@ const initMap = async () => {
   }
 
   try {
-    // Ждем готовности API
-    await window.ymaps3.ready
+    // Ждем готовности API (обязательно!)
+    if (window.ymaps3.ready) {
+      await window.ymaps3.ready
+    } else {
+      // Если ready нет, ждем немного
+      await new Promise(resolve => setTimeout(resolve, 500))
+    }
 
     // Проверяем, что карта еще не создана
     if (mapInstance.value) {
       return // Карта уже создана
+    }
+
+    // Проверяем наличие необходимых компонентов
+    if (!window.ymaps3.YMap || !window.ymaps3.YMapDefaultSchemeLayer) {
+      console.error('Не все компоненты Яндекс Карт загружены')
+      return
     }
 
     const { YMap, YMapDefaultSchemeLayer, YMapControls, YMapGeolocationControl, YMapZoomControl } = window.ymaps3
@@ -171,35 +189,105 @@ const searchAddress = async () => {
   }
 }
 
+// Функция для загрузки скрипта Яндекс Карт
+const loadYmapsScript = (): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    // Проверяем, не загружен ли уже скрипт и готов ли API
+    if (window.ymaps3 && window.ymaps3.ready) {
+      window.ymaps3.ready
+        .then(() => resolve())
+        .catch(reject)
+      return
+    }
+
+    // Проверяем, не загружается ли уже скрипт
+    const existingScript = document.querySelector('script[src*="api-maps.yandex.ru/3.0"]')
+    if (existingScript) {
+      // Скрипт уже есть, ждем его загрузки и готовности
+      let attempts = 0
+      const maxAttempts = 100 // 10 секунд
+      const checkInterval = setInterval(() => {
+        attempts++
+        if (window.ymaps3?.ready) {
+          clearInterval(checkInterval)
+          window.ymaps3.ready
+            .then(() => resolve())
+            .catch(reject)
+        } else if (attempts >= maxAttempts) {
+          clearInterval(checkInterval)
+          reject(new Error('Таймаут загрузки Яндекс Карт API'))
+        }
+      }, 100)
+      return
+    }
+
+    // Создаем и загружаем скрипт
+    const script = document.createElement('script')
+    script.src = 'https://api-maps.yandex.ru/3.0/?apikey=51d550e0-cf8f-4247-bae5-dfd32b51048d&lang=ru_RU'
+    script.type = 'text/javascript'
+    script.async = true
+
+    script.onload = () => {
+      // Ждем появления ymaps3 и его готовности
+      let attempts = 0
+      const maxAttempts = 50 // 5 секунд
+      const checkReady = setInterval(() => {
+        attempts++
+        if (window.ymaps3?.ready) {
+          clearInterval(checkReady)
+          window.ymaps3.ready
+            .then(() => resolve())
+            .catch(reject)
+        } else if (attempts >= maxAttempts) {
+          clearInterval(checkReady)
+          if (window.ymaps3) {
+            // Если ymaps3 есть, но ready нет, пробуем продолжить
+            resolve()
+          } else {
+            reject(new Error('ymaps3 не инициализирован после загрузки скрипта'))
+          }
+        }
+      }, 100)
+    }
+
+    script.onerror = () => {
+      reject(new Error('Ошибка загрузки скрипта Яндекс Карт. Проверьте подключение к интернету и API ключ.'))
+    }
+
+    document.head.appendChild(script)
+  })
+}
+
 // Открытие карты
 const openMap = async () => {
   showMap.value = true
   // Ждем, пока модальное окно отобразится и контейнер будет доступен
   await nextTick()
-  await new Promise(resolve => setTimeout(resolve, 100)) // Небольшая задержка для рендеринга
+  await new Promise(resolve => setTimeout(resolve, 300)) // Задержка для рендеринга модального окна
 
   // Сбрасываем предыдущий экземпляр карты
+  if (mapInstance.value) {
+    try {
+      mapInstance.value.destroy?.()
+    } catch (e) {
+      console.warn('Ошибка при уничтожении предыдущей карты:', e)
+    }
+  }
   mapInstance.value = null
   isMapReady.value = false
 
-  // Проверяем загрузку API
-  if (window.ymaps3) {
+  try {
+    console.log('[Yandex Maps] Начало загрузки API...')
+    // Загружаем скрипт, если он еще не загружен
+    await loadYmapsScript()
+    console.log('[Yandex Maps] API загружен, инициализация карты...')
+    // Инициализируем карту
     await initMap()
-  } else {
-    // Ждем загрузки скрипта
-    let attempts = 0
-    const maxAttempts = 50 // 5 секунд максимум
-    const checkYmaps = setInterval(() => {
-      attempts++
-      if (window.ymaps3) {
-        clearInterval(checkYmaps)
-        initMap()
-      } else if (attempts >= maxAttempts) {
-        clearInterval(checkYmaps)
-        console.error('Не удалось загрузить Яндекс Карты API')
-        alert('Ошибка загрузки карты. Пожалуйста, обновите страницу.')
-      }
-    }, 100)
+    console.log('[Yandex Maps] Карта успешно инициализирована')
+  } catch (error: any) {
+    console.error('[Yandex Maps] Ошибка:', error)
+    const errorMessage = error.message || 'Неизвестная ошибка'
+    alert(`Ошибка загрузки карты: ${errorMessage}\n\nПроверьте:\n- Подключение к интернету\n- API ключ Яндекс Карт\n- Консоль браузера для деталей`)
   }
 }
 
