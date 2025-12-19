@@ -33,12 +33,34 @@ declare global {
 
 // Инициализация карты
 const initMap = async () => {
-  if (!mapContainer.value || !window.ymaps3) {
+  if (!mapContainer.value) {
+    console.error('Контейнер карты не найден')
+    return
+  }
+
+  // Убеждаемся, что контейнер имеет размеры
+  if (mapContainer.value.offsetWidth === 0 || mapContainer.value.offsetHeight === 0) {
+    console.error('Контейнер карты не имеет размеров')
+    await nextTick()
+    // Повторная попытка после следующего тика
+    setTimeout(() => initMap(), 100)
+    return
+  }
+
+  // Ждем загрузки API
+  if (!window.ymaps3) {
+    console.error('ymaps3 не загружен')
     return
   }
 
   try {
+    // Ждем готовности API
     await window.ymaps3.ready
+
+    // Проверяем, что карта еще не создана
+    if (mapInstance.value) {
+      return // Карта уже создана
+    }
 
     const { YMap, YMapDefaultSchemeLayer, YMapControls, YMapGeolocationControl, YMapZoomControl } = window.ymaps3
 
@@ -53,8 +75,13 @@ const initMap = async () => {
           zoom: 10
         }
 
+    // Очищаем контейнер перед созданием карты
+    mapContainer.value.innerHTML = ''
+
     const map = new YMap(mapContainer.value, { location: LOCATION })
     mapInstance.value = map // Сохраняем ссылку на карту
+    
+    // Добавляем слой карты (это обязательно!)
     map.addChild(new YMapDefaultSchemeLayer({}))
 
     // Добавляем контролы
@@ -147,24 +174,44 @@ const searchAddress = async () => {
 // Открытие карты
 const openMap = async () => {
   showMap.value = true
+  // Ждем, пока модальное окно отобразится и контейнер будет доступен
   await nextTick()
+  await new Promise(resolve => setTimeout(resolve, 100)) // Небольшая задержка для рендеринга
+
+  // Сбрасываем предыдущий экземпляр карты
+  mapInstance.value = null
+  isMapReady.value = false
+
+  // Проверяем загрузку API
   if (window.ymaps3) {
     await initMap()
   } else {
     // Ждем загрузки скрипта
+    let attempts = 0
+    const maxAttempts = 50 // 5 секунд максимум
     const checkYmaps = setInterval(() => {
+      attempts++
       if (window.ymaps3) {
         clearInterval(checkYmaps)
         initMap()
+      } else if (attempts >= maxAttempts) {
+        clearInterval(checkYmaps)
+        console.error('Не удалось загрузить Яндекс Карты API')
+        alert('Ошибка загрузки карты. Пожалуйста, обновите страницу.')
       }
     }, 100)
-    setTimeout(() => clearInterval(checkYmaps), 10000) // Таймаут 10 секунд
   }
 }
 
 // Закрытие карты
 const closeMap = () => {
   showMap.value = false
+  // Очищаем карту при закрытии
+  if (mapInstance.value) {
+    mapInstance.value.destroy?.()
+    mapInstance.value = null
+  }
+  isMapReady.value = false
 }
 
 // Подтверждение выбора
@@ -225,7 +272,17 @@ watch(
         </div>
 
         <!-- Карта -->
-        <div ref="mapContainer" class="w-full h-[400px] rounded-lg overflow-hidden border border-white/10"></div>
+        <div 
+          ref="mapContainer" 
+          class="w-full h-[400px] rounded-lg overflow-hidden border border-white/10 bg-gray-900"
+          style="min-width: 100%; min-height: 400px;">
+          <div v-if="!isMapReady" class="w-full h-full flex items-center justify-center text-gray-400">
+            <div class="text-center">
+              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-accent mx-auto mb-2"></div>
+              <div class="text-sm">Загрузка карты...</div>
+            </div>
+          </div>
+        </div>
 
         <!-- Выбранный адрес -->
         <div v-if="selectedAddress" class="p-3 bg-white/5 rounded-lg border border-white/10">

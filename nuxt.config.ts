@@ -21,6 +21,7 @@ export default defineNuxtConfig({
       script: [
         {
           src: 'https://api-maps.yandex.ru/v3/?apikey=51d550e0-cf8f-4247-bae5-dfd32b51048d&lang=ru_RU',
+          async: true,
           defer: true
         }
       ]
