@@ -89,8 +89,8 @@ const initMap = async () => {
           zoom: 15
         }
       : {
-          center: [37.588144, 55.733842], // Москва по умолчанию [lng, lat]
-          zoom: 10
+          center: [158.6503, 53.0194], // Петропавловск-Камчатский по умолчанию [lng, lat]
+          zoom: 12
         }
 
     // Очищаем контейнер перед созданием карты
@@ -116,27 +116,42 @@ const initMap = async () => {
       const [lng, lat] = event.coordinates
       selectedCoordinates.value = [lat, lng] // Сохраняем как [lat, lng] для API
 
-      // Получаем адрес по координатам через HTTP Geocoder API
+      // Показываем индикатор загрузки
+      isLoading.value = true
+
+      // Получаем адрес по координатам через HTTP Geocoder API (обратный геокодинг)
       try {
         const response = await fetch(
-          `https://geocode-maps.yandex.ru/1.x/?apikey=51d550e0-cf8f-4247-bae5-dfd32b51048d&geocode=${lng},${lat}&format=json&results=1`
+          `https://geocode-maps.yandex.ru/1.x/?apikey=51d550e0-cf8f-4247-bae5-dfd32b51048d&geocode=${lng},${lat}&format=json&results=1&kind=house`
         )
         const data = await response.json()
         const geoObject = data.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject
-        const address =
-          geoObject?.metaDataProperty?.GeocoderMetaData?.text ||
-          geoObject?.name ||
-          `${lat.toFixed(6)}, ${lng.toFixed(6)}`
-
-        selectedAddress.value = address
-        emit('update:modelValue', address)
-        emit('update:coordinates', [lat, lng])
-        emit('addressSelected', { address, coordinates: [lat, lng] })
+        
+        if (geoObject) {
+          // Используем полный адрес из GeocoderMetaData
+          const address = geoObject.metaDataProperty?.GeocoderMetaData?.text || 
+                         geoObject.name || 
+                         `${lat.toFixed(6)}, ${lng.toFixed(6)}`
+          
+          selectedAddress.value = address
+          emit('update:modelValue', address)
+          emit('update:coordinates', [lat, lng])
+          emit('addressSelected', { address, coordinates: [lat, lng] })
+        } else {
+          // Если адрес не найден, используем координаты
+          const fallbackAddress = `${lat.toFixed(6)}, ${lng.toFixed(6)}`
+          selectedAddress.value = fallbackAddress
+          emit('update:modelValue', fallbackAddress)
+          emit('update:coordinates', [lat, lng])
+        }
       } catch (error) {
         console.error('Ошибка получения адреса:', error)
-        selectedAddress.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`
-        emit('update:modelValue', selectedAddress.value)
+        const fallbackAddress = `${lat.toFixed(6)}, ${lng.toFixed(6)}`
+        selectedAddress.value = fallbackAddress
+        emit('update:modelValue', fallbackAddress)
         emit('update:coordinates', [lat, lng])
+      } finally {
+        isLoading.value = false
       }
     })
 
@@ -388,17 +403,25 @@ watch(
         </div>
 
         <!-- Выбранный адрес -->
-        <div v-if="selectedAddress" class="p-3 bg-white/5 rounded-lg border border-white/10">
+        <div v-if="selectedAddress || selectedCoordinates" class="p-3 bg-white/5 rounded-lg border border-white/10">
           <div class="text-xs text-gray-400 mb-1">Выбранный адрес:</div>
-          <div class="text-sm text-white font-medium">{{ selectedAddress }}</div>
-          <div v-if="selectedCoordinates" class="text-xs text-gray-500 mt-1">
+          <div v-if="isLoading" class="text-sm text-gray-400 italic">
+            Поиск адреса...
+          </div>
+          <div v-else-if="selectedAddress" class="text-sm text-white font-medium">
+            {{ selectedAddress }}
+          </div>
+          <div v-else-if="selectedCoordinates" class="text-sm text-gray-400 italic">
+            Адрес не найден. Координаты: {{ selectedCoordinates[0].toFixed(6) }}, {{ selectedCoordinates[1].toFixed(6) }}
+          </div>
+          <div v-if="selectedCoordinates && !isLoading" class="text-xs text-gray-500 mt-1">
             Координаты: {{ selectedCoordinates[0].toFixed(6) }}, {{ selectedCoordinates[1].toFixed(6) }}
           </div>
         </div>
 
         <!-- Инструкция -->
         <div class="text-xs text-gray-400">
-          💡 Кликните на карте, чтобы выбрать адрес, или введите адрес в поле поиска
+          💡 Кликните на карте, чтобы выбрать адрес (адрес определится автоматически), или введите адрес в поле поиска
         </div>
       </div>
 
