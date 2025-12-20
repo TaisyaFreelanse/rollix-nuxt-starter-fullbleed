@@ -255,17 +255,46 @@ const fetchSuggestions = async (text: string) => {
   const center = mapInstance.value?.location?.center || [158.6503, 53.0194] // Петропавловск-Камчатский по умолчанию [lng, lat]
   const [lng, lat] = center
 
-  // Сначала пробуем Suggest API
+  // Сначала пробуем Suggest API напрямую с клиента (Yandex блокирует серверные запросы)
   try {
-    // Используем серверный прокси для Suggest API (обход CORS)
+    // Используем API ключ для Suggest API
+    const suggestApiKey = '804dccb1-83e0-419e-a3cd-7d6641593b0b'
+    
+    // Формируем URL для Suggest API
     // В Suggest API формат координат: {lon},{lat} (долгота, широта)
-    const data = await $fetch('/api/yandex/suggest', {
-      query: {
-        text,
-        ll: `${lng},${lat}`, // Формат: долгота,широта
-        spn: '0.5,0.5' // Область поиска: ширина и высота в градусах
+    const params = new URLSearchParams({
+      apikey: suggestApiKey,
+      text: text,
+      lang: 'ru_RU',
+      types: 'house,street,locality',
+      print_address: '1',
+      attrs: 'uri',
+      results: '5',
+      ll: `${lng},${lat}`, // Формат: долгота,широта
+      spn: '0.5,0.5' // Область поиска: ширина и высота в градусах
+    })
+
+    const url = `https://suggest-maps.yandex.ru/v1/suggest?${params.toString()}`
+    
+    // Делаем запрос напрямую с клиента (браузер)
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json'
       }
     })
+
+    if (!response.ok) {
+      // Если ошибка, переходим к fallback
+      if (response.status === 403 || response.status === 401) {
+        console.warn('[AddressMapPicker] Suggest API недоступен (403/401), используем Geocoder API как fallback')
+      } else {
+        console.warn(`[AddressMapPicker] Suggest API вернул ошибку ${response.status}, используем Geocoder API`)
+      }
+      throw new Error(`Suggest API error: ${response.status}`)
+    }
+
+    const data = await response.json()
 
     if (data.results && Array.isArray(data.results)) {
       // Фильтруем результаты - только адреса в России
@@ -283,11 +312,11 @@ const fetchSuggestions = async (text: string) => {
       return
     }
   } catch (error: any) {
-    // Если Suggest API недоступен (403, 401 и т.д.), используем Geocoder API как fallback
-    if (error.statusCode === 403 || error.statusCode === 401) {
-      console.warn('[AddressMapPicker] Suggest API недоступен, используем Geocoder API как fallback')
+    // Если Suggest API недоступен (CORS, 403, 401 и т.д.), используем Geocoder API как fallback
+    if (error.message?.includes('CORS') || error.message?.includes('403') || error.message?.includes('401')) {
+      console.warn('[AddressMapPicker] Suggest API недоступен (CORS/403/401), используем Geocoder API как fallback')
     } else {
-      console.error('Ошибка получения подсказок через Suggest API:', error)
+      console.warn('[AddressMapPicker] Ошибка Suggest API, используем Geocoder API:', error.message)
     }
   }
 
