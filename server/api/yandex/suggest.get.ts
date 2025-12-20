@@ -12,8 +12,9 @@ export default defineEventHandler(async (event) => {
 
     // Формируем URL для Suggest API
     // Используем новый API ключ для пакета "API Геосаджеста"
-    const apiKey = '804dccb1-83e0-419e-a3cd-7d6641593b0b'
     const config = useRuntimeConfig()
+    // Можно использовать ключ из переменных окружения или захардкоженный
+    const apiKey = process.env.YANDEX_SUGGEST_API_KEY || '804dccb1-83e0-419e-a3cd-7d6641593b0b'
     
     const params = new URLSearchParams({
       apikey: apiKey,
@@ -43,21 +44,55 @@ export default defineEventHandler(async (event) => {
 
     const url = `https://suggest-maps.yandex.ru/v1/suggest?${params.toString()}`
 
+    console.log('[Yandex Suggest API] Запрос:', url.replace(apiKey, '***'))
+
     // Делаем запрос к Yandex Suggest API
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json'
       }
     })
 
     if (!response.ok) {
+      // Получаем детали ошибки от Yandex API
+      let errorMessage = `Ошибка Suggest API: ${response.status} ${response.statusText}`
+      try {
+        const errorData = await response.text()
+        console.error('[Yandex Suggest API] Ошибка ответа:', errorData)
+        if (errorData) {
+          try {
+            const errorJson = JSON.parse(errorData)
+            errorMessage = errorJson.message || errorJson.error || errorMessage
+          } catch {
+            errorMessage = `${errorMessage}. Ответ: ${errorData.substring(0, 200)}`
+          }
+        }
+      } catch (e) {
+        console.error('[Yandex Suggest API] Не удалось прочитать ответ об ошибке:', e)
+      }
+
+      // Специальная обработка для 403
+      if (response.status === 403) {
+        console.error('[Yandex Suggest API] 403 Forbidden - возможные причины:')
+        console.error('  1. API ключ неверный или не активирован')
+        console.error('  2. API ключ не имеет доступа к пакету "API Геосаджеста"')
+        console.error('  3. Ключ активируется в течение 15 минут после получения')
+        console.error('  4. Проверьте настройки ключа в Кабинете Разработчика: https://developer.tech.yandex.ru/')
+        throw createError({
+          statusCode: 403,
+          message: `Доступ запрещен. Проверьте API ключ для Suggest API. ${errorMessage}`
+        })
+      }
+
       throw createError({
         statusCode: response.status,
-        message: `Ошибка Suggest API: ${response.statusText}`
+        message: errorMessage
       })
     }
 
     const data = await response.json()
+    console.log('[Yandex Suggest API] Успешный ответ, результатов:', data.results?.length || 0)
     
     // Фильтруем результаты - только адреса в России
     if (data.results && Array.isArray(data.results)) {

@@ -242,7 +242,7 @@ const initMap = async () => {
   }
 }
 
-// Получение подсказок через Suggest API (API Геосаджеста)
+// Получение подсказок через Suggest API (API Геосаджеста) с fallback на Geocoder API
 const fetchSuggestions = async (text: string) => {
   if (!text.trim() || text.length < 2) {
     suggestions.value = []
@@ -250,12 +250,13 @@ const fetchSuggestions = async (text: string) => {
     return
   }
 
-  try {
-    // Получаем текущий центр карты для ограничения области поиска
-    // В Yandex Maps API 3.0 координаты в формате [lng, lat]
-    const center = mapInstance.value?.location?.center || [158.6503, 53.0194] // Петропавловск-Камчатский по умолчанию [lng, lat]
-    const [lng, lat] = center
+  // Получаем текущий центр карты для ограничения области поиска
+  // В Yandex Maps API 3.0 координаты в формате [lng, lat]
+  const center = mapInstance.value?.location?.center || [158.6503, 53.0194] // Петропавловск-Камчатский по умолчанию [lng, lat]
+  const [lng, lat] = center
 
+  // Сначала пробуем Suggest API
+  try {
     // Используем серверный прокси для Suggest API (обход CORS)
     // В Suggest API формат координат: {lon},{lat} (долгота, широта)
     const data = await $fetch('/api/yandex/suggest', {
@@ -279,12 +280,66 @@ const fetchSuggestions = async (text: string) => {
 
       suggestions.value = filteredResults
       showSuggestions.value = filteredResults.length > 0
-    } else {
-      suggestions.value = []
-      showSuggestions.value = false
+      return
     }
+  } catch (error: any) {
+    // Если Suggest API недоступен (403, 401 и т.д.), используем Geocoder API как fallback
+    if (error.statusCode === 403 || error.statusCode === 401) {
+      console.warn('[AddressMapPicker] Suggest API недоступен, используем Geocoder API как fallback')
+    } else {
+      console.error('Ошибка получения подсказок через Suggest API:', error)
+    }
+  }
+
+  // Fallback: используем Geocoder API
+  try {
+    const bbox = '158.4,52.9~158.9,53.2' // Ограничение области поиска для Петропавловска-Камчатского
+    const response = await fetch(
+      `https://geocode-maps.yandex.ru/1.x/?apikey=51d550e0-cf8f-4247-bae5-dfd32b51048d&geocode=${encodeURIComponent(
+        text
+      )}&format=json&results=5&lang=ru_RU&bbox=${bbox}&rspn=1`
+    )
+    const data = await response.json()
+    const features = data.response?.GeoObjectCollection?.featureMember || []
+
+    // Фильтруем результаты - только адреса в России
+    const filteredFeatures = features
+      .map((item: any) => item.GeoObject)
+      .filter((geoObject: any) => {
+        const components = geoObject.metaDataProperty?.GeocoderMetaData?.Address?.Components || []
+        const isRussia = components.some((comp: any) => 
+          comp.kind === 'COUNTRY' && (comp.name?.includes('Россия') || comp.name?.includes('Russia'))
+        )
+        return isRussia
+      })
+      .slice(0, 5) // Максимум 5 результатов
+
+    // Преобразуем в формат, похожий на Suggest API
+    suggestions.value = filteredFeatures.map((geoObject: any) => {
+      const [lngStr, latStr] = geoObject.Point.pos.split(' ').map(Number)
+      const address = geoObject.metaDataProperty?.GeocoderMetaData?.text || geoObject.name
+      const components = geoObject.metaDataProperty?.GeocoderMetaData?.Address?.Components || []
+      const locality = components.find((c: any) => c.kind === 'LOCALITY')?.name || ''
+      const street = components.find((c: any) => c.kind === 'STREET')?.name || ''
+
+      return {
+        title: {
+          text: address
+        },
+        subtitle: {
+          text: locality || street || ''
+        },
+        address: {
+          formatted_address: address
+        },
+        coordinates: [latStr, lngStr],
+        geoObject: geoObject // Сохраняем оригинальный объект для использования
+      }
+    })
+
+    showSuggestions.value = suggestions.value.length > 0
   } catch (error) {
-    console.error('Ошибка получения подсказок:', error)
+    console.error('Ошибка получения подсказок через Geocoder API:', error)
     suggestions.value = []
     showSuggestions.value = false
   }
