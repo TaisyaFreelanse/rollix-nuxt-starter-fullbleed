@@ -242,7 +242,7 @@ const initMap = async () => {
   }
 }
 
-// Получение подсказок через Geocoder API (более надежно, чем Suggest API)
+// Получение подсказок через Suggest API (API Геосаджеста)
 const fetchSuggestions = async (text: string) => {
   if (!text.trim() || text.length < 2) {
     suggestions.value = []
@@ -256,56 +256,33 @@ const fetchSuggestions = async (text: string) => {
     const center = mapInstance.value?.location?.center || [158.6503, 53.0194] // Петропавловск-Камчатский по умолчанию [lng, lat]
     const [lng, lat] = center
 
-    // Используем Geocoder API для поиска адресов
-    // Добавляем ограничение по региону (bbox для Петропавловска-Камчатского)
-    // Примерные границы: долгота 158.4-158.9, широта 52.9-53.2
-    const bbox = '158.4,52.9~158.9,53.2' // Ограничение области поиска
-    
-    const response = await fetch(
-      `https://geocode-maps.yandex.ru/1.x/?apikey=51d550e0-cf8f-4247-bae5-dfd32b51048d&geocode=${encodeURIComponent(
-        text
-      )}&format=json&results=5&lang=ru_RU&bbox=${bbox}&rspn=1`
-    )
-    const data = await response.json()
-    const features = data.response?.GeoObjectCollection?.featureMember || []
-
-    // Фильтруем результаты - только адреса в России
-    const filteredFeatures = features
-      .map((item: any) => item.GeoObject)
-      .filter((geoObject: any) => {
-        const components = geoObject.metaDataProperty?.GeocoderMetaData?.Address?.Components || []
-        const isRussia = components.some((comp: any) => 
-          comp.kind === 'COUNTRY' && (comp.name?.includes('Россия') || comp.name?.includes('Russia'))
-        )
-        return isRussia
-      })
-      .slice(0, 5) // Максимум 5 результатов
-
-    // Преобразуем в формат, похожий на Suggest API
-    suggestions.value = filteredFeatures.map((geoObject: any) => {
-      const [lngStr, latStr] = geoObject.Point.pos.split(' ').map(Number)
-      const address = geoObject.metaDataProperty?.GeocoderMetaData?.text || geoObject.name
-      const components = geoObject.metaDataProperty?.GeocoderMetaData?.Address?.Components || []
-      const locality = components.find((c: any) => c.kind === 'LOCALITY')?.name || ''
-      const street = components.find((c: any) => c.kind === 'STREET')?.name || ''
-      const house = components.find((c: any) => c.kind === 'HOUSE')?.name || ''
-
-      return {
-        title: {
-          text: address
-        },
-        subtitle: {
-          text: locality || street || ''
-        },
-        address: {
-          formatted_address: address
-        },
-        coordinates: [latStr, lngStr],
-        geoObject: geoObject // Сохраняем оригинальный объект для использования
+    // Используем серверный прокси для Suggest API (обход CORS)
+    // В Suggest API формат координат: {lon},{lat} (долгота, широта)
+    const data = await $fetch('/api/yandex/suggest', {
+      query: {
+        text,
+        ll: `${lng},${lat}`, // Формат: долгота,широта
+        spn: '0.5,0.5' // Область поиска: ширина и высота в градусах
       }
     })
 
-    showSuggestions.value = suggestions.value.length > 0
+    if (data.results && Array.isArray(data.results)) {
+      // Фильтруем результаты - только адреса в России
+      const filteredResults = data.results.filter((result: any) => {
+        const addressComponents = result.address?.component || []
+        const isRussia = addressComponents.some((comp: any) => 
+          comp.kind?.includes('COUNTRY') && 
+          (comp.name?.includes('Россия') || comp.name?.includes('Russia') || comp.name?.includes('Российская'))
+        )
+        return isRussia
+      })
+
+      suggestions.value = filteredResults
+      showSuggestions.value = filteredResults.length > 0
+    } else {
+      suggestions.value = []
+      showSuggestions.value = false
+    }
   } catch (error) {
     console.error('Ошибка получения подсказок:', error)
     suggestions.value = []
@@ -320,21 +297,51 @@ const selectSuggestion = async (suggestion: any) => {
   isLoading.value = true
 
   try {
-    // Используем координаты напрямую из подсказки (уже получены через Geocoder API)
+    // Используем uri из Suggest API для получения координат через Geocoder API
     let lat: number, lng: number
-    let address = suggestion.title.text
+    let address = suggestion.address?.formatted_address || suggestion.title.text
 
-    if (suggestion.coordinates && Array.isArray(suggestion.coordinates) && suggestion.coordinates.length === 2) {
-      // Используем координаты из подсказки
-      lat = suggestion.coordinates[0]
-      lng = suggestion.coordinates[1]
-      address = suggestion.address?.formatted_address || suggestion.title.text
-    } else if (suggestion.geoObject) {
-      // Используем данные из geoObject
-      const [lngStr, latStr] = suggestion.geoObject.Point.pos.split(' ').map(Number)
-      lng = lngStr
-      lat = latStr
-      address = suggestion.geoObject.metaDataProperty?.GeocoderMetaData?.text || suggestion.title.text
+    if (suggestion.uri) {
+      // Используем uri для получения координат через Geocoder API
+      const geocodeResponse = await fetch(
+        `https://geocode-maps.yandex.ru/1.x/?apikey=51d550e0-cf8f-4247-bae5-dfd32b51048d&geocode=${encodeURIComponent(
+          suggestion.uri
+        )}&format=json&results=1&lang=ru_RU`
+      )
+      const geocodeData = await geocodeResponse.json()
+      const geoObject = geocodeData.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject
+
+      if (geoObject) {
+        // В Geocoder API координаты в формате "долгота широта" (через пробел)
+        const [lngStr, latStr] = geoObject.Point.pos.split(' ').map(Number)
+        lng = lngStr
+        lat = latStr
+        // Используем адрес из Geocoder API, если он более полный
+        const geocodeAddress = geoObject.metaDataProperty?.GeocoderMetaData?.text
+        if (geocodeAddress) {
+          address = geocodeAddress
+        }
+      } else {
+        throw new Error('Не удалось получить координаты по uri')
+      }
+    } else if (suggestion.address?.formatted_address) {
+      // Если нет uri, используем адрес для геокодинга
+      const geocodeResponse = await fetch(
+        `https://geocode-maps.yandex.ru/1.x/?apikey=51d550e0-cf8f-4247-bae5-dfd32b51048d&geocode=${encodeURIComponent(
+          suggestion.address.formatted_address
+        )}&format=json&results=1&lang=ru_RU`
+      )
+      const geocodeData = await geocodeResponse.json()
+      const geoObject = geocodeData.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject
+
+      if (geoObject) {
+        const [lngStr, latStr] = geoObject.Point.pos.split(' ').map(Number)
+        lng = lngStr
+        lat = latStr
+        address = geoObject.metaDataProperty?.GeocoderMetaData?.text || suggestion.address.formatted_address
+      } else {
+        throw new Error('Не удалось получить координаты по адресу')
+      }
     } else {
       throw new Error('Недостаточно данных для определения координат')
     }

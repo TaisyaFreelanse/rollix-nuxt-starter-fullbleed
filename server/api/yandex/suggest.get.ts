@@ -11,25 +11,30 @@ export default defineEventHandler(async (event) => {
     }
 
     // Формируем URL для Suggest API
-    const apiKey = '51d550e0-cf8f-4247-bae5-dfd32b51048d'
+    // Используем новый API ключ для пакета "API Геосаджеста"
+    const apiKey = '804dccb1-83e0-419e-a3cd-7d6641593b0b'
+    const config = useRuntimeConfig()
+    
     const params = new URLSearchParams({
       apikey: apiKey,
       text: text as string,
       lang: 'ru_RU',
       types: 'house,street,locality',
       print_address: '1',
-      attrs: 'uri'
+      attrs: 'uri',
+      results: '5' // Максимум 5 результатов
     })
 
     // Добавляем координаты центра, если указаны
+    // В Suggest API формат: {lon},{lat} (долгота, широта)
     if (ll && typeof ll === 'string') {
       params.append('ll', ll)
     } else {
-      // Петропавловск-Камчатский по умолчанию
-      params.append('ll', '53.0194,158.6503')
+      // Петропавловск-Камчатский по умолчанию: долгота 158.6503, широта 53.0194
+      params.append('ll', '158.6503,53.0194')
     }
 
-    // Добавляем область поиска
+    // Добавляем область поиска (spn - ширина и высота окна в градусах)
     if (spn && typeof spn === 'string') {
       params.append('spn', spn)
     } else {
@@ -53,6 +58,24 @@ export default defineEventHandler(async (event) => {
     }
 
     const data = await response.json()
+    
+    // Фильтруем результаты - только адреса в России
+    if (data.results && Array.isArray(data.results)) {
+      const filteredResults = data.results.filter((result: any) => {
+        const addressComponents = result.address?.component || []
+        const isRussia = addressComponents.some((comp: any) => 
+          comp.kind?.includes('COUNTRY') && 
+          (comp.name?.includes('Россия') || comp.name?.includes('Russia') || comp.name?.includes('Российская'))
+        )
+        return isRussia
+      })
+      
+      return {
+        ...data,
+        results: filteredResults
+      }
+    }
+    
     return data
   } catch (error: any) {
     if (error.statusCode) {
