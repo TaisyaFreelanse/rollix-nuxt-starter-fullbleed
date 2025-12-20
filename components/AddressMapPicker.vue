@@ -250,15 +250,15 @@ const fetchSuggestions = async (text: string) => {
     return
   }
 
-  // Получаем текущий центр карты для ограничения области поиска
-  // В Yandex Maps API 3.0 координаты в формате [lng, lat]
-  const center = mapInstance.value?.location?.center || [158.6503, 53.0194] // Петропавловск-Камчатский по умолчанию [lng, lat]
-  const [lng, lat] = center
-
   // Сначала пробуем Suggest API напрямую с клиента (Yandex блокирует серверные запросы)
   try {
     // Используем API ключ для Suggest API
     const suggestApiKey = '804dccb1-83e0-419e-a3cd-7d6641593b0b'
+    
+    // Ограничиваем область поиска только Петропавловском-Камчатским
+    // bbox: координаты левого нижнего и правого верхнего угла
+    // Формат: долгота_нижний_левый,широта_нижний_левый~долгота_верхний_правый,широта_верхний_правый
+    const bbox = '158.4,52.9~158.9,53.2' // Петропавловск-Камчатский
     
     // Формируем URL для Suggest API
     // В Suggest API формат координат: {lon},{lat} (долгота, широта)
@@ -270,8 +270,8 @@ const fetchSuggestions = async (text: string) => {
       print_address: '1',
       attrs: 'uri',
       results: '5',
-      ll: `${lng},${lat}`, // Формат: долгота,широта
-      spn: '0.5,0.5' // Область поиска: ширина и высота в градусах
+      bbox: bbox, // Строгое ограничение области поиска
+      strict_bounds: '1' // Строгое ограничение - только объекты в указанной области
     })
 
     const url = `https://suggest-maps.yandex.ru/v1/suggest?${params.toString()}`
@@ -297,14 +297,31 @@ const fetchSuggestions = async (text: string) => {
     const data = await response.json()
 
     if (data.results && Array.isArray(data.results)) {
-      // Фильтруем результаты - только адреса в России
+      // Фильтруем результаты - только адреса в Петропавловске-Камчатском
       const filteredResults = data.results.filter((result: any) => {
         const addressComponents = result.address?.component || []
+        
+        // Проверяем, что адрес в России
         const isRussia = addressComponents.some((comp: any) => 
           comp.kind?.includes('COUNTRY') && 
           (comp.name?.includes('Россия') || comp.name?.includes('Russia') || comp.name?.includes('Российская'))
         )
-        return isRussia
+        
+        if (!isRussia) return false
+        
+        // Проверяем, что адрес в Петропавловске-Камчатском
+        const isPetropavlovsk = addressComponents.some((comp: any) => {
+          const name = comp.name?.toLowerCase() || ''
+          return (
+            comp.kind?.includes('LOCALITY') && 
+            (name.includes('петропавловск') || name.includes('камчатск') || name.includes('petropavlovsk'))
+          )
+        })
+        
+        // Если есть компонент LOCALITY, проверяем что это Петропавловск-Камчатский
+        // Если LOCALITY нет, но есть другие компоненты (улица, дом), считаем что это Петропавловск
+        // так как strict_bounds=1 уже ограничил область поиска
+        return isPetropavlovsk || !addressComponents.some((comp: any) => comp.kind?.includes('LOCALITY'))
       })
 
       suggestions.value = filteredResults
@@ -331,15 +348,32 @@ const fetchSuggestions = async (text: string) => {
     const data = await response.json()
     const features = data.response?.GeoObjectCollection?.featureMember || []
 
-    // Фильтруем результаты - только адреса в России
+    // Фильтруем результаты - только адреса в Петропавловске-Камчатском
     const filteredFeatures = features
       .map((item: any) => item.GeoObject)
       .filter((geoObject: any) => {
         const components = geoObject.metaDataProperty?.GeocoderMetaData?.Address?.Components || []
+        
+        // Проверяем, что адрес в России
         const isRussia = components.some((comp: any) => 
           comp.kind === 'COUNTRY' && (comp.name?.includes('Россия') || comp.name?.includes('Russia'))
         )
-        return isRussia
+        
+        if (!isRussia) return false
+        
+        // Проверяем, что адрес в Петропавловске-Камчатском
+        const isPetropavlovsk = components.some((comp: any) => {
+          const name = comp.name?.toLowerCase() || ''
+          return (
+            comp.kind === 'LOCALITY' && 
+            (name.includes('петропавловск') || name.includes('камчатск') || name.includes('petropavlovsk'))
+          )
+        })
+        
+        // Если есть компонент LOCALITY, проверяем что это Петропавловск-Камчатский
+        // Если LOCALITY нет, но есть другие компоненты (улица, дом), считаем что это Петропавловск
+        // так как bbox уже ограничил область поиска
+        return isPetropavlovsk || !components.some((comp: any) => comp.kind === 'LOCALITY')
       })
       .slice(0, 5) // Максимум 5 результатов
 
