@@ -12,7 +12,6 @@ export default defineEventHandler(async (event) => {
 
     // Формируем URL для Suggest API
     // Используем новый API ключ для пакета "API Геосаджеста"
-    const config = useRuntimeConfig()
     // Можно использовать ключ из переменных окружения или захардкоженный
     const apiKey = process.env.YANDEX_SUGGEST_API_KEY || '804dccb1-83e0-419e-a3cd-7d6641593b0b'
     
@@ -45,73 +44,100 @@ export default defineEventHandler(async (event) => {
     const url = `https://suggest-maps.yandex.ru/v1/suggest?${params.toString()}`
 
     console.log('[Yandex Suggest API] Запрос:', url.replace(apiKey, '***'))
-
-    // Делаем запрос к Yandex Suggest API
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'application/json'
-      }
+    console.log('[Yandex Suggest API] Параметры:', {
+      text: text,
+      ll: ll || '158.6503,53.0194',
+      spn: spn || '0.5,0.5',
+      types: 'house,street,locality',
+      lang: 'ru_RU'
     })
 
-    if (!response.ok) {
-      // Получаем детали ошибки от Yandex API
-      let errorMessage = `Ошибка Suggest API: ${response.status} ${response.statusText}`
-      try {
-        const errorData = await response.text()
-        console.error('[Yandex Suggest API] Ошибка ответа:', errorData)
-        if (errorData) {
-          try {
-            const errorJson = JSON.parse(errorData)
-            errorMessage = errorJson.message || errorJson.error || errorMessage
-          } catch {
-            errorMessage = `${errorMessage}. Ответ: ${errorData.substring(0, 200)}`
-          }
+    try {
+      // Используем $fetch вместо fetch для лучшей совместимости с Nuxt
+      // Минимальные заголовки, как в документации Yandex
+      const data = await $fetch<{ results?: Array<any> }>(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        },
+        // Не бросаем ошибку при 403, обрабатываем вручную
+        onResponseError({ response }) {
+          console.error('[Yandex Suggest API] Ошибка ответа:', {
+            status: response.status,
+            statusText: response.statusText,
+            headers: Object.fromEntries(response.headers.entries())
+          })
         }
-      } catch (e) {
-        console.error('[Yandex Suggest API] Не удалось прочитать ответ об ошибке:', e)
+      })
+
+      console.log('[Yandex Suggest API] Успешный ответ, результатов:', data.results?.length || 0)
+
+      // Фильтруем результаты - только адреса в России
+      if (data.results && Array.isArray(data.results)) {
+        const filteredResults = data.results.filter((result: any) => {
+          const addressComponents = result.address?.component || []
+          const isRussia = addressComponents.some((comp: any) => 
+            comp.kind?.includes('COUNTRY') && 
+            (comp.name?.includes('Россия') || comp.name?.includes('Russia') || comp.name?.includes('Российская'))
+          )
+          return isRussia
+        })
+        
+        return {
+          results: filteredResults
+        }
+      }
+      
+      return data
+    } catch (error: any) {
+      // Обработка ошибок $fetch
+      const statusCode = error.statusCode || error.response?.status || 500
+      const statusText = error.statusText || error.response?.statusText || 'Internal Server Error'
+      
+      let errorMessage = `Ошибка Suggest API: ${statusCode} ${statusText}`
+      
+      // Пытаемся получить детали ошибки
+      if (error.data) {
+        try {
+          if (typeof error.data === 'string') {
+            errorMessage = error.data
+          } else if (error.data.message) {
+            errorMessage = error.data.message
+          }
+        } catch (e) {
+          console.error('[Yandex Suggest API] Не удалось обработать данные ошибки:', e)
+        }
       }
 
       // Специальная обработка для 403
-      if (response.status === 403) {
+      if (statusCode === 403) {
         console.error('[Yandex Suggest API] 403 Forbidden - возможные причины:')
         console.error('  1. API ключ неверный или не активирован')
         console.error('  2. API ключ не имеет доступа к пакету "API Геосаджеста"')
         console.error('  3. Ключ активируется в течение 15 минут после получения')
-        console.error('  4. Проверьте настройки ключа в Кабинете Разработчика: https://developer.tech.yandex.ru/')
+        console.error('  4. Yandex может блокировать запросы с серверных IP-адресов')
+        console.error('  5. Проверьте настройки ключа в Кабинете Разработчика: https://developer.tech.yandex.ru/')
+        console.error('  6. Проверьте ограничения HTTP Referer для ключа')
+        console.error('[Yandex Suggest API] Полная ошибка:', JSON.stringify(error, null, 2))
+        
         throw createError({
           statusCode: 403,
-          message: `Доступ запрещен. Проверьте API ключ для Suggest API. ${errorMessage}`
+          message: `Доступ запрещен. Проверьте API ключ для Suggest API. ${errorMessage}. Возможно, Yandex блокирует запросы с серверных IP. Попробуйте использовать клиентский запрос или проверьте настройки ключа.`
+        })
+      }
+
+      if (error.statusCode) {
+        throw createError({
+          statusCode: error.statusCode,
+          message: errorMessage
         })
       }
 
       throw createError({
-        statusCode: response.status,
-        message: errorMessage
+        statusCode: 500,
+        message: `Ошибка при получении подсказок: ${errorMessage}`
       })
     }
-
-    const data = await response.json()
-    console.log('[Yandex Suggest API] Успешный ответ, результатов:', data.results?.length || 0)
-    
-    // Фильтруем результаты - только адреса в России
-    if (data.results && Array.isArray(data.results)) {
-      const filteredResults = data.results.filter((result: any) => {
-        const addressComponents = result.address?.component || []
-        const isRussia = addressComponents.some((comp: any) => 
-          comp.kind?.includes('COUNTRY') && 
-          (comp.name?.includes('Россия') || comp.name?.includes('Russia') || comp.name?.includes('Российская'))
-        )
-        return isRussia
-      })
-      
-      return {
-        ...data,
-        results: filteredResults
-      }
-    }
-    
-    return data
   } catch (error: any) {
     if (error.statusCode) {
       throw error
