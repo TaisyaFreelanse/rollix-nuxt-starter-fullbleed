@@ -128,11 +128,25 @@ const handleAuthSuccess = async (_phone: string) => {
 const handleAuthCancel = () => {
   showAuthModal.value = false
 }
+
+const clearCart = () => {
+  if (confirm('Вы уверены, что хотите очистить корзину?')) {
+    cartStore.clear()
+  }
+}
 </script>
 
 <template>
   <main class="w-full px-3 sm:px-4 lg:px-8 py-2 sm:py-3">
-    <h1 class="text-sm sm:text-base font-semibold mb-2 sm:mb-3">Корзина</h1>
+    <div class="flex items-center justify-between mb-2 sm:mb-3">
+      <h1 class="text-sm sm:text-base font-semibold">Корзина</h1>
+      <button
+        v-if="!cartStore.isEmpty"
+        class="px-3 py-1.5 rounded bg-white/5 hover:bg-white/10 transition text-gray-400 hover:text-white text-xs sm:text-sm"
+        @click="clearCart">
+        Очистить
+      </button>
+    </div>
 
     <div v-if="cartStore.isEmpty" class="flex flex-col items-center justify-center py-12 text-gray-400">
       <div class="text-4xl mb-4">🛒</div>

@@ -124,6 +124,12 @@ const proceedToCheckout = () => {
   router.push('/checkout')
 }
 
+const clearCart = () => {
+  if (confirm('Вы уверены, что хотите очистить корзину?')) {
+    cartStore.clear()
+  }
+}
+
 // Закрытие по Escape
 const handleEscape = (e: KeyboardEvent) => {
   if (e.key === 'Escape' && model.value) {
@@ -158,13 +164,21 @@ onUnmounted(() => {
         <!-- Header -->
         <div class="flex items-center justify-between p-3 sm:p-4 border-b border-white/10">
           <h2 class="text-sm sm:text-base font-semibold text-white">Корзина</h2>
-          <button
-            class="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition text-gray-400 hover:text-white"
-            @click="model = false">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <div class="flex items-center gap-2">
+            <button
+              v-if="cartStore.items && Array.isArray(cartStore.items) && cartStore.items.length > 0"
+              class="px-2 sm:px-3 py-1.5 rounded bg-white/5 hover:bg-white/10 transition text-gray-400 hover:text-white text-xs sm:text-sm"
+              @click="clearCart">
+              Очистить
+            </button>
+            <button
+              class="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition text-gray-400 hover:text-white"
+              @click="model = false">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <!-- Cart Content -->
