@@ -569,9 +569,21 @@ const openMap = async () => {
   // Сбрасываем предыдущий экземпляр карты
   if (mapInstance.value) {
     try {
-      mapInstance.value.destroy?.()
+      // Удаляем маркер, если есть
+      if (markerInstance.value) {
+        try {
+          mapInstance.value.removeChild(markerInstance.value)
+        } catch (e) {
+          // Игнорируем ошибки при удалении маркера
+        }
+        markerInstance.value = null
+      }
+      // Очищаем контейнер карты
+      if (mapContainer.value) {
+        mapContainer.value.innerHTML = ''
+      }
     } catch (e) {
-      console.warn('Ошибка при уничтожении предыдущей карты:', e)
+      console.warn('Ошибка при очистке предыдущей карты:', e)
     }
   }
   mapInstance.value = null
@@ -610,27 +622,27 @@ const closeMap = () => {
     markerInstance.value = null
   }
   
-  // Уничтожаем карту с задержкой, чтобы избежать ошибок
+  // Очищаем карту при закрытии
   if (mapInstance.value) {
     try {
-      // Даем время для завершения анимаций
-      if (typeof window !== 'undefined') {
-        window.setTimeout(() => {
-          try {
-            if (mapInstance.value && typeof mapInstance.value.destroy === 'function') {
-              mapInstance.value.destroy()
-            }
-          } catch (e) {
-            console.warn('Ошибка при уничтожении карты:', e)
-          }
-          mapInstance.value = null
-        }, 100)
+      // Удаляем маркер, если есть
+      if (markerInstance.value) {
+        try {
+          mapInstance.value.removeChild(markerInstance.value)
+        } catch (e) {
+          // Игнорируем ошибки при удалении маркера
+        }
+        markerInstance.value = null
+      }
+      // Очищаем контейнер карты
+      if (mapContainer.value) {
+        mapContainer.value.innerHTML = ''
       }
     } catch (e) {
-      console.warn('Ошибка при закрытии карты:', e)
-      mapInstance.value = null
+      console.warn('Ошибка при очистке карты:', e)
     }
   }
+  mapInstance.value = null
   isMapReady.value = false
 }
 
