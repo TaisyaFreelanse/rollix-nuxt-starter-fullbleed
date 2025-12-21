@@ -312,104 +312,27 @@ const fetchSuggestions = async (text: string) => {
       return
     }
   } catch (error: any) {
-    // Если Suggest API недоступен (CORS, 403, 401 и т.д.), используем Geocoder API как fallback
-    if (error.message?.includes('CORS') || error.message?.includes('403') || error.message?.includes('401')) {
-      console.warn('[AddressMapPicker] Suggest API недоступен (CORS/403/401), используем Geocoder API как fallback')
-    } else {
-      console.warn('[AddressMapPicker] Ошибка Suggest API, используем Geocoder API:', error.message)
-    }
-  }
-
-  // Fallback: используем Geocoder API
-  try {
-    const bbox = '158.4,52.9~158.9,53.2' // Ограничение области поиска для Петропавловска-Камчатского
-    const response = await fetch(
-      `https://geocode-maps.yandex.ru/1.x/?apikey=51d550e0-cf8f-4247-bae5-dfd32b51048d&geocode=${encodeURIComponent(
-        text
-      )}&format=json&results=5&lang=ru_RU&bbox=${bbox}&rspn=1`
-    )
-    const data = await response.json()
-    const features = data.response?.GeoObjectCollection?.featureMember || []
-
-    // Фильтруем результаты - только адреса в Петропавловске-Камчатском
-    const filteredFeatures = features
-      .map((item: any) => item.GeoObject)
-      .filter((geoObject: any) => {
-        const components = geoObject.metaDataProperty?.GeocoderMetaData?.Address?.Components || []
-        
-        // Проверяем, что адрес в России
-        const isRussia = components.some((comp: any) => 
-          comp.kind === 'COUNTRY' && (comp.name?.includes('Россия') || comp.name?.includes('Russia'))
-        )
-        
-        if (!isRussia) return false
-        
-        // Проверяем, что адрес в Петропавловске-Камчатском
-        const isPetropavlovsk = components.some((comp: any) => {
-          const name = comp.name?.toLowerCase() || ''
-          return (
-            comp.kind === 'LOCALITY' && 
-            (name.includes('петропавловск') || name.includes('камчатск') || name.includes('petropavlovsk'))
-          )
-        })
-        
-        // Если есть компонент LOCALITY, проверяем что это Петропавловск-Камчатский
-        // Если LOCALITY нет, но есть другие компоненты (улица, дом), считаем что это Петропавловск
-        // так как bbox уже ограничил область поиска
-        return isPetropavlovsk || !components.some((comp: any) => comp.kind === 'LOCALITY')
-      })
-      .slice(0, 5) // Максимум 5 результатов
-
-    // Преобразуем в формат, похожий на Suggest API
-    suggestions.value = filteredFeatures.map((geoObject: any) => {
-      const [lngStr, latStr] = geoObject.Point.pos.split(' ').map(Number)
-      const address = geoObject.metaDataProperty?.GeocoderMetaData?.text || geoObject.name
-      const components = geoObject.metaDataProperty?.GeocoderMetaData?.Address?.Components || []
-      const locality = components.find((c: any) => c.kind === 'LOCALITY')?.name || ''
-      const street = components.find((c: any) => c.kind === 'STREET')?.name || ''
-
-      return {
-        title: {
-          text: address
-        },
-        subtitle: {
-          text: locality || street || ''
-        },
-        address: {
-          formatted_address: address
-        },
-        coordinates: [latStr, lngStr],
-        geoObject: geoObject // Сохраняем оригинальный объект для использования
-      }
-    })
-
-    showSuggestions.value = suggestions.value.length > 0
-  } catch (error) {
-    console.error('Ошибка получения подсказок через Geocoder API:', error)
+    // Если Suggest API недоступен, показываем ошибку
+    console.error('[AddressMapPicker] Ошибка Suggest API:', error.message)
     suggestions.value = []
     showSuggestions.value = false
   }
 }
 
-// Выбор адреса из подсказок
+// Выбор адреса из подсказок (используем только Suggest API)
 const selectSuggestion = async (suggestion: any) => {
   showSuggestions.value = false
   searchInput.value = suggestion.title.text
   isLoading.value = true
 
   try {
-    // Ограничение области поиска только Петропавловском-Камчатским
-    const bbox = '158.4,52.9~158.9,53.2'
-    
-    // Используем uri из Suggest API для получения координат через Geocoder API
     let lat: number, lng: number
     let address = suggestion.address?.formatted_address || suggestion.title.text
 
-    // Если в подсказке уже есть координаты (из fallback Geocoder API), используем их напрямую
+    // Если в подсказке уже есть координаты (из fallback), используем их напрямую
     if (suggestion.coordinates && Array.isArray(suggestion.coordinates) && suggestion.coordinates.length === 2) {
       lat = suggestion.coordinates[0]
       lng = suggestion.coordinates[1]
-      // Используем адрес из подсказки
       address = suggestion.address?.formatted_address || suggestion.title.text
     }
     // Если есть geoObject (из fallback), используем его напрямую
@@ -420,85 +343,30 @@ const selectSuggestion = async (suggestion: any) => {
       lat = latStr
       address = geoObject.metaDataProperty?.GeocoderMetaData?.text || suggestion.address?.formatted_address || suggestion.title.text
     }
-    // Если есть uri, используем его с ограничением области поиска
+    // Если есть uri, используем адрес из подсказки
+    // Для координат используем центр Петропавловска-Камчатского
+    // Пользователь сможет уточнить координаты, кликнув на карте
     else if (suggestion.uri) {
-      // Используем uri для получения координат через Geocoder API с ограничением области
-      const geocodeResponse = await fetch(
-        `https://geocode-maps.yandex.ru/1.x/?apikey=51d550e0-cf8f-4247-bae5-dfd32b51048d&geocode=${encodeURIComponent(
-          suggestion.uri
-        )}&format=json&results=1&lang=ru_RU&bbox=${bbox}&rspn=1`
-      )
-      const geocodeData = await geocodeResponse.json()
-      const geoObject = geocodeData.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject
-
-      if (geoObject) {
-        // В Geocoder API координаты в формате "долгота широта" (через пробел)
-        const [lngStr, latStr] = geoObject.Point.pos.split(' ').map(Number)
-        lng = lngStr
-        lat = latStr
-        
-        // Проверяем, что адрес находится в Петропавловске-Камчатском
-        const components = geoObject.metaDataProperty?.GeocoderMetaData?.Address?.Components || []
-        const isPetropavlovsk = components.some((comp: any) => {
-          const name = comp.name?.toLowerCase() || ''
-          return (
-            comp.kind === 'LOCALITY' && 
-            (name.includes('петропавловск') || name.includes('камчатск') || name.includes('petropavlovsk'))
-          )
-        })
-        
-        // Если адрес не в Петропавловске-Камчатском, используем адрес из подсказки
-        if (!isPetropavlovsk && components.some((comp: any) => comp.kind === 'LOCALITY')) {
-          console.warn('[AddressMapPicker] Получен адрес не из Петропавловска-Камчатского, используем адрес из подсказки')
-          address = suggestion.address?.formatted_address || suggestion.title.text
-        } else {
-          // Используем адрес из Geocoder API, если он более полный
-          const geocodeAddress = geoObject.metaDataProperty?.GeocoderMetaData?.text
-          if (geocodeAddress) {
-            address = geocodeAddress
-          }
-        }
-      } else {
-        throw new Error('Не удалось получить координаты по uri')
-      }
+      // Используем адрес из подсказки
+      address = suggestion.address?.formatted_address || suggestion.title.text
+      // Используем центр Петропавловска-Камчатского как приблизительные координаты
+      // Пользователь сможет уточнить координаты, кликнув на карте
+      lng = 158.6503
+      lat = 53.0194
+      console.log('[AddressMapPicker] Используем адрес из Suggest API, координаты можно уточнить на карте')
     }
-    // Если нет uri, используем адрес для геокодинга с ограничением области
+    // Если нет uri и нет координат, используем адрес из подсказки и приблизительные координаты
     else if (suggestion.address?.formatted_address) {
-      const geocodeResponse = await fetch(
-        `https://geocode-maps.yandex.ru/1.x/?apikey=51d550e0-cf8f-4247-bae5-dfd32b51048d&geocode=${encodeURIComponent(
-          suggestion.address.formatted_address
-        )}&format=json&results=1&lang=ru_RU&bbox=${bbox}&rspn=1`
-      )
-      const geocodeData = await geocodeResponse.json()
-      const geoObject = geocodeData.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject
-
-      if (geoObject) {
-        const [lngStr, latStr] = geoObject.Point.pos.split(' ').map(Number)
-        lng = lngStr
-        lat = latStr
-        
-        // Проверяем, что адрес находится в Петропавловске-Камчатском
-        const components = geoObject.metaDataProperty?.GeocoderMetaData?.Address?.Components || []
-        const isPetropavlovsk = components.some((comp: any) => {
-          const name = comp.name?.toLowerCase() || ''
-          return (
-            comp.kind === 'LOCALITY' && 
-            (name.includes('петропавловск') || name.includes('камчатск') || name.includes('petropavlovsk'))
-          )
-        })
-        
-        // Если адрес не в Петропавловске-Камчатском, используем адрес из подсказки
-        if (!isPetropavlovsk && components.some((comp: any) => comp.kind === 'LOCALITY')) {
-          console.warn('[AddressMapPicker] Получен адрес не из Петропавловска-Камчатского, используем адрес из подсказки')
-          address = suggestion.address.formatted_address
-        } else {
-          address = geoObject.metaDataProperty?.GeocoderMetaData?.text || suggestion.address.formatted_address
-        }
-      } else {
-        throw new Error('Не удалось получить координаты по адресу')
-      }
+      // Используем центр Петропавловска-Камчатского как приблизительные координаты
+      lng = 158.6503
+      lat = 53.0194
+      address = suggestion.address.formatted_address
+      console.log('[AddressMapPicker] Используем приблизительные координаты для адреса из Suggest API')
     } else {
-      throw new Error('Недостаточно данных для определения координат')
+      // Если нет данных, используем центр Петропавловска-Камчатского
+      lng = 158.6503
+      lat = 53.0194
+      address = suggestion.title.text
     }
 
     selectedAddress.value = address
@@ -569,110 +437,20 @@ const selectSuggestion = async (suggestion: any) => {
 const searchAddress = async () => {
   if (!searchInput.value.trim()) return
 
-  // Если есть подсказки, выбираем первую
+  // Используем только Suggest API - если есть подсказки, выбираем первую
   if (suggestions.value.length > 0) {
     await selectSuggestion(suggestions.value[0])
     return
   }
 
-  // Иначе используем геокодинг с ограничением области поиска
-  isLoading.value = true
-  try {
-    // Ограничение области поиска только Петропавловском-Камчатским
-    const bbox = '158.4,52.9~158.9,53.2'
-    
-    const response = await fetch(
-      `https://geocode-maps.yandex.ru/1.x/?apikey=51d550e0-cf8f-4247-bae5-dfd32b51048d&geocode=${encodeURIComponent(
-        searchInput.value
-      )}&format=json&results=1&lang=ru_RU&bbox=${bbox}&rspn=1`
-    )
-    const data = await response.json()
-    const feature = data.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject
-
-    if (feature) {
-      const [lng, lat] = feature.Point.pos.split(' ').map(Number)
-      
-      // Проверяем, что адрес находится в Петропавловске-Камчатском
-      const components = feature.metaDataProperty?.GeocoderMetaData?.Address?.Components || []
-      const isPetropavlovsk = components.some((comp: any) => {
-        const name = comp.name?.toLowerCase() || ''
-        return (
-          comp.kind === 'LOCALITY' && 
-          (name.includes('петропавловск') || name.includes('камчатск') || name.includes('petropavlovsk'))
-        )
-      })
-      
-      // Если адрес не в Петропавловске-Камчатском, показываем предупреждение
-      if (!isPetropavlovsk && components.some((comp: any) => comp.kind === 'LOCALITY')) {
-        console.warn('[AddressMapPicker] Найден адрес не из Петропавловска-Камчатского')
-        alert('Адрес не найден в Петропавловске-Камчатском. Пожалуйста, уточните адрес.')
-        isLoading.value = false
-        return
-      }
-      
-      const address = feature.metaDataProperty?.GeocoderMetaData?.text || searchInput.value
-
-      selectedAddress.value = address
-      selectedCoordinates.value = [lat, lng]
-
-      emit('update:modelValue', address)
-      emit('update:coordinates', [lat, lng])
-      emit('addressSelected', { address, coordinates: [lat, lng] })
-
-      // Обновляем центр карты и добавляем маркер
-      if (mapInstance.value) {
-        if (markerInstance.value) {
-          try {
-            mapInstance.value.removeChild(markerInstance.value)
-          } catch (e) {
-            console.warn('Ошибка удаления маркера:', e)
-          }
-          markerInstance.value = null
-        }
-
-        try {
-          if (typeof mapInstance.value.updateLocation === 'function') {
-            mapInstance.value.updateLocation({
-              center: [lng, lat],
-              zoom: 15
-            })
-          } else if (mapInstance.value.location) {
-            Object.assign(mapInstance.value.location, {
-              center: [lng, lat],
-              zoom: 15
-            })
-          }
-        } catch (error) {
-          console.warn('Не удалось обновить местоположение карты:', error)
-        }
-
-        try {
-          const { YMapMarker } = window.ymaps3
-          if (YMapMarker) {
-            const markerElement = document.createElement('div')
-            markerElement.style.cssText = 'background: #ff0000; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);'
-            
-            const marker = new YMapMarker(
-              {
-                coordinates: [lng, lat]
-              },
-              markerElement
-            )
-            mapInstance.value.addChild(marker)
-            markerInstance.value = marker
-          }
-        } catch (error) {
-          console.warn('Ошибка добавления маркера:', error)
-        }
-      }
-    } else {
-      alert('Адрес не найден')
-    }
-  } catch (error) {
-    console.error('Ошибка поиска адреса:', error)
-    alert('Ошибка при поиске адреса')
-  } finally {
-    isLoading.value = false
+  // Если подсказок нет, запрашиваем их
+  await fetchSuggestions(searchInput.value)
+  
+  // Если после запроса появились подсказки, выбираем первую
+  if (suggestions.value.length > 0) {
+    await selectSuggestion(suggestions.value[0])
+  } else {
+    alert('Адрес не найден. Пожалуйста, выберите адрес из подсказок или укажите его на карте.')
   }
 }
 
