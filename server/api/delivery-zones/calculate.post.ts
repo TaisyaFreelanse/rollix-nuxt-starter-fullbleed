@@ -148,7 +148,21 @@ function isPointInZone(lat: number, lng: number, coordinates: any): boolean {
   console.log(`[isPointInZone] Проверка точки (${lat}, ${lng}) в полигоне с ${polygon.length} точками`)
   console.log(`[isPointInZone] Первые точки полигона:`, polygon.slice(0, 3))
 
+  // Определяем формат координат по первой точке
+  // Для Петропавловска-Камчатского: lat ~53, lng ~158
+  // Если первая координата > 100, это lng, значит формат [lng, lat]
+  const firstPoint = polygon[0]
+  if (!Array.isArray(firstPoint) || firstPoint.length < 2) {
+    console.log('[isPointInZone] Неверный формат первой точки полигона')
+    return false
+  }
+
+  const isLngLatFormat = Math.abs(firstPoint[0]) > 90
+  console.log(`[isPointInZone] Формат координат: ${isLngLatFormat ? '[lng, lat]' : '[lat, lng]'}`)
+  console.log(`[isPointInZone] Проверяемая точка: lat=${lat}, lng=${lng}`)
+
   let inside = false
+  let intersections = 0
 
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
     const pointI = polygon[i]
@@ -158,34 +172,43 @@ function isPointInZone(lat: number, lng: number, coordinates: any): boolean {
       continue
     }
 
-    // Определяем формат координат: [lat, lng] или [lng, lat]
-    // Для Петропавловска-Камчатского: lat ~53, lng ~158
-    // Если первая координата > 100, это скорее всего lng, значит формат [lng, lat]
-    const isLngLatFormat = Math.abs(pointI[0]) > 90 || Math.abs(pointI[1]) <= 90
-    
-    let xi: number, yi: number, xj: number, yj: number
+    // Извлекаем координаты в зависимости от формата
+    let lngI: number, latI: number, lngJ: number, latJ: number
     
     if (isLngLatFormat) {
-      // Формат [lng, lat]
-      xi = pointI[0] // lng
-      yi = pointI[1] // lat
-      xj = pointJ[0] // lng
-      yj = pointJ[1] // lat
+      // Формат [lng, lat] - как в GeoJSON
+      lngI = pointI[0]
+      latI = pointI[1]
+      lngJ = pointJ[0]
+      latJ = pointJ[1]
     } else {
       // Формат [lat, lng]
-      xi = pointI[1] // lng
-      yi = pointI[0] // lat
-      xj = pointJ[1] // lng
-      yj = pointJ[0] // lat
+      latI = pointI[0]
+      lngI = pointI[1]
+      latJ = pointJ[0]
+      lngJ = pointJ[1]
     }
 
-    const intersect =
-      yi > lat !== yj > lat && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi
-
-    if (intersect) inside = !inside
+    // Алгоритм ray casting: проверяем пересечение горизонтального луча с ребром полигона
+    // Луч идет от точки (lng, lat) вправо (вдоль оси lng)
+    // Проверяем, пересекает ли горизонтальный луч от точки (lng, lat) ребро между точками I и J
+    
+    // Проверяем, что ребро пересекает горизонтальную линию на уровне lat
+    const latCrosses = (latI > lat) !== (latJ > lat)
+    
+    if (latCrosses) {
+      // Вычисляем lng точки пересечения
+      const lngIntersect = (lngJ - lngI) * (lat - latI) / (latJ - latI) + lngI
+      
+      // Если точка пересечения справа от проверяемой точки
+      if (lng < lngIntersect) {
+        inside = !inside
+        intersections++
+      }
+    }
   }
 
-  console.log(`[isPointInZone] Результат: ${inside ? 'ТОЧКА ВНУТРИ' : 'точка снаружи'}`)
+  console.log(`[isPointInZone] Количество пересечений: ${intersections}, Результат: ${inside ? 'ТОЧКА ВНУТРИ' : 'точка снаружи'}`)
   return inside
 }
 

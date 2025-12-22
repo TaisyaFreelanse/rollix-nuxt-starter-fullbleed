@@ -75,7 +75,12 @@ const loadDeliveryZones = async () => {
 
 // Автоматический расчет доставки при выборе адреса
 const calculateDelivery = async (coordinates: [number, number]) => {
-  if (!coordinates) return
+  if (!coordinates || coordinates.length !== 2) {
+    console.warn('[Checkout] Координаты не указаны или неверный формат:', coordinates)
+    return
+  }
+
+  console.log('[Checkout] Расчет доставки для координат:', { lat: coordinates[0], lng: coordinates[1] })
 
   isCalculatingDelivery.value = true
   try {
@@ -91,6 +96,8 @@ const calculateDelivery = async (coordinates: [number, number]) => {
       // Явно указываем, что это не навигация
       redirect: 'manual'
     })
+    
+    console.log('[Checkout] Результат расчета доставки:', result)
 
     selectedZone.value = {
       id: result.zone.id,
@@ -129,6 +136,7 @@ const calculateDelivery = async (coordinates: [number, number]) => {
 
 // Обработчик выбора адреса на карте
 const handleAddressSelected = (data: { address: string; coordinates: [number, number] }) => {
+  console.log('[Checkout] Выбран адрес:', data.address, 'Координаты:', data.coordinates)
   deliveryAddress.value = data.address
   deliveryCoordinates.value = data.coordinates
   calculateDelivery(data.coordinates)
