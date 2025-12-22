@@ -343,17 +343,44 @@ const selectSuggestion = async (suggestion: any) => {
       lat = latStr
       address = geoObject.metaDataProperty?.GeocoderMetaData?.text || suggestion.address?.formatted_address || suggestion.title.text
     }
-    // Если есть uri, используем адрес из подсказки
-    // Для координат используем центр Петропавловска-Камчатского
-    // Пользователь сможет уточнить координаты, кликнув на карте
+    // Если есть uri, получаем точные координаты через Geocoder API
     else if (suggestion.uri) {
       // Используем адрес из подсказки
       address = suggestion.address?.formatted_address || suggestion.title.text
-      // Используем центр Петропавловска-Камчатского как приблизительные координаты
-      // Пользователь сможет уточнить координаты, кликнув на карте
-      lng = 158.6503
-      lat = 53.0194
-      console.log('[AddressMapPicker] Используем адрес из Suggest API, координаты можно уточнить на карте')
+      
+      try {
+        // Получаем точные координаты через Geocoder API по uri
+        // Используем тот же ключ, что и для карты
+        const geocoderApiKey = '51d550e0-cf8f-4247-bae5-dfd32b51048d'
+        const geocoderUrl = `https://geocode-maps.yandex.ru/1.x/?apikey=${geocoderApiKey}&geocode=${encodeURIComponent(suggestion.uri)}&format=json&results=1&bbox=158.4,52.9~158.9,53.2&strict_bounds=1`
+        
+        const geocoderResponse = await fetch(geocoderUrl)
+        if (geocoderResponse.ok) {
+          const geocoderData = await geocoderResponse.json()
+          
+          if (geocoderData.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject?.Point?.pos) {
+            const [lngStr, latStr] = geocoderData.response.GeoObjectCollection.featureMember[0].GeoObject.Point.pos.split(' ').map(Number)
+            lng = lngStr
+            lat = latStr
+            console.log('[AddressMapPicker] Получены точные координаты из Geocoder API:', { lat, lng })
+          } else {
+            // Если не удалось получить координаты, используем центр города
+            lng = 158.6503
+            lat = 53.0194
+            console.warn('[AddressMapPicker] Не удалось получить координаты из Geocoder API, используем центр города')
+          }
+        } else {
+          // Если Geocoder API недоступен, используем центр города
+          lng = 158.6503
+          lat = 53.0194
+          console.warn('[AddressMapPicker] Geocoder API недоступен, используем центр города')
+        }
+      } catch (error) {
+        // В случае ошибки используем центр города
+        lng = 158.6503
+        lat = 53.0194
+        console.error('[AddressMapPicker] Ошибка получения координат из Geocoder API:', error)
+      }
     }
     // Если нет uri и нет координат, используем адрес из подсказки и приблизительные координаты
     else if (suggestion.address?.formatted_address) {

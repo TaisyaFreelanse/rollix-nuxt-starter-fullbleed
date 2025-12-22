@@ -205,16 +205,25 @@ function isPointInZone(lat: number, lng: number, coordinates: any): boolean {
     // Проверяем, пересекает ли горизонтальный луч от точки (lng, lat) ребро между точками I и J
     
     // Проверяем, что ребро пересекает горизонтальную линию на уровне lat
-    const latCrosses = (latI > lat) !== (latJ > lat)
+    // Исключаем случаи, когда луч проходит через вершину (чтобы не считать дважды)
+    const latIAbove = latI > lat
+    const latJAbove = latJ > lat
     
-    if (latCrosses) {
-      // Вычисляем lng точки пересечения
-      const lngIntersect = (lngJ - lngI) * (lat - latI) / (latJ - latI) + lngI
+    // Ребро пересекает горизонтальную линию, если одна точка выше, а другая ниже
+    if (latIAbove !== latJAbove) {
+      // Вычисляем lng точки пересечения горизонтальной линии lat с ребром
+      const denominator = latJ - latI
       
-      // Если точка пересечения справа от проверяемой точки
-      if (lng < lngIntersect) {
-        inside = !inside
-        intersections++
+      // Избегаем деления на ноль (если ребро горизонтальное)
+      if (Math.abs(denominator) > 1e-10) {
+        const lngIntersect = (lngJ - lngI) * (lat - latI) / denominator + lngI
+        
+        // Если точка пересечения справа от проверяемой точки (или точно на ней)
+        // Используем >= для включения граничных случаев
+        if (lng <= lngIntersect) {
+          inside = !inside
+          intersections++
+        }
       }
     }
   }
