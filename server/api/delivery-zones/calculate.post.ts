@@ -26,11 +26,18 @@ export default defineEventHandler(async (event) => {
       }
     })
 
+    console.log(`[Delivery Zones Calculate] Найдено зон в базе: ${zones.length}`)
+    if (zones.length === 0) {
+      console.warn('[Delivery Zones Calculate] В базе данных нет активных зон доставки!')
+    }
+
     // Находим подходящую зону
     let matchedZone = null
     for (const zone of zones) {
       const coordinates = zone.coordinates as any
-      if (isPointInZone(lat, lng, coordinates)) {
+      const isInZone = isPointInZone(lat, lng, coordinates)
+      console.log(`[Delivery Zones Calculate] Проверка зоны "${zone.name}": ${isInZone ? 'ПОПАДАЕТ' : 'не попадает'}`)
+      if (isInZone) {
         matchedZone = zone
         break
       }
@@ -85,27 +92,40 @@ export default defineEventHandler(async (event) => {
 // Функция проверки точки в полигоне
 function isPointInZone(lat: number, lng: number, coordinates: any): boolean {
   if (!Array.isArray(coordinates) || coordinates.length === 0) {
+    console.log('[isPointInZone] Координаты не являются массивом или пусты')
     return false
   }
 
   // Обрабатываем разные форматы координат
   let polygon: number[][]
   
-  if (Array.isArray(coordinates[0])) {
+  // Проверяем формат GeoJSON или простой массив
+  if (coordinates.type === 'Polygon' && Array.isArray(coordinates.coordinates)) {
+    // Формат GeoJSON: { type: 'Polygon', coordinates: [[[lng, lat], ...]] }
+    polygon = coordinates.coordinates[0]
+    console.log('[isPointInZone] Обнаружен формат GeoJSON Polygon')
+  } else if (Array.isArray(coordinates[0])) {
     if (Array.isArray(coordinates[0][0])) {
-      // Формат: [[[lat, lng], [lat, lng], ...]]
+      // Формат: [[[lat, lng], [lat, lng], ...]] или [[[lng, lat], [lng, lat], ...]]
       polygon = coordinates[0]
+      console.log('[isPointInZone] Обнаружен формат вложенного массива')
     } else {
-      // Формат: [[lat, lng], [lat, lng], ...]
+      // Формат: [[lat, lng], [lat, lng], ...] или [[lng, lat], [lng, lat], ...]
       polygon = coordinates
+      console.log('[isPointInZone] Обнаружен формат плоского массива')
     }
   } else {
+    console.log('[isPointInZone] Неизвестный формат координат')
     return false
   }
 
   if (polygon.length < 3) {
+    console.log(`[isPointInZone] Полигон имеет недостаточно точек: ${polygon.length}`)
     return false // Полигон должен иметь минимум 3 точки
   }
+
+  console.log(`[isPointInZone] Проверка точки (${lat}, ${lng}) в полигоне с ${polygon.length} точками`)
+  console.log(`[isPointInZone] Первые точки полигона:`, polygon.slice(0, 3))
 
   let inside = false
 
@@ -117,18 +137,34 @@ function isPointInZone(lat: number, lng: number, coordinates: any): boolean {
       continue
     }
 
-    // Координаты могут быть в формате [lat, lng] или [lng, lat]
-    const xi = pointI[1] ?? pointI[0]
-    const yi = pointI[0] ?? pointI[1]
-    const xj = pointJ[1] ?? pointJ[0]
-    const yj = pointJ[0] ?? pointJ[1]
+    // Определяем формат координат: [lat, lng] или [lng, lat]
+    // Для Петропавловска-Камчатского: lat ~53, lng ~158
+    // Если первая координата > 100, это скорее всего lng, значит формат [lng, lat]
+    const isLngLatFormat = Math.abs(pointI[0]) > 90 || Math.abs(pointI[1]) <= 90
+    
+    let xi: number, yi: number, xj: number, yj: number
+    
+    if (isLngLatFormat) {
+      // Формат [lng, lat]
+      xi = pointI[0] // lng
+      yi = pointI[1] // lat
+      xj = pointJ[0] // lng
+      yj = pointJ[1] // lat
+    } else {
+      // Формат [lat, lng]
+      xi = pointI[1] // lng
+      yi = pointI[0] // lat
+      xj = pointJ[1] // lng
+      yj = pointJ[0] // lat
+    }
 
     const intersect =
-      yi > lng !== yj > lng && lat < ((xj - xi) * (lng - yi)) / (yj - yi) + xi
+      yi > lat !== yj > lat && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi
 
     if (intersect) inside = !inside
   }
 
+  console.log(`[isPointInZone] Результат: ${inside ? 'ТОЧКА ВНУТРИ' : 'точка снаружи'}`)
   return inside
 }
 

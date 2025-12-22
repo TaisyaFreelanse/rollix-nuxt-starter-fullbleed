@@ -28,7 +28,10 @@
     "iiko:test-downgrade": "tsx scripts/test-status-downgrade.ts",
     "render:build": "npm install --production=false && npx prisma generate --schema=prisma/schema.prisma && npx tsx scripts/create-sms-table.ts && npx tsx scripts/add-product-tags.ts && npx tsx scripts/create-banners-table.ts && npm run build",
     "render:setup": "npx tsx scripts/setup-db.ts",
-    "render:migrate": "npx tsx scripts/run-migration.ts"
+    "render:migrate": "npx tsx scripts/run-migration.ts",
+    "zones:create-petrokam": "tsx scripts/create-petrokam-zones.ts",
+    "zones:parse-kml": "tsx scripts/parse-kml-zones.ts",
+    "zones:import-json": "tsx scripts/import-zones-from-json.ts"
   },
   "dependencies": {
     "@headlessui/vue": "^1.7.23",
