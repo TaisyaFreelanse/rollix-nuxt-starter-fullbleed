@@ -35,8 +35,13 @@ export default defineEventHandler(async (event) => {
     let matchedZone = null
     for (const zone of zones) {
       const coordinates = zone.coordinates as any
+      console.log(`[Delivery Zones Calculate] Проверка зоны "${zone.name}"`)
+      console.log(`[Delivery Zones Calculate] Тип координат:`, typeof coordinates, Array.isArray(coordinates) ? 'массив' : 'объект')
+      if (coordinates && typeof coordinates === 'object' && coordinates.type) {
+        console.log(`[Delivery Zones Calculate] Формат: GeoJSON (${coordinates.type})`)
+      }
       const isInZone = isPointInZone(lat, lng, coordinates)
-      console.log(`[Delivery Zones Calculate] Проверка зоны "${zone.name}": ${isInZone ? 'ПОПАДАЕТ' : 'не попадает'}`)
+      console.log(`[Delivery Zones Calculate] Результат проверки зоны "${zone.name}": ${isInZone ? 'ПОПАДАЕТ' : 'не попадает'}`)
       if (isInZone) {
         matchedZone = zone
         break
@@ -91,31 +96,47 @@ export default defineEventHandler(async (event) => {
 
 // Функция проверки точки в полигоне
 function isPointInZone(lat: number, lng: number, coordinates: any): boolean {
-  if (!Array.isArray(coordinates) || coordinates.length === 0) {
-    console.log('[isPointInZone] Координаты не являются массивом или пусты')
+  if (!coordinates) {
+    console.log('[isPointInZone] Координаты пусты или undefined')
     return false
   }
 
   // Обрабатываем разные форматы координат
   let polygon: number[][]
   
-  // Проверяем формат GeoJSON или простой массив
-  if (coordinates.type === 'Polygon' && Array.isArray(coordinates.coordinates)) {
+  // Сначала проверяем формат GeoJSON (объект с type и coordinates)
+  if (coordinates && typeof coordinates === 'object' && coordinates.type === 'Polygon' && Array.isArray(coordinates.coordinates)) {
     // Формат GeoJSON: { type: 'Polygon', coordinates: [[[lng, lat], ...]] }
-    polygon = coordinates.coordinates[0]
-    console.log('[isPointInZone] Обнаружен формат GeoJSON Polygon')
-  } else if (Array.isArray(coordinates[0])) {
-    if (Array.isArray(coordinates[0][0])) {
-      // Формат: [[[lat, lng], [lat, lng], ...]] или [[[lng, lat], [lng, lat], ...]]
-      polygon = coordinates[0]
-      console.log('[isPointInZone] Обнаружен формат вложенного массива')
+    if (Array.isArray(coordinates.coordinates[0]) && Array.isArray(coordinates.coordinates[0][0])) {
+      polygon = coordinates.coordinates[0]
+      console.log('[isPointInZone] Обнаружен формат GeoJSON Polygon')
     } else {
-      // Формат: [[lat, lng], [lat, lng], ...] или [[lng, lat], [lng, lat], ...]
-      polygon = coordinates
-      console.log('[isPointInZone] Обнаружен формат плоского массива')
+      console.log('[isPointInZone] Неверный формат GeoJSON координат')
+      return false
+    }
+  } else if (Array.isArray(coordinates)) {
+    // Проверяем простой массив
+    if (coordinates.length === 0) {
+      console.log('[isPointInZone] Массив координат пуст')
+      return false
+    }
+    
+    if (Array.isArray(coordinates[0])) {
+      if (Array.isArray(coordinates[0][0])) {
+        // Формат: [[[lat, lng], [lat, lng], ...]] или [[[lng, lat], [lng, lat], ...]]
+        polygon = coordinates[0]
+        console.log('[isPointInZone] Обнаружен формат вложенного массива')
+      } else {
+        // Формат: [[lat, lng], [lat, lng], ...] или [[lng, lat], [lng, lat], ...]
+        polygon = coordinates
+        console.log('[isPointInZone] Обнаружен формат плоского массива')
+      }
+    } else {
+      console.log('[isPointInZone] Неизвестный формат координат (не массив массивов)')
+      return false
     }
   } else {
-    console.log('[isPointInZone] Неизвестный формат координат')
+    console.log('[isPointInZone] Неизвестный формат координат:', typeof coordinates)
     return false
   }
 
