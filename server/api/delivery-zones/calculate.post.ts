@@ -38,12 +38,12 @@ export default defineEventHandler(async (event) => {
     // Рассчитываем стоимость доставки
     let deliveryPrice = Number(matchedZone.deliveryPrice)
     const orderSubtotal = subtotal || 0
+    const minOrderAmount = Number(matchedZone.minOrderAmount)
 
-    // Проверяем бесплатную доставку
-    if (
-      matchedZone.freeDeliveryThreshold &&
-      orderSubtotal >= Number(matchedZone.freeDeliveryThreshold)
-    ) {
+    // Логика доставки:
+    // - До минимальной суммы (minOrderAmount) - доставка платная (deliveryPrice)
+    // - От минимальной суммы и выше - доставка бесплатная
+    if (orderSubtotal >= minOrderAmount) {
       deliveryPrice = 0
     }
 
