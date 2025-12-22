@@ -58,7 +58,7 @@ onMounted(() => {
           src="https://www.google.com/maps/d/embed?mid=1IfxTsTdE_9g3TkhGFnBOVru_GQCVDNo&ehbc=2E312F&ll=53.0194,158.6503&z=12"
           width="100%"
           height="100%"
-          style="border:0; margin-top: -50px; height: calc(100% + 50px); pointer-events: auto;"
+          style="border:0; margin-top: -70px; height: calc(100% + 70px); pointer-events: auto; display: block;"
           allowfullscreen
           loading="lazy"
           referrerpolicy="no-referrer-when-downgrade">
