@@ -23,6 +23,9 @@ export default defineEventHandler(async (event) => {
     const zones = await prisma.deliveryZone.findMany({
       where: {
         isActive: true
+      },
+      orderBy: {
+        minOrderAmount: 'desc' // Сортируем по убыванию минимальной суммы - сначала проверяем зоны с большей суммой
       }
     })
 
@@ -32,7 +35,8 @@ export default defineEventHandler(async (event) => {
     }
 
     // Находим подходящую зону
-    let matchedZone = null
+    // Проверяем все зоны и собираем все подходящие (на случай перекрытия зон)
+    const matchedZones: Array<typeof zones[0]> = []
     for (const zone of zones) {
       const coordinates = zone.coordinates as any
       console.log(`[Delivery Zones Calculate] Проверка зоны "${zone.name}"`)
@@ -43,9 +47,16 @@ export default defineEventHandler(async (event) => {
       const isInZone = isPointInZone(lat, lng, coordinates)
       console.log(`[Delivery Zones Calculate] Результат проверки зоны "${zone.name}": ${isInZone ? 'ПОПАДАЕТ' : 'не попадает'}`)
       if (isInZone) {
-        matchedZone = zone
-        break
+        matchedZones.push(zone)
       }
+    }
+
+    // Если точка попадает в несколько зон, выбираем зону с наибольшей минимальной суммой
+    // (так как зоны уже отсортированы по убыванию minOrderAmount, первая подходящая и есть нужная)
+    const matchedZone = matchedZones.length > 0 ? matchedZones[0] : null
+    
+    if (matchedZones.length > 1) {
+      console.log(`[Delivery Zones Calculate] Точка попадает в ${matchedZones.length} зон. Выбрана зона с наибольшей минимальной суммой: "${matchedZone?.name}"`)
     }
 
     if (!matchedZone) {
