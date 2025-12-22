@@ -79,13 +79,17 @@ const calculateDelivery = async (coordinates: [number, number]) => {
 
   isCalculatingDelivery.value = true
   try {
+    // Используем $fetch с явным указанием, что это API запрос
+    // В Nuxt 3 $fetch автоматически обрабатывает /api/ routes через Nitro
     const result = await $fetch('/api/delivery-zones/calculate', {
       method: 'POST',
       body: {
         lat: coordinates[0],
         lng: coordinates[1],
         subtotal: cartStore.subtotal
-      }
+      },
+      // Явно указываем, что это не навигация
+      redirect: 'manual'
     })
 
     selectedZone.value = {
@@ -184,10 +188,12 @@ const deliveryPrice = computed(() => {
   if (!selectedZone.value) return 0
 
   const subtotal = cartStore.subtotal
-  if (
-    selectedZone.value.freeDeliveryThreshold &&
-    subtotal >= selectedZone.value.freeDeliveryThreshold
-  ) {
+  const minOrderAmount = selectedZone.value.minOrderAmount || 0
+
+  // Логика доставки:
+  // - До минимальной суммы (minOrderAmount) - доставка платная (deliveryPrice)
+  // - От минимальной суммы и выше - доставка бесплатная
+  if (subtotal >= minOrderAmount) {
     return 0
   }
 

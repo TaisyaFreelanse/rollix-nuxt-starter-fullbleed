@@ -32,6 +32,12 @@ export default defineNuxtConfig({
     viewer: false
   },
   compatibilityDate: '2024-12-01',
+  nitro: {
+    // Настройка для правильной обработки API routes
+    routeRules: {
+      '/api/**': { cors: true, headers: { 'Access-Control-Allow-Methods': 'GET,HEAD,PUT,PATCH,POST,DELETE' } }
+    }
+  },
   runtimeConfig: {
     // Private keys (only available on server-side)
     smsRuApiKey: process.env.SMS_RU_API_KEY || '66CCA90D-74B8-6CCB-30C5-05A1D6661AE6',

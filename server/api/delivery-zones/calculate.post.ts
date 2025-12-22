@@ -2,8 +2,16 @@ import { prisma } from '~/server/utils/prisma'
 
 export default defineEventHandler(async (event) => {
   try {
+    // Логируем запрос для отладки
+    console.log('[Delivery Zones Calculate] Получен запрос:', {
+      method: event.method,
+      url: event.path
+    })
+
     const body = await readBody(event)
     const { lat, lng, subtotal } = body
+
+    console.log('[Delivery Zones Calculate] Данные запроса:', { lat, lng, subtotal })
 
     if (!lat || !lng) {
       throw createError({
@@ -47,7 +55,7 @@ export default defineEventHandler(async (event) => {
       deliveryPrice = 0
     }
 
-    return {
+    const result = {
       zone: {
         id: matchedZone.id,
         name: matchedZone.name,
@@ -59,7 +67,11 @@ export default defineEventHandler(async (event) => {
         : null,
       minOrderAmount: Number(matchedZone.minOrderAmount)
     }
+
+    console.log('[Delivery Zones Calculate] Результат:', result)
+    return result
   } catch (error: any) {
+    console.error('[Delivery Zones Calculate] Ошибка:', error)
     if (error.statusCode) {
       throw error
     }

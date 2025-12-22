@@ -640,6 +640,16 @@ const _inlineRuntimeConfig = {
       "/__nuxt_error": {
         "cache": false
       },
+      "/api/**": {
+        "cors": true,
+        "headers": {
+          "access-control-allow-origin": "*",
+          "access-control-allow-methods": "*",
+          "access-control-allow-headers": "*",
+          "access-control-max-age": "0",
+          "Access-Control-Allow-Methods": "GET,HEAD,PUT,PATCH,POST,DELETE"
+        }
+      },
       "/_nuxt/builds/meta/**": {
         "headers": {
           "cache-control": "public, max-age=31536000, immutable"
@@ -1889,6 +1899,7 @@ const _lazy_H71tn_ = () => Promise.resolve().then(function () { return index_get
 const _lazy_Y3iFa4 = () => Promise.resolve().then(function () { return index_post$1; });
 const _lazy_Lb_Xig = () => Promise.resolve().then(function () { return index_get$3; });
 const _lazy_SYDJt5 = () => Promise.resolve().then(function () { return index_get$1; });
+const _lazy_MVPIo4 = () => Promise.resolve().then(function () { return suggest_get$1; });
 const _lazy_NR2P7R = () => Promise.resolve().then(function () { return renderer$1; });
 
 const handlers = [
@@ -1970,6 +1981,7 @@ const handlers = [
   { route: '/api/promo-codes', handler: _lazy_Y3iFa4, lazy: true, middleware: false, method: "post" },
   { route: '/api/promocode-widget', handler: _lazy_Lb_Xig, lazy: true, middleware: false, method: "get" },
   { route: '/api/promotions', handler: _lazy_SYDJt5, lazy: true, middleware: false, method: "get" },
+  { route: '/api/yandex/suggest', handler: _lazy_MVPIo4, lazy: true, middleware: false, method: "get" },
   { route: '/__nuxt_error', handler: _lazy_NR2P7R, lazy: true, middleware: false, method: undefined },
   { route: '/__nuxt_island/**', handler: _SxA8c9, lazy: false, middleware: false, method: undefined },
   { route: '/**', handler: _lazy_NR2P7R, lazy: true, middleware: false, method: undefined }
@@ -5521,8 +5533,13 @@ const _id__delete$7 = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.definePrope
 
 const calculate_post = defineEventHandler(async (event) => {
   try {
+    console.log("[Delivery Zones Calculate] \u041F\u043E\u043B\u0443\u0447\u0435\u043D \u0437\u0430\u043F\u0440\u043E\u0441:", {
+      method: event.method,
+      url: event.path
+    });
     const body = await readBody(event);
     const { lat, lng, subtotal } = body;
+    console.log("[Delivery Zones Calculate] \u0414\u0430\u043D\u043D\u044B\u0435 \u0437\u0430\u043F\u0440\u043E\u0441\u0430:", { lat, lng, subtotal });
     if (!lat || !lng) {
       throw createError({
         statusCode: 400,
@@ -5550,10 +5567,11 @@ const calculate_post = defineEventHandler(async (event) => {
     }
     let deliveryPrice = Number(matchedZone.deliveryPrice);
     const orderSubtotal = subtotal || 0;
-    if (matchedZone.freeDeliveryThreshold && orderSubtotal >= Number(matchedZone.freeDeliveryThreshold)) {
+    const minOrderAmount = Number(matchedZone.minOrderAmount);
+    if (orderSubtotal >= minOrderAmount) {
       deliveryPrice = 0;
     }
-    return {
+    const result = {
       zone: {
         id: matchedZone.id,
         name: matchedZone.name,
@@ -5563,7 +5581,10 @@ const calculate_post = defineEventHandler(async (event) => {
       freeDeliveryThreshold: matchedZone.freeDeliveryThreshold ? Number(matchedZone.freeDeliveryThreshold) : null,
       minOrderAmount: Number(matchedZone.minOrderAmount)
     };
+    console.log("[Delivery Zones Calculate] \u0420\u0435\u0437\u0443\u043B\u044C\u0442\u0430\u0442:", result);
+    return result;
   } catch (error) {
+    console.error("[Delivery Zones Calculate] \u041E\u0448\u0438\u0431\u043A\u0430:", error);
     if (error.statusCode) {
       throw error;
     }
@@ -5574,20 +5595,38 @@ const calculate_post = defineEventHandler(async (event) => {
   }
 });
 function isPointInZone$1(lat, lng, coordinates) {
-  if (Array.isArray(coordinates) && coordinates.length > 0) {
-    const polygon = Array.isArray(coordinates[0][0]) ? coordinates[0] : coordinates;
-    let inside = false;
-    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-      const xi = polygon[i][1] || polygon[i][0];
-      const yi = polygon[i][0] || polygon[i][1];
-      const xj = polygon[j][1] || polygon[j][0];
-      const yj = polygon[j][0] || polygon[j][1];
-      const intersect = yi > lng !== yj > lng && lat < (xj - xi) * (lng - yi) / (yj - yi) + xi;
-      if (intersect) inside = !inside;
-    }
-    return inside;
+  var _a, _b, _c, _d;
+  if (!Array.isArray(coordinates) || coordinates.length === 0) {
+    return false;
   }
-  return false;
+  let polygon;
+  if (Array.isArray(coordinates[0])) {
+    if (Array.isArray(coordinates[0][0])) {
+      polygon = coordinates[0];
+    } else {
+      polygon = coordinates;
+    }
+  } else {
+    return false;
+  }
+  if (polygon.length < 3) {
+    return false;
+  }
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const pointI = polygon[i];
+    const pointJ = polygon[j];
+    if (!Array.isArray(pointI) || !Array.isArray(pointJ) || pointI.length < 2 || pointJ.length < 2) {
+      continue;
+    }
+    const xi = (_a = pointI[1]) != null ? _a : pointI[0];
+    const yi = (_b = pointI[0]) != null ? _b : pointI[1];
+    const xj = (_c = pointJ[1]) != null ? _c : pointJ[0];
+    const yj = (_d = pointJ[0]) != null ? _d : pointJ[1];
+    const intersect = yi > lng !== yj > lng && lat < (xj - xi) * (lng - yi) / (yj - yi) + xi;
+    if (intersect) inside = !inside;
+  }
+  return inside;
 }
 
 const calculate_post$1 = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
@@ -7988,6 +8027,136 @@ const index_get = defineEventHandler(async (event) => {
 const index_get$1 = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
   __proto__: null,
   default: index_get
+}, Symbol.toStringTag, { value: 'Module' }));
+
+const suggest_get = defineEventHandler(async (event) => {
+  var _a, _b, _c;
+  try {
+    const query = getQuery$1(event);
+    const { text, ll, spn } = query;
+    if (!text || typeof text !== "string") {
+      throw createError({
+        statusCode: 400,
+        message: "\u041F\u0430\u0440\u0430\u043C\u0435\u0442\u0440 text \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u0435\u043D"
+      });
+    }
+    const apiKey = process.env.YANDEX_SUGGEST_API_KEY || "804dccb1-83e0-419e-a3cd-7d6641593b0b";
+    const params = new URLSearchParams({
+      apikey: apiKey,
+      text,
+      lang: "ru_RU",
+      types: "house,street,locality",
+      print_address: "1",
+      attrs: "uri",
+      results: "5"
+      // Максимум 5 результатов
+    });
+    if (ll && typeof ll === "string") {
+      params.append("ll", ll);
+    } else {
+      params.append("ll", "158.6503,53.0194");
+    }
+    if (spn && typeof spn === "string") {
+      params.append("spn", spn);
+    } else {
+      params.append("spn", "0.5,0.5");
+    }
+    const url = `https://suggest-maps.yandex.ru/v1/suggest?${params.toString()}`;
+    console.log("[Yandex Suggest API] \u0417\u0430\u043F\u0440\u043E\u0441:", url.replace(apiKey, "***"));
+    console.log("[Yandex Suggest API] \u041F\u0430\u0440\u0430\u043C\u0435\u0442\u0440\u044B:", {
+      text,
+      ll: ll || "158.6503,53.0194",
+      spn: spn || "0.5,0.5",
+      types: "house,street,locality",
+      lang: "ru_RU"
+    });
+    try {
+      const data = await $fetch(url, {
+        method: "GET",
+        headers: {
+          "Accept": "application/json"
+        },
+        // Не бросаем ошибку при 403, обрабатываем вручную
+        onResponseError({ response }) {
+          console.error("[Yandex Suggest API] \u041E\u0448\u0438\u0431\u043A\u0430 \u043E\u0442\u0432\u0435\u0442\u0430:", {
+            status: response.status,
+            statusText: response.statusText,
+            headers: Object.fromEntries(response.headers.entries())
+          });
+        }
+      });
+      console.log("[Yandex Suggest API] \u0423\u0441\u043F\u0435\u0448\u043D\u044B\u0439 \u043E\u0442\u0432\u0435\u0442, \u0440\u0435\u0437\u0443\u043B\u044C\u0442\u0430\u0442\u043E\u0432:", ((_a = data.results) == null ? void 0 : _a.length) || 0);
+      if (data.results && Array.isArray(data.results)) {
+        const filteredResults = data.results.filter((result) => {
+          var _a2;
+          const addressComponents = ((_a2 = result.address) == null ? void 0 : _a2.component) || [];
+          const isRussia = addressComponents.some(
+            (comp) => {
+              var _a3, _b2, _c2, _d;
+              return ((_a3 = comp.kind) == null ? void 0 : _a3.includes("COUNTRY")) && (((_b2 = comp.name) == null ? void 0 : _b2.includes("\u0420\u043E\u0441\u0441\u0438\u044F")) || ((_c2 = comp.name) == null ? void 0 : _c2.includes("Russia")) || ((_d = comp.name) == null ? void 0 : _d.includes("\u0420\u043E\u0441\u0441\u0438\u0439\u0441\u043A\u0430\u044F")));
+            }
+          );
+          return isRussia;
+        });
+        return {
+          results: filteredResults
+        };
+      }
+      return data;
+    } catch (error) {
+      const statusCode = error.statusCode || ((_b = error.response) == null ? void 0 : _b.status) || 500;
+      const statusText = error.statusText || ((_c = error.response) == null ? void 0 : _c.statusText) || "Internal Server Error";
+      let errorMessage = `\u041E\u0448\u0438\u0431\u043A\u0430 Suggest API: ${statusCode} ${statusText}`;
+      if (error.data) {
+        try {
+          if (typeof error.data === "string") {
+            errorMessage = error.data;
+          } else if (error.data.message) {
+            errorMessage = error.data.message;
+          }
+        } catch (e) {
+          console.error("[Yandex Suggest API] \u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0431\u0440\u0430\u0431\u043E\u0442\u0430\u0442\u044C \u0434\u0430\u043D\u043D\u044B\u0435 \u043E\u0448\u0438\u0431\u043A\u0438:", e);
+        }
+      }
+      if (statusCode === 403) {
+        console.error("[Yandex Suggest API] 403 Forbidden - \u0432\u043E\u0437\u043C\u043E\u0436\u043D\u044B\u0435 \u043F\u0440\u0438\u0447\u0438\u043D\u044B:");
+        console.error("  1. API \u043A\u043B\u044E\u0447 \u043D\u0435\u0432\u0435\u0440\u043D\u044B\u0439 \u0438\u043B\u0438 \u043D\u0435 \u0430\u043A\u0442\u0438\u0432\u0438\u0440\u043E\u0432\u0430\u043D");
+        console.error('  2. API \u043A\u043B\u044E\u0447 \u043D\u0435 \u0438\u043C\u0435\u0435\u0442 \u0434\u043E\u0441\u0442\u0443\u043F\u0430 \u043A \u043F\u0430\u043A\u0435\u0442\u0443 "API \u0413\u0435\u043E\u0441\u0430\u0434\u0436\u0435\u0441\u0442\u0430"');
+        console.error("  3. \u041A\u043B\u044E\u0447 \u0430\u043A\u0442\u0438\u0432\u0438\u0440\u0443\u0435\u0442\u0441\u044F \u0432 \u0442\u0435\u0447\u0435\u043D\u0438\u0435 15 \u043C\u0438\u043D\u0443\u0442 \u043F\u043E\u0441\u043B\u0435 \u043F\u043E\u043B\u0443\u0447\u0435\u043D\u0438\u044F");
+        console.error("  4. Yandex \u043C\u043E\u0436\u0435\u0442 \u0431\u043B\u043E\u043A\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0437\u0430\u043F\u0440\u043E\u0441\u044B \u0441 \u0441\u0435\u0440\u0432\u0435\u0440\u043D\u044B\u0445 IP-\u0430\u0434\u0440\u0435\u0441\u043E\u0432");
+        console.error("  5. \u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043A\u043B\u044E\u0447\u0430 \u0432 \u041A\u0430\u0431\u0438\u043D\u0435\u0442\u0435 \u0420\u0430\u0437\u0440\u0430\u0431\u043E\u0442\u0447\u0438\u043A\u0430: https://developer.tech.yandex.ru/");
+        console.error("  6. \u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043E\u0433\u0440\u0430\u043D\u0438\u0447\u0435\u043D\u0438\u044F HTTP Referer \u0434\u043B\u044F \u043A\u043B\u044E\u0447\u0430");
+        console.error("[Yandex Suggest API] \u041F\u043E\u043B\u043D\u0430\u044F \u043E\u0448\u0438\u0431\u043A\u0430:", JSON.stringify(error, null, 2));
+        throw createError({
+          statusCode: 403,
+          message: `\u0414\u043E\u0441\u0442\u0443\u043F \u0437\u0430\u043F\u0440\u0435\u0449\u0435\u043D. \u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 API \u043A\u043B\u044E\u0447 \u0434\u043B\u044F Suggest API. ${errorMessage}. \u0412\u043E\u0437\u043C\u043E\u0436\u043D\u043E, Yandex \u0431\u043B\u043E\u043A\u0438\u0440\u0443\u0435\u0442 \u0437\u0430\u043F\u0440\u043E\u0441\u044B \u0441 \u0441\u0435\u0440\u0432\u0435\u0440\u043D\u044B\u0445 IP. \u041F\u043E\u043F\u0440\u043E\u0431\u0443\u0439\u0442\u0435 \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u044C \u043A\u043B\u0438\u0435\u043D\u0442\u0441\u043A\u0438\u0439 \u0437\u0430\u043F\u0440\u043E\u0441 \u0438\u043B\u0438 \u043F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043A\u043B\u044E\u0447\u0430.`
+        });
+      }
+      if (error.statusCode) {
+        throw createError({
+          statusCode: error.statusCode,
+          message: errorMessage
+        });
+      }
+      throw createError({
+        statusCode: 500,
+        message: `\u041E\u0448\u0438\u0431\u043A\u0430 \u043F\u0440\u0438 \u043F\u043E\u043B\u0443\u0447\u0435\u043D\u0438\u0438 \u043F\u043E\u0434\u0441\u043A\u0430\u0437\u043E\u043A: ${errorMessage}`
+      });
+    }
+  } catch (error) {
+    if (error.statusCode) {
+      throw error;
+    }
+    throw createError({
+      statusCode: 500,
+      message: "\u041E\u0448\u0438\u0431\u043A\u0430 \u043F\u0440\u0438 \u043F\u043E\u043B\u0443\u0447\u0435\u043D\u0438\u0438 \u043F\u043E\u0434\u0441\u043A\u0430\u0437\u043E\u043A"
+    });
+  }
+});
+
+const suggest_get$1 = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
+  __proto__: null,
+  default: suggest_get
 }, Symbol.toStringTag, { value: 'Module' }));
 
 function renderPayloadResponse(ssrContext) {

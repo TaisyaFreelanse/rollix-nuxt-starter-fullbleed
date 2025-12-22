@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Тест Delivery Endpoint</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #1a1a1a; color: #fff; }
+        .container { max-width: 600px; margin: 0 auto; }
+        button { padding: 10px 20px; background: #4CAF50; color: white; border: none; cursor: pointer; border-radius: 4px; }
+        button:hover { background: #45a049; }
+        .result { margin-top: 20px; padding: 15px; background: #2a2a2a; border-radius: 4px; }
+        .error { background: #5a2a2a; color: #ff6b6b; }
+        .success { background: #2a5a2a; color: #6bff6b; }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Тест Endpoint: /api/delivery-zones/calculate</h1>
+        <button onclick="testEndpoint()">Тестировать Endpoint</button>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function testEndpoint() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="result">Отправка запроса...</div>';
+
+            const testData = {
+                lat: 53.0194,
+                lng: 158.6503,
+                subtotal: 1000
+            };
+
+            try {
+                const response = await fetch('http://localhost:3000/api/delivery-zones/calculate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="result success">
+                            <h3>✅ Успешно!</h3>
+                            <p><strong>Статус:</strong> ${response.status} ${response.statusText}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="result error">
+                            <h3>❌ Ошибка</h3>
+                            <p><strong>Статус:</strong> ${response.status} ${response.statusText}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <h3>❌ Ошибка подключения</h3>
+                        <p>${error.message}</p>
+                        <p><strong>Убедитесь, что:</strong></p>
+                        <ul>
+                            <li>Сервер запущен: <code>npm run dev</code></li>
+                            <li>Сервер доступен на порту 3000</li>
+                            <li>База данных подключена и содержит зоны доставки</li>
+                        </ul>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
+

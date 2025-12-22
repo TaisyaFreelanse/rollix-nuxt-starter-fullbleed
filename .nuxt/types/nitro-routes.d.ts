@@ -181,6 +181,9 @@ declare module "nitropack/types" {
     '/api/promotions': {
       'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/promotions/index.get').default>>>>
     }
+    '/api/yandex/suggest': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/yandex/suggest.get').default>>>>
+    }
     '/__nuxt_error': {
       'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../node_modules/nuxt/dist/core/runtime/nitro/handlers/renderer').default>>>>
     }
