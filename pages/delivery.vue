@@ -14,12 +14,15 @@ const selectedZone = ref<DeliveryZone | null>(null)
 const showZoneModal = ref(false)
 const isLoading = ref(true)
 
-// Загружаем зоны доставки
+// Загружаем зоны доставки (только для Петропавловска-Камчатского)
 const loadZones = async () => {
   try {
     isLoading.value = true
     const response = await $fetch<{ zones: DeliveryZone[] }>('/api/delivery-zones')
-    zones.value = response.zones
+    // Фильтруем зоны - показываем только зоны для Петропавловска-Камчатского
+    zones.value = response.zones.filter(zone => 
+      zone.name.includes('Петро-Кам') || zone.name.includes('Петропавловск')
+    )
   } catch (error) {
     console.error('Ошибка загрузки зон доставки:', error)
   } finally {
@@ -48,11 +51,11 @@ onMounted(() => {
   <main class="w-full px-0 pb-20">
     <h1 class="text-sm sm:text-base font-semibold mt-2 mb-2 px-3 sm:px-4 lg:px-8">Условия доставки</h1>
     
-    <!-- Карта Google Maps -->
+    <!-- Карта Google Maps для Петропавловска-Камчатского -->
     <div class="rounded-lg overflow-hidden border border-white/10 mx-3 sm:mx-4 lg:mx-8 mb-4">
       <div class="relative w-full" style="height: 60vh; min-height: 400px;">
         <iframe
-          src="https://www.google.com/maps/d/embed?mid=1IfxTsTdE_9g3TkhGFnBOVru_GQCVDNo&ehbc=2E312F"
+          src="https://www.google.com/maps/d/embed?mid=1IfxTsTdE_9g3TkhGFnBOVru_GQCVDNo&ehbc=2E312F&ll=53.0194,158.6503&z=12"
           width="100%"
           height="100%"
           style="border:0;"
@@ -113,48 +116,48 @@ onMounted(() => {
     <!-- Модальное окно с информацией о зоне -->
     <Modal :open="showZoneModal" :title="selectedZone?.name || 'Информация о зоне'" @close="closeZoneModal">
       <div v-if="selectedZone" class="space-y-4">
-        <div>
-          <label class="text-gray-400 text-xs mb-1 block">Название</label>
-          <div class="text-white text-sm font-medium">{{ selectedZone.name }}</div>
+        <!-- Основная информация -->
+        <div class="space-y-3">
+          <div class="flex justify-between items-center py-2 border-b border-white/10">
+            <span class="text-gray-400 text-sm">Время доставки:</span>
+            <span class="text-white text-sm font-semibold">~{{ selectedZone.estimatedTime }} мин</span>
+          </div>
+          
+          <div class="flex justify-between items-center py-2 border-b border-white/10">
+            <span class="text-gray-400 text-sm">Минимальная сумма заказа:</span>
+            <span class="text-accent text-sm font-semibold">{{ selectedZone.minOrderAmount.toLocaleString('ru-RU') }} ₽</span>
+          </div>
+          
+          <div class="flex justify-between items-center py-2 border-b border-white/10">
+            <span class="text-gray-400 text-sm">Стоимость доставки:</span>
+            <span class="text-white text-sm font-semibold">{{ selectedZone.deliveryPrice.toLocaleString('ru-RU') }} ₽</span>
+          </div>
         </div>
         
-        <div v-if="selectedZone.description">
-          <label class="text-gray-400 text-xs mb-1 block">Описание</label>
-          <div class="text-white text-sm">{{ selectedZone.description }}</div>
-        </div>
-        
-        <div class="space-y-2 pt-2 border-t border-white/10">
-          <div class="flex justify-between items-center">
-            <span class="text-gray-400 text-xs">Время доставки:</span>
-            <span class="text-white text-sm font-medium">{{ selectedZone.estimatedTime }} мин</span>
-          </div>
-          
-          <div class="flex justify-between items-center">
-            <span class="text-gray-400 text-xs">Минимальная сумма:</span>
-            <span class="text-white text-sm font-medium">{{ selectedZone.minOrderAmount.toLocaleString('ru-RU') }} ₽</span>
-          </div>
-          
-          <div class="flex justify-between items-center">
-            <span class="text-gray-400 text-xs">Платная доставка:</span>
-            <span class="text-white text-sm font-medium">{{ selectedZone.deliveryPrice.toLocaleString('ru-RU') }} ₽</span>
-          </div>
-          
-          <div class="pt-2 border-t border-white/10">
-            <div class="bg-accent/10 border border-accent/20 rounded-lg p-3">
-              <div class="text-xs text-gray-300 leading-relaxed">
-                <div class="font-medium text-white mb-1">Условия доставки:</div>
-                <div>• До суммы {{ selectedZone.minOrderAmount.toLocaleString('ru-RU') }} ₽ доставка платная: {{ selectedZone.deliveryPrice.toLocaleString('ru-RU') }} ₽</div>
-                <div>• От суммы {{ selectedZone.minOrderAmount.toLocaleString('ru-RU') }} ₽ доставка бесплатная</div>
-              </div>
+        <!-- Условия доставки -->
+        <div class="bg-accent/10 border border-accent/20 rounded-lg p-4 mt-4">
+          <div class="text-sm text-gray-300 leading-relaxed">
+            <div class="font-medium text-white mb-2">Условия доставки:</div>
+            <div class="space-y-1">
+              <div>• До суммы <span class="font-semibold text-white">{{ selectedZone.minOrderAmount.toLocaleString('ru-RU') }} ₽</span> доставка платная: <span class="font-semibold text-white">{{ selectedZone.deliveryPrice.toLocaleString('ru-RU') }} ₽</span></div>
+              <div class="text-accent">• От суммы <span class="font-semibold">{{ selectedZone.minOrderAmount.toLocaleString('ru-RU') }} ₽</span> доставка <span class="font-semibold">бесплатная</span></div>
             </div>
           </div>
         </div>
         
+        <!-- Дополнительная информация -->
+        <div v-if="selectedZone.description" class="pt-2 border-t border-white/10">
+          <div class="text-xs text-gray-400 leading-relaxed">
+            {{ selectedZone.description }}
+          </div>
+        </div>
+        
+        <!-- Информация о филиале -->
         <div class="pt-2 border-t border-white/10">
-          <div class="text-xs text-gray-400">
-            <div>Город: Петропавловск-Камчатский</div>
-            <div>Филиал: ул. Советская, 30</div>
-            <div>Точка: Петропаловск_1 Сов</div>
+          <div class="text-xs text-gray-400 space-y-1">
+            <div><span class="text-gray-500">Город:</span> Петропавловск-Камчатский</div>
+            <div><span class="text-gray-500">Филиал:</span> ул. Советская, 30</div>
+            <div><span class="text-gray-500">Точка:</span> Петропаловск_1 Сов</div>
           </div>
         </div>
       </div>
