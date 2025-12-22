@@ -349,20 +349,33 @@ const selectSuggestion = async (suggestion: any) => {
       address = suggestion.address?.formatted_address || suggestion.title.text
       
       try {
-        // Получаем точные координаты через Geocoder API по uri
+        // Получаем точные координаты через Geocoder API v1 по uri
         // Используем тот же ключ, что и для карты
         const geocoderApiKey = '51d550e0-cf8f-4247-bae5-dfd32b51048d'
-        const geocoderUrl = `https://geocode-maps.yandex.ru/1.x/?apikey=${geocoderApiKey}&geocode=${encodeURIComponent(suggestion.uri)}&format=json&results=1&bbox=158.4,52.9~158.9,53.2&strict_bounds=1`
+        // Формат v1 API: https://geocode-maps.yandex.ru/v1/?apikey=...&uri=...
+        const geocoderUrl = `https://geocode-maps.yandex.ru/v1/?apikey=${geocoderApiKey}&uri=${encodeURIComponent(suggestion.uri)}&format=json&results=1&bbox=158.4,52.9~158.9,53.2&rspn=1`
         
         const geocoderResponse = await fetch(geocoderUrl)
         if (geocoderResponse.ok) {
           const geocoderData = await geocoderResponse.json()
           
+          // Проверяем формат ответа v1 API
           if (geocoderData.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject?.Point?.pos) {
+            // В v1 API координаты в формате "долгота широта" (lng lat)
             const [lngStr, latStr] = geocoderData.response.GeoObjectCollection.featureMember[0].GeoObject.Point.pos.split(' ').map(Number)
-            lng = lngStr
-            lat = latStr
-            console.log('[AddressMapPicker] Получены точные координаты из Geocoder API:', { lat, lng })
+            
+            // Валидация: проверяем, что координаты в Петропавловске-Камчатском
+            // Петропавловск-Камчатский: lat ~52.9-53.2, lng ~158.4-158.9
+            if (latStr >= 52.9 && latStr <= 53.2 && lngStr >= 158.4 && lngStr <= 158.9) {
+              lng = lngStr
+              lat = latStr
+              console.log('[AddressMapPicker] Получены точные координаты из Geocoder API:', { lat, lng })
+            } else {
+              // Координаты не в Петропавловске-Камчатском - используем центр города
+              console.warn('[AddressMapPicker] Координаты из Geocoder API не в Петропавловске-Камчатском:', { lat: latStr, lng: lngStr })
+              lng = 158.6503
+              lat = 53.0194
+            }
           } else {
             // Если не удалось получить координаты, используем центр города
             lng = 158.6503
