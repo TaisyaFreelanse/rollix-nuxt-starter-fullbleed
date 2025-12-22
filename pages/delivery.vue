@@ -53,12 +53,12 @@ onMounted(() => {
     
     <!-- Карта Google Maps для Петропавловска-Камчатского -->
     <div class="rounded-lg overflow-hidden border border-white/10 mx-3 sm:mx-4 lg:mx-8 mb-4">
-      <div class="relative w-full" style="height: 60vh; min-height: 400px;">
+      <div class="relative w-full" style="height: 60vh; min-height: 400px; overflow: hidden;">
         <iframe
           src="https://www.google.com/maps/d/embed?mid=1IfxTsTdE_9g3TkhGFnBOVru_GQCVDNo&ehbc=2E312F&ll=53.0194,158.6503&z=12"
           width="100%"
           height="100%"
-          style="border:0;"
+          style="border:0; margin-top: -50px; height: calc(100% + 50px); pointer-events: auto;"
           allowfullscreen
           loading="lazy"
           referrerpolicy="no-referrer-when-downgrade">
